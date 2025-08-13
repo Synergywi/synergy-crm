@@ -52,7 +52,7 @@ thead th{background:#f3f6fa;color:#6b7b8f;font-size:.85rem;text-transform:upperc
     .toolbar, #boot{display:none !important}
   }
   
-/* === Spacing tune (cleaner rhythm) === */
+/* removed spacing tune */
 .section { margin: 18px; }
 .section > header { margin-bottom: 10px; }
 .card { padding: 16px; border-radius: 12px; }
@@ -116,6 +116,47 @@ main{max-width:1100px;margin:0 auto;padding:16px;}
 .table td{background:#fff;border:1px solid var(--card-br);padding:10px 12px;border-radius:12px;}
 /* === End V7 Baseline LOCK === */
 
+</style>
+<style id="v7-baseline-lock">
+/* ===== V7 BASELINE LOCK (do not modify) ===== */
+:root{
+  --v7-card-bg:#fff;
+  --v7-card-b:#e6eef6;
+  --v7-card-r:14px;
+  --v7-card-pad:14px;
+  --v7-block-m:12px;
+  --v7-input-b:#e6eef6;
+  --v7-input-r:12px;
+  --v7-input-pad:0.6rem 0.8rem;
+  --v7-main-max:1100px;
+  --v7-grid-gap:16px;
+}
+main{max-width:var(--v7-main-max);margin:0 auto;padding:16px;}
+.card,.section{
+  background:var(--v7-card-bg);
+  border:1px solid var(--v7-card-b);
+  border-radius:var(--v7-card-r);
+  padding:var(--v7-card-pad);
+  margin:var(--v7-block-m) 0;
+  box-shadow:none;
+}
+.section>header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;margin:0 0 8px 0;
+}
+.input, select, textarea{
+  background:#fff;border:1px solid var(--v7-input-b);border-radius:var(--v7-input-r);
+  padding:var(--v7-input-pad);height:auto;box-shadow:none;outline:none;
+}
+.grid{display:grid;gap:12px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-grid-gap);}
+table{width:100%;border-collapse:separate;border-spacing:0 8px;}
+th{font-weight:600;color:#3b5670;text-align:left;padding:8px 10px;}
+td{background:#fff;border:1px solid var(--v7-card-b);padding:10px;border-radius:10px;}
+.btn{border-radius:12px;}
+/* Ensure inner pages keep layout regardless of future style injections */
+.case-form .card,.contact-form .card,.company-form .card{margin:var(--v7-block-m) 0;padding:var(--v7-card-pad);}
+/* ===== END V7 BASELINE LOCK ===== */
 </style>
 </head>
 <body>
