@@ -2,134 +2,65 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Synergy CRM — Clean (Toolbar Build)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synergy CRM — Clean V7 Base</title>
   <link rel="stylesheet" href="print.css" media="print">
   <style>
-
-
-:root{--ink:#1f2b3a;--muted:#6b7b8f;--brand:#0d75cc;--brand-ink:#0d548e;--bg:#f7f9fc;--line:#e8edf5;--panel:#fff;--soft:#eef5fb;--nav:#11384a;--nav2:#163f54;--nav3:#1d4b64;--danger:#b3261e;--success:#2e7d32}
-*{box-sizing:border-box}body{margin:0;font:14px/1.45 -apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
-.topbar{background:#0e4662;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:5}
-.brand{font-weight:700}.sp{flex:1}
-.badge{opacity:.9;background:#073753;border-radius:8px;padding:4px 8px;font-size:12px}
-.chip{display:inline-block;background:#eaf3ff;border:1px solid #cfe3f6;border-radius:999px;padding:4px 8px;font-size:12px}
-.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-.sidebar{background:var(--nav);color:#dfe8ee;padding:14px}.sidebar h3{margin:4px 0 12px;font-size:16px}
-.nav{list-style:none;margin:0;padding:0}.nav li{padding:9px 10px;border-radius:10px;cursor:pointer}.nav li:hover{background:var(--nav2)}.nav li.active{background:var(--nav3)}
-.main{padding:16px}
-.card,.section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.section>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:7px 12px;font-weight:600;cursor:pointer}
-.btn.light{background:var(--soft);border:1px solid #cfe3f6;color:var(--brand-ink)}
-.btn.danger{background:var(--danger)} .btn.success{background:var(--success)}
-.grid{display:grid;gap:10px}.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}.cols-4{grid-template-columns:1fr 1fr 1fr 1fr}
-.input,select,textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem}
-textarea{min-height:86px}
-table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid var(--line);padding:10px;vertical-align:top}
-thead th{background:#f3f6fa;color:#6b7b8f;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em}
-.right{text-align:right}.muted{color:#6b7b8f}
-.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.kpi .card{margin:0;padding:12px}
-#boot{position:fixed;right:8px;bottom:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px}
-.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#0d548e}
-.section-title{margin:0}
-.hr{height:1px;background:var(--line);margin:10px 0}
-
-  
-
-  /* --- Toolbar --- */
-  .toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:6}
-  .toolbar-inner{display:flex;gap:10px;align-items:center;padding:10px 14px;flex-wrap:wrap}
-  .toolbar .sp{flex:1}
-  .toolbar .field{display:flex;gap:6px;align-items:center}
-  .toolbar input[type="date"]{padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px}
-  .toolbar button{background:var(--brand);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
-  .toolbar button.light{background:var(--soft);border:1px solid #cfe3f6;color:var(--brand-ink)}
-  .toolbar small.muted{color:#6b7b8f}
-
-  @media print{
-    .toolbar, #boot{display:none !important}
-  }
-  
-/* === User Log card spacing === */
-#userlog-card { padding: 20px; border-radius: 14px; }
-#userlog-card .row.spread { margin-bottom: 14px; }
-#userlog-card .btn + .btn { margin-left: 10px; }
-#userlog-card .userlog-meta { gap: 18px; }
-#userlog-card .userlog-meta > div { padding-right: 12px; }
-#userlog-card table.compact thead th { padding-top: 12px; padding-bottom: 12px; }
-#userlog-card table.compact td { padding-top: 10px; padding-bottom: 10px; }
-
-
-/* Title–buttons spacing inside User Log header */
-#userlog-card .row.spread { gap: 18px; flex-wrap: wrap; }
-#userlog-card .row.spread > strong { margin-right: 12px; }
-#userlog-card .row.spread > div { margin-top: 6px; }
-@media (min-width: 1100px){
-  #userlog-card .row.spread { gap: 24px; }
-  #userlog-card .row.spread > div { margin-top: 0; }
-}
-
-
-/* v15.2 – Restore V7 spacing/inputs/header layout */
-.section,.card{
-  background:#fff;
-  border:1px solid #e6eef6;
-  border-radius:14px;
-  padding:14px;
-  margin:12px 0;
-}
-.input, select, textarea{
-  background:#fff;
-  border:1px solid #e6eef6;
-  border-radius:12px;
-  padding:.6rem .8rem;
-  height:auto;
-}
-.section>header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  flex-wrap:wrap;
-  margin:0 0 8px 0;
-}
-.grid-2{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-}
-main{ padding:16px; max-width:1100px; margin:0 auto; }
-</style>
+    :root{
+      --ink:#1f2b3a; --muted:#6b7b8f; --bg:#f7f9fc; --line:#e6eef6;
+      --brand:#0d75cc; --brand-ink:#0b5ba3; --nav:#11384a; --nav2:#163f54; --nav3:#1d4b64;
+      --danger:#b3261e; --success:#2e7d32;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Arial}
+    .toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:10}
+    .toolbar .inner{display:flex;gap:10px;align-items:center;padding:10px 14px;flex-wrap:wrap}
+    .toolbar label{font-size:12px;color:var(--muted)}
+    .toolbar input[type="date"]{padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px}
+    .toolbar button{background:#0d75cc;color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
+    .toolbar .light{background:#eef5fb;border:1px solid #cfe3f6;color:var(--brand-ink)}
+    .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+    aside{background:var(--nav);color:#dfe8ee;padding:14px}
+    aside h3{margin:4px 0 12px;font-size:16px}
+    .nav{list-style:none;margin:0;padding:0}
+    .nav li{padding:9px 10px;border-radius:10px;cursor:pointer}
+    .nav li:hover{background:var(--nav2)}
+    .nav li.active{background:var(--nav3)}
+    main{padding:16px}
+    .card,.section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+    .section>header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:7px 12px;font-weight:600;cursor:pointer}
+    .btn.light{background:#eef5fb;border:1px solid #cfe3f6;color:var(--brand-ink)}
+    .btn.success{background:var(--success)} .btn.danger{background:var(--danger)}
+    .input, select, textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem}
+    textarea{min-height:90px}
+    table{width:100%;border-collapse:collapse}
+    td,th{border-bottom:1px solid var(--line);padding:10px;vertical-align:top}
+    thead th{background:#f3f6fa;color:#6b7b8f;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .right{text-align:right}.muted{color:var(--muted)}
+    #boot{position:fixed;right:8px;bottom:8px;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+    @media (max-width:900px){.shell{grid-template-columns:1fr}aside{position:sticky;top:46px}}
+    @media print{.toolbar,aside,#boot{display:none !important}}
+  </style>
 </head>
 <body>
-  <div id="boot">Booting...</div>
-
   <div class="toolbar">
-    <div class="toolbar-inner">
-      <div class="field">
-        <label for="tb-from">From</label>
-        <input id="tb-from" type="date">
-      </div>
-      <div class="field">
-        <label for="tb-to">To</label>
-        <input id="tb-to" type="date">
-      </div>
-      <div class="field">
-        <button id="tb-summary" class="light" title="Export summary">&nbsp;Export Summary&nbsp;</button>
-        <button id="tb-detailed" title="Export detailed">&nbsp;Export Detailed&nbsp;</button>
-      </div>
-      <div class="sp"></div>
+    <div class="inner">
+      <label>From</label><input id="tb-from" type="date">
+      <label>To</label><input id="tb-to" type="date">
+      <button id="tb-summary" class="light">Export Summary</button>
+      <button id="tb-detailed">Export Detailed</button>
+      <div style="flex:1"></div>
       <small id="tb-msg" class="muted">Tip: choose dates then export.</small>
     </div>
   </div>
 
-  <div id="app"><noscript>This app requires JavaScript.</noscript></div>
+  <div id="app"></div>
+  <div id="boot">Booting…</div>
 
   <script src="app.js" defer></script>
   <script src="toolbar.js" defer></script>
-
-  <script src="settings-addon.js"></script>
+  <script src="settings-addon.js" defer></script>
 </body>
 </html>
