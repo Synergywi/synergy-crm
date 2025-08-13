@@ -1,47 +1,5 @@
 
 (function(){ "use strict";
-// ===== API wiring (v15.3) =====
-const API = {
-  enabled: true,
-  base: '/api',
-  async fetchJSON(path, opts){
-    try{
-      const r = await fetch(this.base + path, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return await r.json();
-    }catch(e){
-      console.warn('API offline, using local DATA. Reason:', e.message||e);
-      this.enabled = false;
-      return null;
-    }
-  },
-  async loadSeedIntoDATA(){
-    if(!this.enabled) return;
-    try{
-      const [contacts, companies] = await Promise.all([
-        this.fetchJSON('/contacts'),
-        this.fetchJSON('/companies')
-      ]);
-      if(Array.isArray(contacts)) { DATA.contacts = contacts; }
-      if(Array.isArray(companies)) { DATA.companies = companies; }
-    }catch(e){ /* already handled */ }
-  },
-  async saveContact(c){
-    if(!this.enabled) return false;
-    const method = c.id ? 'PUT' : 'POST';
-    const url = '/contacts' + (c.id?('/'+encodeURIComponent(c.id)) : '');
-    const res = await this.fetchJSON(url, { method, body: JSON.stringify(c) });
-    return !!res;
-  },
-  async saveCompany(co){
-    if(!this.enabled) return false;
-    const method = co.id ? 'PUT' : 'POST';
-    const url = '/companies' + (co.id?('/'+encodeURIComponent(co.id)) : '');
-    const res = await this.fetchJSON(url, { method, body: JSON.stringify(co) });
-    return !!res;
-  }
-};
-// ===== end API wiring =====
 const BUILD="v2.10.7"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM "+BUILD+" • "+STAMP);
 function uid(){return "id-"+Math.random().toString(36).slice(2,9);}
@@ -466,7 +424,7 @@ if(act==='deleteFolder'){const p=arg.split('::'); const cs=findCase(p[0]); if(!c
 // contacts
 if(act==='openContact'){App.set({currentContactId:arg,route:'contact'});return;}
 if(act==='newContact'){const c={id:uid(),name:'New Contact',email:'',phone:'',org:'',companyId:'',notes:''}; d.contacts.unshift(c); App.set({currentContactId:c.id,route:'contact'}); return;}
-if(act==='saveContact'){const c=findContact(arg); if(!c) return; c.name=document.getElementById('ct-name').value; c.email=document.getElementById('ct-email').value; c.phone=document.getElementById('ct-phone').value; c.org=document.getElementById('ct-org').value; c.companyId=document.getElementById('ct-company').value; c.notes=document.getElementById('ct-notes').value; (async ()=>{ try{ await API.saveContact(c); }catch(_){ } alert('Contact saved'); })(); return;}
+if(act==='saveContact'){const c=findContact(arg); if(!c) return; c.name=document.getElementById('ct-name').value; c.email=document.getElementById('ct-email').value; c.phone=document.getElementById('ct-phone').value; c.org=document.getElementById('ct-org').value; c.companyId=document.getElementById('ct-company').value; c.notes=document.getElementById('ct-notes').value; alert('Contact saved'); return;}
 
 // portal access
 if(act==='grantPortal'){const c=findContact(arg); if(!c) return; const email=(document.getElementById('cp-email')?document.getElementById('cp-email').value:'')||c.email; if(!email){alert('Email required');return;} const role=document.getElementById('cp-role').value||'Client'; let exists=d.users.find(u=>(u.email||'').toLowerCase()===email.toLowerCase()); if(!exists) d.users.push({name:c.name||email,email,role}); else exists.role=role; alert('Access granted'); App.set({}); return;}
@@ -492,7 +450,7 @@ if(act==='clearUserLog'){ const c=findContact(arg); if(!c||!c.email){ return; }
 // companies
 if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company'});return;}
 if(act==='newCompany'){const nid='C-'+('00'+(d.companies.length+1)).slice(-3); d.companies.push({id:nid,name:'New Company',folders:{General:[]}}); App.set({currentCompanyId:nid,route:'company'}); return;}
-if(act==='saveCompany'){const co=findCompany(arg); if(!co) return; co.name=document.getElementById('co-name').value; (async ()=>{ try{ await API.saveCompany(co); }catch(_){ } alert('Company saved'); })(); return;}
+if(act==='saveCompany'){const co=findCompany(arg); if(!co) return; co.name=document.getElementById('co-name').value; alert('Company saved'); return;}
 if(act==='newContactForCompany'){const cid=arg; const c={id:uid(),name:'New Contact',email:'',phone:'',org:'',companyId:cid,notes:''}; d.contacts.unshift(c); App.set({currentContactId:c.id,route:'contact'}); return;}
 if(act==='newCaseForCompany'){const cid=arg; const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const co=findCompany(cid); const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:(co?co.name:''),companyId:cid,investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;}
 
@@ -560,5 +518,5 @@ document.addEventListener('change',e=>{
 });
 
 // Boot
-document.addEventListener('DOMContentLoaded',async ()=>{ try{ await API.loadSeedIntoDATA(); }catch(_){ } try{const f=localStorage.getItem('synergy_filters_cases_v2104'); if(f) App.state.casesFilter=JSON.parse(f)||App.state.casesFilter;}catch(_){ } App.set({route:'dashboard'});});
+document.addEventListener('DOMContentLoaded',()=>{try{const f=localStorage.getItem('synergy_filters_cases_v2104'); if(f) App.state.casesFilter=JSON.parse(f)||App.state.casesFilter;}catch(_){ } App.set({route:'dashboard'});});
 })();
