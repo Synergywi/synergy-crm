@@ -223,7 +223,7 @@ function render(){
   else if(r==='settings') out=Settings();
   else out=Dashboard();
   el('app').innerHTML = out;
-  setBoot('Ready ('+BUILD+')');
+  setBoot('Ready ('+DIST+')');
 }
 
 // ---------- events ----------
