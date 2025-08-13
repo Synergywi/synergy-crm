@@ -1,0 +1,9 @@
+Synergy CRM build: V18
+Generated: 2025-08-13T22:32:37.630300Z
+Files:
+ - index.html (sha256:b830fdb84d1b)
+ - app.js (sha256:46b14581c980)
+ - toolbar.js (sha256:e721da0aad75)
+ - settings-addon.js (sha256:d1b04df68537)
+ - print.css (sha256:432b95646616)
+ - BASELINE.json (sha256:4ebc9690e109)
