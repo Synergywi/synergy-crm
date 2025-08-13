@@ -1,0 +1,8 @@
+{
+  "name": "synergy-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for Synergy CRM (contacts & companies)",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {}
+}

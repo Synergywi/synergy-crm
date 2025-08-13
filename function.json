@@ -1,1 +1,23 @@
-{"bindings": [{"authLevel": "anonymous", "type": "httpTrigger", "direction": "in", "name": "req", "methods": ["post"], "route": "cases"}, {"type": "http", "direction": "out", "name": "res"}]}
+{
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get",
+        "post",
+        "put",
+        "delete",
+        "options"
+      ],
+      "route": "contacts/{id?}"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ]
+}
