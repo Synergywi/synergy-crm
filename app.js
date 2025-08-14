@@ -40,9 +40,10 @@ function logCase(cs, type, details){
   a.unshift({ time: nowStamp(), type, by: actor(), details: details || '' });
 }
 
-DATA.audit = DATA.audit || []; // global audit trail for destructive ops (like deletion)
+function getAudit(){ try{ if(!DATA.audit) DATA.audit = []; }catch(_){ /* DATA not ready yet */ } return (typeof DATA!=='undefined' && DATA.audit) ? DATA.audit : []; }
 function logAudit(type, payload){
-  DATA.audit.unshift({ time: nowStamp(), type, by: actor(), ...payload });
+  const audit = getAudit();
+  audit.unshift({ time: nowStamp(), type, by: actor(), ...payload });
 }
 
 // Seed
@@ -81,6 +82,8 @@ const DATA={
   timesheets:[],
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
+DATA.audit = DATA.audit || [];
+
 
 // Ensure one contact has email & a little session history for demo
 (function(){
