@@ -441,7 +441,7 @@ if(act==='viewCompany'){App.set({companyViewMode:'view'});return;}
     App.set({currentCompanyId:co.id,route:'company'});
     return;
   }
-  if(act==='saveCompany'){{
+  if(act==='saveCompany'){
     const co=findCompany(arg); if(!co) return;
     const getV=id=>{ const el=document.getElementById(id); return el?el.value:''; };
     const getB=id=>{ const el=document.getElementById(id); return !!(el&&el.checked); };
