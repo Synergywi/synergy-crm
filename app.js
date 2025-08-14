@@ -184,83 +184,96 @@ function CompanyPage(id){
     App.set({route:'companies'});
     return Shell('<div class="card">Company not found.</div>','companies');
   }
-  // Defaults so older data doesn't break
+  // Ensure defaults
   co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
   co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  co.billing = co.billing || { name:'', phone:'', email:'' };
+  co.mainContact = co.mainContact || { name:'', phone:'', email:'' };
   const same = !!co.postalSame;
 
   const header = '<div class="card">'
     + '<div style="display:flex;align-items:center;gap:8px">'
     +   '<h2>Company</h2><div class="sp"></div>'
+    +   '<button class="btn success" data-act="newCaseForCompany" data-arg="'+co.id+'">New Case</button> '
     +   '<button class="btn" data-act="saveCompany" data-arg="'+co.id+'">Save</button> '
     +   '<button class="btn danger" data-act="deleteCompany" data-arg="'+co.id+'">Delete</button> '
-    +   '<button class="btn light" data-act="route" data-arg="companies">Back to Companies</button>'
+    +   '<button class="btn light" data-act="route" data-arg="companies">Back</button>'
     + '</div>'
     + '</div>';
 
-  const details = '<div class="section">'
-    + '<header><h3 class="section-title">Company Details</h3></header>'
-    + '<div class="card">'
-    +   '<div class="grid cols-2">'
-    +     '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
-    +     '<div><label>Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
-    +     '<div><label>ABN</label><input class="input" id="co-abn" value="'+(co.abn||'')+'" placeholder="eg. 12 345 678 901"></div>'
-    +     '<div><label>ACN</label><input class="input" id="co-acn" value="'+(co.acn||'')+'"></div>'
-    +     '<div><label>Phone</label><input class="input" id="co-phone" value="'+(co.phone||'')+'"></div>'
-    +     '<div><label>Email</label><input class="input" id="co-email" value="'+(co.email||'')+'"></div>'
-    +     '<div style="grid-column:span 2"><label>Website</label><input class="input" id="co-web" value="'+(co.website||'')+'"></div>'
-    +   '</div>'
+  const details = '<div class="section"><header><h3 class="section-title">Company Details</h3></header>'
+    + '<div class="card grid cols-2">'
+    +   '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
+    +   '<div><label>Legal Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
+    +   '<div><label>Trading Name</label><input class="input" id="co-trading" value="'+(co.tradingName||'')+'"></div>'
+    +   '<div><label>ABN</label><input class="input" id="co-abn" value="'+(co.abn||'')+'" placeholder="12 345 678 901"></div>'
+    +   '<div><label>ACN</label><input class="input" id="co-acn" value="'+(co.acn||'')+'"></div>'
+    +   '<div><label>Phone</label><input class="input" id="co-phone" value="'+(co.phone||'')+'"></div>'
+    +   '<div><label>Email</label><input class="input" id="co-email" value="'+(co.email||'')+'"></div>'
+    +   '<div><label>Website</label><input class="input" id="co-web" value="'+(co.website||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Notes</label><textarea class="input" id="co-notes">'+(co.notes||'')+'</textarea></div>'
     + '</div>'
     + '</div>';
 
-  const addr = '<div class="section"><header><h3 class="section-title">Addresses</h3></header>'
+  const contactsSection = '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
+    + '<div class="card grid cols-2">'
+    +   '<div><label>Main Contact Name</label><input class="input" id="co-main-name" value="'+(co.mainContact.name||'')+'"></div>'
+    +   '<div><label>Main Contact Phone</label><input class="input" id="co-main-phone" value="'+(co.mainContact.phone||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Main Contact Email</label><input class="input" id="co-main-email" value="'+(co.mainContact.email||'')+'"></div>'
+    +   '<div><label>Billing Contact Name</label><input class="input" id="co-bill-name" value="'+(co.billing.name||'')+'"></div>'
+    +   '<div><label>Billing Contact Phone</label><input class="input" id="co-bill-phone" value="'+(co.billing.phone||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Billing Contact Email</label><input class="input" id="co-bill-email" value="'+(co.billing.email||'')+'"></div>'
+    + '</div>'
+    + '</div>';
+
+  const addresses = '<div class="section"><header><h3 class="section-title">Addresses</h3></header>'
     + '<div class="grid cols-2">'
     +   '<div class="card">'
-    +     '<h4 style="margin:0 0 8px">Street Address</h4>'
-    +     '<div class="grid cols-2">'
-    +       '<div style="grid-column:span 2"><label>Line 1</label><input class="input" id="co-addr-1" value="'+(co.address.line1||'')+'"></div>'
-    +       '<div style="grid-column:span 2"><label>Line 2</label><input class="input" id="co-addr-2" value="'+(co.address.line2||'')+'"></div>'
-    +       '<div><label>City</label><input class="input" id="co-addr-city" value="'+(co.address.city||'')+'"></div>'
-    +       '<div><label>State</label><input class="input" id="co-addr-state" value="'+(co.address.state||'')+'"></div>'
-    +       '<div><label>Postcode</label><input class="input" id="co-addr-post" value="'+(co.address.postcode||'')+'"></div>'
-    +       '<div><label>Country</label><input class="input" id="co-addr-country" value="'+(co.address.country||'Australia')+'"></div>'
-    +     '</div>'
+    +     '<h4>Street Address</h4>'
+    +     '<label>Line 1</label><input class="input" id="co-addr-1" value="'+(co.address.line1||'')+'">'
+    +     '<label>Line 2</label><input class="input" id="co-addr-2" value="'+(co.address.line2||'')+'">'
+    +     '<label>City</label><input class="input" id="co-addr-city" value="'+(co.address.city||'')+'">'
+    +     '<label>State</label><input class="input" id="co-addr-state" value="'+(co.address.state||'')+'">'
+    +     '<label>Postcode</label><input class="input" id="co-addr-post" value="'+(co.address.postcode||'')+'">'
+    +     '<label>Country</label><input class="input" id="co-addr-country" value="'+(co.address.country||'Australia')+'">'
     +   '</div>'
     +   '<div class="card">'
-    +     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-    +       '<h4 style="margin:0">Postal Address</h4>'
-    +       '<label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="co-postal-same" '+(same?'checked':'')+'> Same as street</label>'
+    +     '<div style="display:flex;justify-content:space-between;align-items:center">'
+    +       '<h4>Postal Address</h4>'
+    +       '<label><input type="checkbox" id="co-postal-same" '+(same?'checked':'')+'> Same as street</label>'
     +     '</div>'
-    +     '<div class="grid cols-2">'
-    +       '<div style="grid-column:span 2"><label>Line 1</label><input class="input" id="co-post-1" value="'+(co.postal.line1||'')+'" '+(same?'disabled':'')+'></div>'
-    +       '<div style="grid-column:span 2"><label>Line 2</label><input class="input" id="co-post-2" value="'+(co.postal.line2||'')+'" '+(same?'disabled':'')+'></div>'
-    +       '<div><label>City</label><input class="input" id="co-post-city" value="'+(co.postal.city||'')+'" '+(same?'disabled':'')+'></div>'
-    +       '<div><label>State</label><input class="input" id="co-post-state" value="'+(co.postal.state||'')+'" '+(same?'disabled':'')+'></div>'
-    +       '<div><label>Postcode</label><input class="input" id="co-post-post" value="'+(co.postal.postcode||'')+'" '+(same?'disabled':'')+'></div>'
-    +       '<div><label>Country</label><input class="input" id="co-post-country" value="'+(co.postal.country||'Australia')+'" '+(same?'disabled':'')+'></div>'
-    +     '</div>'
+    +     '<label>Line 1</label><input class="input" id="co-post-1" value="'+(co.postal.line1||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Line 2</label><input class="input" id="co-post-2" value="'+(co.postal.line2||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>City</label><input class="input" id="co-post-city" value="'+(co.postal.city||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>State</label><input class="input" id="co-post-state" value="'+(co.postal.state||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Postcode</label><input class="input" id="co-post-post" value="'+(co.postal.postcode||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Country</label><input class="input" id="co-post-country" value="'+(co.postal.country||'Australia')+'" '+(same?'disabled':'')+'>'
     +   '</div>'
     + '</div>'
     + '</div>';
 
-  const contacts = d.contacts.filter(c=>c.companyId===co.id);
-  const contactRows = (contacts.length ? contacts.map(c=>(
-    '<tr><td>'+c.name+'</td><td>'+(c.email||'')+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>'
-  )).join('') : '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>');
+  // Related lists
+  const contactRows = d.contacts.filter(c=>c.companyId===co.id)
+    .map(c=>'<tr><td>'+c.name+'</td><td>'+ (c.email||'') +'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>').join('')
+    || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
 
-  const linkedCases = d.cases.filter(cs=>cs.companyId===co.id);
-  const caseRows = (linkedCases.length ? linkedCases.map(cs=>(
-    '<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>'
-  )).join('') : '<tr><td colspan="4" class="muted">No cases yet.</td></tr>');
+  const caseRows = d.cases.filter(cs=>cs.companyId===co.id)
+    .map(cs=>'<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>').join('')
+    || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
 
   const related = '<div class="grid cols-2">'
-    + '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
+    + '<div class="section"><header><h3 class="section-title">Related Contacts</h3></header>'
     +   '<div class="card"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+contactRows+'</tbody></table></div></div>'
-    + '<div class="section"><header><h3 class="section-title">Cases</h3></header>'
+    + '<div class="section"><header><h3 class="section-title">Related Cases</h3></header>'
     +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
     + '</div>';
 
-  return Shell(header + details + addr + related, 'companies');
+  // Company Documents placeholder
+  const docs = '<div class="section"><header><h3 class="section-title">Company Documents</h3></header>'
+    + '<div class="card">[Folder & upload UI here]</div>'
+    + '</div>';
+
+  return Shell(header + details + contactsSection + addresses + related + docs, 'companies');
 }
 
 
@@ -285,18 +298,31 @@ if(act==='newCompany'){
 }
 if(act==='saveCompany'){
   const co=findCompany(arg); if(!co) return;
-  // Ensure structures
+  // Ensure sub-objects exist
   co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
   co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
-  // Basic fields
+  co.billing = co.billing || { name:'', phone:'', email:'' };
+  co.mainContact = co.mainContact || { name:'', phone:'', email:'' };
+  // Helper to get value
   const getV=(id)=>{ const el=document.getElementById(id); return el?el.value:''; };
   const getB=(id)=>{ const el=document.getElementById(id); return !!(el && el.checked); };
-  co.name   = getV('co-name');
-  co.abn    = getV('co-abn');
-  co.acn    = getV('co-acn');
-  co.phone  = getV('co-phone');
-  co.email  = getV('co-email');
-  co.website= getV('co-web');
+  // Core info
+  co.name        = getV('co-name');
+  co.tradingName = getV('co-trading');
+  co.abn         = getV('co-abn');
+  co.acn         = getV('co-acn');
+  co.phone       = getV('co-phone');
+  co.email       = getV('co-email');
+  co.website     = getV('co-web');
+  co.notes       = getV('co-notes');
+  // Main contact
+  co.mainContact.name  = getV('co-main-name');
+  co.mainContact.phone = getV('co-main-phone');
+  co.mainContact.email = getV('co-main-email');
+  // Billing contact
+  co.billing.name  = getV('co-bill-name');
+  co.billing.phone = getV('co-bill-phone');
+  co.billing.email = getV('co-bill-email');
   // Address
   co.address.line1    = getV('co-addr-1');
   co.address.line2    = getV('co-addr-2');
