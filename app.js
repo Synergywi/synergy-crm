@@ -184,6 +184,10 @@ function CompanyPage(id){
     App.set({route:'companies'});
     return Shell('<div class="card">Company not found.</div>','companies');
   }
+  // Defaults so older data doesn't break
+  co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  const same = !!co.postalSame;
 
   const header = '<div class="card">'
     + '<div style="display:flex;align-items:center;gap:8px">'
@@ -200,17 +204,54 @@ function CompanyPage(id){
     +   '<div class="grid cols-2">'
     +     '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
     +     '<div><label>Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
+    +     '<div><label>ABN</label><input class="input" id="co-abn" value="'+(co.abn||'')+'" placeholder="eg. 12 345 678 901"></div>'
+    +     '<div><label>ACN</label><input class="input" id="co-acn" value="'+(co.acn||'')+'"></div>'
+    +     '<div><label>Phone</label><input class="input" id="co-phone" value="'+(co.phone||'')+'"></div>'
+    +     '<div><label>Email</label><input class="input" id="co-email" value="'+(co.email||'')+'"></div>'
+    +     '<div style="grid-column:span 2"><label>Website</label><input class="input" id="co-web" value="'+(co.website||'')+'"></div>'
     +   '</div>'
     + '</div>'
     + '</div>';
 
-  const contactRows = (d.contacts.filter(c=>c.companyId===co.id).map(c=>(
-    '<tr><td>'+c.name+'</td><td>'+(c.email||'')+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>'
-  )).join('')) || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
+  const addr = '<div class="section"><header><h3 class="section-title">Addresses</h3></header>'
+    + '<div class="grid cols-2">'
+    +   '<div class="card">'
+    +     '<h4 style="margin:0 0 8px">Street Address</h4>'
+    +     '<div class="grid cols-2">'
+    +       '<div style="grid-column:span 2"><label>Line 1</label><input class="input" id="co-addr-1" value="'+(co.address.line1||'')+'"></div>'
+    +       '<div style="grid-column:span 2"><label>Line 2</label><input class="input" id="co-addr-2" value="'+(co.address.line2||'')+'"></div>'
+    +       '<div><label>City</label><input class="input" id="co-addr-city" value="'+(co.address.city||'')+'"></div>'
+    +       '<div><label>State</label><input class="input" id="co-addr-state" value="'+(co.address.state||'')+'"></div>'
+    +       '<div><label>Postcode</label><input class="input" id="co-addr-post" value="'+(co.address.postcode||'')+'"></div>'
+    +       '<div><label>Country</label><input class="input" id="co-addr-country" value="'+(co.address.country||'Australia')+'"></div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="card">'
+    +     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    +       '<h4 style="margin:0">Postal Address</h4>'
+    +       '<label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="co-postal-same" '+(same?'checked':'')+'> Same as street</label>'
+    +     '</div>'
+    +     '<div class="grid cols-2">'
+    +       '<div style="grid-column:span 2"><label>Line 1</label><input class="input" id="co-post-1" value="'+(co.postal.line1||'')+'" '+(same?'disabled':'')+'></div>'
+    +       '<div style="grid-column:span 2"><label>Line 2</label><input class="input" id="co-post-2" value="'+(co.postal.line2||'')+'" '+(same?'disabled':'')+'></div>'
+    +       '<div><label>City</label><input class="input" id="co-post-city" value="'+(co.postal.city||'')+'" '+(same?'disabled':'')+'></div>'
+    +       '<div><label>State</label><input class="input" id="co-post-state" value="'+(co.postal.state||'')+'" '+(same?'disabled':'')+'></div>'
+    +       '<div><label>Postcode</label><input class="input" id="co-post-post" value="'+(co.postal.postcode||'')+'" '+(same?'disabled':'')+'></div>'
+    +       '<div><label>Country</label><input class="input" id="co-post-country" value="'+(co.postal.country||'Australia')+'" '+(same?'disabled':'')+'></div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
 
-  const caseRows = (d.cases.filter(cs=>cs.companyId===co.id).map(cs=>(
+  const contacts = d.contacts.filter(c=>c.companyId===co.id);
+  const contactRows = (contacts.length ? contacts.map(c=>(
+    '<tr><td>'+c.name+'</td><td>'+(c.email||'')+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>'
+  )).join('') : '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>');
+
+  const linkedCases = d.cases.filter(cs=>cs.companyId===co.id);
+  const caseRows = (linkedCases.length ? linkedCases.map(cs=>(
     '<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>'
-  )).join('')) || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
+  )).join('') : '<tr><td colspan="4" class="muted">No cases yet.</td></tr>');
 
   const related = '<div class="grid cols-2">'
     + '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
@@ -219,7 +260,7 @@ function CompanyPage(id){
     +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
     + '</div>';
 
-  return Shell(header + details + related, 'companies');
+  return Shell(header + details + addr + related, 'companies');
 }
 
 
@@ -244,8 +285,40 @@ if(act==='newCompany'){
 }
 if(act==='saveCompany'){
   const co=findCompany(arg); if(!co) return;
-  const nameEl=document.getElementById('co-name'); if(nameEl) co.name=nameEl.value;
-  alert('Company saved'); return;
+  // Ensure structures
+  co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  // Basic fields
+  const getV=(id)=>{ const el=document.getElementById(id); return el?el.value:''; };
+  const getB=(id)=>{ const el=document.getElementById(id); return !!(el && el.checked); };
+  co.name   = getV('co-name');
+  co.abn    = getV('co-abn');
+  co.acn    = getV('co-acn');
+  co.phone  = getV('co-phone');
+  co.email  = getV('co-email');
+  co.website= getV('co-web');
+  // Address
+  co.address.line1    = getV('co-addr-1');
+  co.address.line2    = getV('co-addr-2');
+  co.address.city     = getV('co-addr-city');
+  co.address.state    = getV('co-addr-state');
+  co.address.postcode = getV('co-addr-post');
+  co.address.country  = getV('co-addr-country');
+  // Postal
+  const same = getB('co-postal-same');
+  co.postalSame = same;
+  if(same){
+    co.postal = { ...co.address };
+  } else {
+    co.postal.line1    = getV('co-post-1');
+    co.postal.line2    = getV('co-post-2');
+    co.postal.city     = getV('co-post-city');
+    co.postal.state    = getV('co-post-state');
+    co.postal.postcode = getV('co-post-post');
+    co.postal.country  = getV('co-post-country');
+  }
+  alert('Company saved');
+  return;
 }
 if(act==='deleteCompany'){
   const co=findCompany(arg); if(!co) return;
