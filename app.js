@@ -215,7 +215,48 @@ return Shell(html,'contacts');}
 
 function Companies(){const d=App.get(); const countContacts=cid=>d.contacts.filter(c=>c.companyId===cid).length; const countCases=cid=>d.cases.filter(c=>c.companyId===cid).length; let rows=''; for(const co of d.companies){rows+='<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+countContacts(co.id)+'</td><td>'+countCases(co.id)+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New Company</button></header><table><thead><tr><th>ID</th><th>Name</th><th>Contacts</th><th>Cases</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies');}
 
-function Documents(){const d=App.get(); let rows=''; for(const c of d.cases){let count=0; for(const k in c.folders){if(Object.prototype.hasOwnProperty.call(c.folders,k)) count+=c.folders[k].length;} rows+='<tr><td>'+c.fileNumber+'</td><td>'+count+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>'; } return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case ID</th><th>Files</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents');}
+function Documents()
+function CompanyPage(id){
+  const d=App.get(), co=findCompany(id);
+  if(!co){ alert('Company not found'); App.set({route:'companies'}); return Shell('<div class="card">Company not found.</div>','companies'); }
+
+  const header = '<div class="card">'
+    + '<div style="display:flex;align-items:center;gap:8px">'
+    +   '<h2>Company</h2><div class="sp"></div>'
+    +   '<button class="btn" data-act="saveCompany" data-arg="'+co.id+'">Save</button>'
+    +   '<button class="btn danger" data-act="deleteCompany" data-arg="'+co.id+'">Delete</button>'
+    +   '<button class="btn light" data-act="route" data-arg="companies">Back to Companies</button>'
+    + '</div>'
+    + '</div>';
+
+  const details = '<div class="section">'
+    + '<header><h3 class="section-title">Company Details</h3></header>'
+    + '<div class="card">'
+    +   '<div class="grid cols-2">'
+    +     '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
+    +     '<div><label>Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+
+  const contactRows = d.contacts.filter(c=>c.companyId===co.id)
+    .map(c=>'<tr><td>'+c.name+'</td><td>'+ (c.email||'') +'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>').join('')
+    || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
+
+  const caseRows = d.cases.filter(cs=>cs.companyId===co.id)
+    .map(cs=>'<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>').join('')
+    || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
+
+  const related = '<div class="grid cols-2">'
+    + '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+contactRows+'</tbody></table></div></div>'
+    + '<div class="section"><header><h3 class="section-title">Cases</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
+    + '</div>';
+
+  return Shell(header + details + related, 'companies');
+}
+{const d=App.get(); let rows=''; for(const c of d.cases){let count=0; for(const k in c.folders){if(Object.prototype.hasOwnProperty.call(c.folders,k)) count+=c.folders[k].length;} rows+='<tr><td>'+c.fileNumber+'</td><td>'+count+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>'; } return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case ID</th><th>Files</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents');}
 
 function Resources(){const d=App.get(); if(!d.resources) d.resources={templates:[],procedures:[]}; const rows=kind=>{const list=(kind==='templates')?d.resources.templates:d.resources.procedures; if(!list.length) return '<tr><td colspan="3" class="muted">No items yet.</td></tr>'; return list.map(it=>{const arg=kind+'::'+it.name; return '<tr><td>'+it.name+'</td><td>'+it.size+'</td><td class="right">'+(it.dataUrl?('<button class="btn light" data-act="viewResource" data-arg="'+arg+'">View</button> '):'')+'<button class="btn light" data-act="removeResource" data-arg="'+arg+'">Remove</button></td></tr>';}).join(''); }; const html='<div class="section"><header><h3 class="section-title">Investigation Templates</h3><div><button class="btn light" data-act="selectResTemplates">Select files</button></div></header><input type="file" id="rs-file-templates" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('templates')+'</tbody></table></div><div class="section"><header><h3 class="section-title">Procedures</h3><div><button class="btn light" data-act="selectResProcedures">Select files</button></div></header><input type="file" id="rs-file-procedures" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('procedures')+'</tbody></table></div>'; return Shell(html,'resources');}
 
@@ -225,6 +266,11 @@ function render(){const r=App.state.route, el=document.getElementById('app'); do
 // Actions
 document.addEventListener('click',e=>{let t=e.target; while(t&&t!==document&&!t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return; const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg'), d=App.get();
 // nav
+if(act==='route'){App.set({route:arg});return;}
+if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company'});return;}
+if(act==='newCompany'){const nid='C-'+String(DATA.companies.length+1).padStart(3,'0'); const co={id:nid,name:'New Company',folders:{General:[]}}; DATA.companies.unshift(co); App.set({currentCompanyId:co.id,route:'company'}); return;}
+if(act==='saveCompany'){const co=findCompany(arg); if(!co) return; co.name=document.getElementById('co-name').value; alert('Company saved'); return;}
+if(act==='deleteCompany'){const co=findCompany(arg); if(!co) return; const hasCases=DATA.cases.some(c=>c.companyId===co.id); if(hasCases && !confirm('This company has linked cases. Delete anyway?')) return; DATA.companies=DATA.companies.filter(c=>c.id!==co.id); if(hasCases){DATA.cases=DATA.cases.filter(c=>c.companyId!==co.id);} App.set({route:'companies',currentCompanyId:null}); return;}
 if(act==='route'){App.set({route:arg});return;}
 if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
 
