@@ -503,6 +503,12 @@ if(act==='viewPortalAs'){const c=findContact(arg); if(!c) return; const user=d.u
 if(act==='exitPortal'){App.set({asUser:null,route:'contacts'}); return;}
 
 // resources actions
+if(act==='addResFolderPrompt'){ DATA.resources = DATA.resources||{}; DATA.resources.folders = DATA.resources.folders||{General:[]}; const name=prompt('New folder name'); if(!name) return; DATA.resources.folders[name]=DATA.resources.folders[name]||[]; App.set({}); return; }
+if(act==='selectResFiles'){ const folder=arg||'General'; App.state.currentResourceUploadTarget=folder; const fi=document.getElementById('rs-file-any'); if(fi) fi.click(); return; }
+if(act==='viewResFile'){ const p=arg.split('::'); const folder=p[0]; const name=p[1]; const list=(DATA.resources.folders&&DATA.resources.folders[folder])||[]; const f=list.find(x=>x.name===name&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
+if(act==='removeResFile'){ const p=arg.split('::'); const folder=p[0]; const name=p[1]; const list=(DATA.resources.folders&&DATA.resources.folders[folder])||[]; DATA.resources.folders[folder]=list.filter(x=>x.name!==name); App.set({}); return; }
+if(act==='deleteResFolder'){ const folder=arg; if(folder==='General'){ alert('Cannot delete General'); return; } if(confirm('Delete folder '+folder+' and its files?')){ delete DATA.resources.folders[folder]; App.set({}); } return; }
+
 if(act==='selectResTemplates'){const fi=document.getElementById('rs-file-templates'); if(fi) fi.click(); return;}
 if(act==='selectResProcedures'){const fi=document.getElementById('rs-file-procedures'); if(fi) fi.click(); return;}
 // company docs
@@ -520,6 +526,14 @@ if(act==='resetCaseFilters'){App.state.casesFilter={q:""}; try{localStorage.remo
 
 
 document.addEventListener('change',e=>{
+  if(e.target && e.target.id==='rs-file-any'){
+    const fi=e.target; const folder=App.state.currentResourceUploadTarget||'General';
+    DATA.resources = DATA.resources||{}; DATA.resources.folders = DATA.resources.folders||{General:[]};
+    const list = DATA.resources.folders[folder] = DATA.resources.folders[folder] || [];
+    const jobs=Array.from(fi.files||[]).map(f=>new Promise(res=>{ const r=new FileReader(); r.onload=()=>res({name:f.name,size:f.size,dataUrl:r.result}); r.readAsDataURL(f);}));
+    Promise.all(jobs).then(files=>{ files.forEach(ff=>list.push(ff)); fi.value=''; App.set({}); });
+    return; }
+  
   if(e.target && e.target.id==='co-file-input'){
     const fi=e.target;
     const target=App.state.currentCompanyUploadTarget || ((App.state.currentCompanyId||'')+'::General');
