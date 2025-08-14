@@ -1,2 +1,2 @@
-Synergy CRM bundle with workflow fix
-Generated: 2025-08-13T22:56:19.849274Z
+SynergyCRM v21
+Created: 2025-08-14T02:33:23.147613Z
