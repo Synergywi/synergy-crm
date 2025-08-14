@@ -429,7 +429,9 @@ document.addEventListener('click',e=>{
   // nav
   if(act==='route'){App.set({route:arg});return;}
   if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
-  if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company'});return;}
+  if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company',companyViewMode:'view'});return;}
+if(act==='editCompany'){App.set({companyViewMode:'edit'});return;}
+if(act==='viewCompany'){App.set({companyViewMode:'view'});return;}
 
   // companies
   if(act==='newCompany'){
@@ -439,7 +441,7 @@ document.addEventListener('click',e=>{
     App.set({currentCompanyId:co.id,route:'company'});
     return;
   }
-  if(act==='saveCompany'){
+  if(act==='saveCompany'){{
     const co=findCompany(arg); if(!co) return;
     const getV=id=>{ const el=document.getElementById(id); return el?el.value:''; };
     const getB=id=>{ const el=document.getElementById(id); return !!(el&&el.checked); };
@@ -453,7 +455,7 @@ document.addEventListener('click',e=>{
     if(same){ co.postal={...co.address}; } else {
       co.postal.line1=getV('co-post-1'); co.postal.line2=getV('co-post-2'); co.postal.city=getV('co-post-city'); co.postal.state=getV('co-post-state'); co.postal.postcode=getV('co-post-post'); co.postal.country=getV('co-post-country');
     }
-    alert('Company saved'); return;
+    alert('Company saved'); App.set({companyViewMode:'view'}); return;
   }
   if(act==='deleteCompany'){
     const co=findCompany(arg); if(!co) return;
