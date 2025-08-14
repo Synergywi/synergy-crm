@@ -408,7 +408,19 @@ if(act==='route'){App.set({route:arg});return;}
 if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
 
 // cases
-if(act==='newCase'){const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'});return;}
+if(act==='newCase'){
+  const seq=('00'+(d.cases.length+1)).slice(-3);
+  const inv=d.users[0]||{name:'',email:''};
+  const created=(new Date()).toISOString().slice(0,7);
+  let entered = prompt('Enter Case ID', 'INV-'+YEAR+'-'+seq);
+  if(entered===null){ return; }
+  entered = (entered||'').trim();
+  if(!entered){ entered = 'INV-'+YEAR+'-'+seq; }
+  const cs={id:uid(),fileNumber:entered,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}};
+  d.cases.unshift(cs);
+  App.set({currentCaseId:cs.id,route:'case'});
+  return;
+}
 if(act==='saveCase'){const cs=findCase(arg); if(!cs) return; cs.title=document.getElementById('c-title').value; cs.organisation=document.getElementById('c-org').value; cs.companyId=document.getElementById('c-company').value; const invEmail=document.getElementById('c-inv').value; const u=d.users.find(x=>x.email===invEmail)||null; cs.investigatorEmail=invEmail; cs.investigatorName=u?u.name:''; cs.status=document.getElementById('c-status').value; cs.priority=document.getElementById('c-priority').value; alert('Case saved'); return;}
 if(act==='addNote'){const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return;}
 if(act==='addStdTasks'){const cs=findCase(arg); if(!cs) return; const base=cs.tasks, add=['Gather documents','Interview complainant','Interview respondent','Write report']; add.forEach(a=>base.push({id:'T-'+(base.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return;}
@@ -452,7 +464,21 @@ if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company'});return;}
 if(act==='newCompany'){const nid='C-'+('00'+(d.companies.length+1)).slice(-3); d.companies.push({id:nid,name:'New Company',folders:{General:[]}}); App.set({currentCompanyId:nid,route:'company'}); return;}
 if(act==='saveCompany'){const co=findCompany(arg); if(!co) return; co.name=document.getElementById('co-name').value; alert('Company saved'); return;}
 if(act==='newContactForCompany'){const cid=arg; const c={id:uid(),name:'New Contact',email:'',phone:'',org:'',companyId:cid,notes:''}; d.contacts.unshift(c); App.set({currentContactId:c.id,route:'contact'}); return;}
-if(act==='newCaseForCompany'){const cid=arg; const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const co=findCompany(cid); const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:(co?co.name:''),companyId:cid,investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;}
+if(act==='newCaseForCompany'){
+  const cid=arg;
+  const seq=('00'+(d.cases.length+1)).slice(-3);
+  const inv=d.users[0]||{name:'',email:''};
+  const co=findCompany(cid);
+  const created=(new Date()).toISOString().slice(0,7);
+  let entered = prompt('Enter Case ID', 'INV-'+YEAR+'-'+seq);
+  if(entered===null){ return; }
+  entered = (entered||'').trim();
+  if(!entered){ entered = 'INV-'+YEAR+'-'+seq; }
+  const cs={id:uid(),fileNumber:entered,title:'',organisation:(co?co.name:''),companyId:cid,investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}};
+  d.cases.unshift(cs);
+  App.set({currentCaseId:cs.id,route:'case'});
+  return;
+}
 
 // company docs
 if(act==='addCompanyFolderPrompt'){const co=findCompany(arg); if(!co) return; const name=prompt('New folder name'); if(!name) return; co.folders[name]=co.folders[name]||[]; App.set({}); return;}
