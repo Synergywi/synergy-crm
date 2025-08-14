@@ -177,6 +177,7 @@ return Shell(html,'contacts');}
 
 function Companies(){const d=App.get(); const countContacts=cid=>d.contacts.filter(c=>c.companyId===cid).length; const countCases=cid=>d.cases.filter(c=>c.companyId===cid).length; let rows=''; for(const co of d.companies){rows+='<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+countContacts(co.id)+'</td><td>'+countCases(co.id)+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New Company</button></header><table><thead><tr><th>ID</th><th>Name</th><th>Contacts</th><th>Cases</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies');}
 
+
 function CompanyPage(id){
   const d=App.get(), co=findCompany(id);
   if(!co){
@@ -184,6 +185,119 @@ function CompanyPage(id){
     App.set({route:'companies'});
     return Shell('<div class="card">Company not found.</div>','companies');
   }
+  // Ensure defaults for legacy data
+  co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
+  co.billing = co.billing || { name:'', phone:'', email:'' };
+  co.mainContact = co.mainContact || { name:'', phone:'', email:'' };
+  co.folders = co.folders || { General: [] };
+  const same = !!co.postalSame;
+
+  const header = '<div class="card">'
+    + '<div style="display:flex;align-items:center;gap:8px">'
+    +   '<h2>Company</h2><div class="sp"></div>'
+    +   '<button class="btn success" data-act="newCaseForCompany" data-arg="'+co.id+'">New Case</button> '
+    +   '<button class="btn" data-act="saveCompany" data-arg="'+co.id+'">Save</button> '
+    +   '<button class="btn danger" data-act="deleteCompany" data-arg="'+co.id+'">Delete</button> '
+    +   '<button class="btn light" data-act="route" data-arg="companies">Back</button>'
+    + '</div>'
+    + '</div>';
+
+  const details = '<div class="section"><header><h3 class="section-title">Company Details</h3></header>'
+    + '<div class="card grid cols-2">'
+    +   '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
+    +   '<div><label>Legal Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
+    +   '<div><label>Trading Name</label><input class="input" id="co-trading" value="'+(co.tradingName||'')+'"></div>'
+    +   '<div><label>ABN</label><input class="input" id="co-abn" value="'+(co.abn||'')+'" placeholder="12 345 678 901"></div>'
+    +   '<div><label>ACN</label><input class="input" id="co-acn" value="'+(co.acn||'')+'"></div>'
+    +   '<div><label>Phone</label><input class="input" id="co-phone" value="'+(co.phone||'')+'"></div>'
+    +   '<div><label>Email</label><input class="input" id="co-email" value="'+(co.email||'')+'"></div>'
+    +   '<div><label>Website</label><input class="input" id="co-web" value="'+(co.website||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Notes</label><textarea class="input" id="co-notes">'+(co.notes||'')+'</textarea></div>'
+    + '</div>'
+    + '</div>';
+
+  const contactsSection = '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
+    + '<div class="card grid cols-2">'
+    +   '<div><label>Main Contact Name</label><input class="input" id="co-main-name" value="'+(co.mainContact.name||'')+'"></div>'
+    +   '<div><label>Main Contact Phone</label><input class="input" id="co-main-phone" value="'+(co.mainContact.phone||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Main Contact Email</label><input class="input" id="co-main-email" value="'+(co.mainContact.email||'')+'"></div>'
+    +   '<div><label>Billing Contact Name</label><input class="input" id="co-bill-name" value="'+(co.billing.name||'')+'"></div>'
+    +   '<div><label>Billing Contact Phone</label><input class="input" id="co-bill-phone" value="'+(co.billing.phone||'')+'"></div>'
+    +   '<div style="grid-column:span 2"><label>Billing Contact Email</label><input class="input" id="co-bill-email" value="'+(co.billing.email||'')+'"></div>'
+    + '</div>'
+    + '</div>';
+
+  const addresses = '<div class="section"><header><h3 class="section-title">Addresses</h3></header>'
+    + '<div class="grid cols-2">'
+    +   '<div class="card">'
+    +     '<h4>Street Address</h4>'
+    +     '<label>Line 1</label><input class="input" id="co-addr-1" value="'+(co.address.line1||'')+'">'
+    +     '<label>Line 2</label><input class="input" id="co-addr-2" value="'+(co.address.line2||'')+'">'
+    +     '<label>City</label><input class="input" id="co-addr-city" value="'+(co.address.city||'')+'">'
+    +     '<label>State</label><input class="input" id="co-addr-state" value="'+(co.address.state||'')+'">'
+    +     '<label>Postcode</label><input class="input" id="co-addr-post" value="'+(co.address.postcode||'')+'">'
+    +     '<label>Country</label><input class="input" id="co-addr-country" value="'+(co.address.country||'Australia')+'">'
+    +   '</div>'
+    +   '<div class="card">'
+    +     '<div style="display:flex;justify-content:space-between;align-items:center">'
+    +       '<h4>Postal Address</h4>'
+    +       '<label><input type="checkbox" id="co-postal-same" '+(same?'checked':'')+'> Same as street</label>'
+    +     '</div>'
+    +     '<label>Line 1</label><input class="input" id="co-post-1" value="'+(co.postal.line1||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Line 2</label><input class="input" id="co-post-2" value="'+(co.postal.line2||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>City</label><input class="input" id="co-post-city" value="'+(co.postal.city||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>State</label><input class="input" id="co-post-state" value="'+(co.postal.state||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Postcode</label><input class="input" id="co-post-post" value="'+(co.postal.postcode||'')+'" '+(same?'disabled':'')+'>'
+    +     '<label>Country</label><input class="input" id="co-post-country" value="'+(co.postal.country||'Australia')+'" '+(same?'disabled':'')+'>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+
+  const contactRows = (d.contacts.filter(c=>c.companyId===co.id).map(c=>(
+    '<tr><td>'+c.name+'</td><td>'+(c.email||'')+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>'
+  )).join('')) || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
+
+  const caseRows = (d.cases.filter(cs=>cs.companyId===co.id).map(cs=>(
+    '<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>'
+  )).join('')) || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
+
+  const related = '<div class="grid cols-2">'
+    + '<div class="section"><header><h3 class="section-title">Related Contacts</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+contactRows+'</tbody></table></div></div>'
+    + '<div class="section"><header><h3 class="section-title">Related Cases</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
+    + '</div>';
+
+  // Company Documents
+  var docRows='';
+  for(const fname in co.folders){
+    if(!Object.prototype.hasOwnProperty.call(co.folders,fname)) continue;
+    const files = co.folders[fname];
+    docRows += '<tr><th colspan="3">'+fname+'</th></tr>';
+    docRows += '<tr><td colspan="3" class="right">'
+      + '<button class="btn light" data-act="selectCompanyFiles" data-arg="'+co.id+'::'+fname+'">Upload to '+fname+'</button> '
+      + (fname==='General' ? '' : '<button class="btn light" data-act="deleteCompanyFolder" data-arg="'+co.id+'::'+fname+'">Delete folder</button>')
+      + '</td></tr>';
+    if(!files.length){ docRows += '<tr><td colspan="3" class="muted">No files</td></tr>'; }
+    for(const ff of files){
+      const a = co.id+'::'+fname+'::'+ff.name;
+      docRows += '<tr><td>'+ff.name+'</td><td>'+ff.size+'</td><td class="right">'
+        + (ff.dataUrl?('<button class="btn light" data-act="viewCompanyDoc" data-arg="'+a+'">View</button> '):'')
+        + '<button class="btn light" data-act="removeCompanyDoc" data-arg="'+a+'">Remove</button>'
+        + '</td></tr>';
+    }
+  }
+  const docs = '<div class="section"><header><h3 class="section-title">Company Documents</h3>'
+    + '<div><button class="btn light" data-act="addCompanyFolderPrompt" data-arg="'+co.id+'">Add folder</button> '
+    + '<button class="btn light" data-act="selectCompanyFiles" data-arg="'+co.id+'::General">Select files</button></div></header>'
+    + '<input type="file" id="co-file-input" multiple style="display:none">'
+    + '<div class="card"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div>'
+    + '</div>';
+
+  return Shell(header + details + contactsSection + addresses + related + docs, 'companies');
+}
+
   // Ensure defaults
   co.address = co.address || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
   co.postal  = co.postal  || { line1:'', line2:'', city:'', state:'', postcode:'', country:'' };
@@ -270,7 +384,7 @@ function CompanyPage(id){
 
   // Company Documents placeholder
   const docs = '<div class="section"><header><h3 class="section-title">Company Documents</h3></header>'
-    + '<div class="card">[Folder & upload UI here]</div>'
+    + '<div class="card">' + (function(){ co.folders=co.folders||{General:[]}; var rows=""; for(const fname in co.folders){ if(!Object.prototype.hasOwnProperty.call(co.folders,fname)) continue; const files=co.folders[fname]; rows+=\'<tr><th colspan="3">\'+fname+\'</th></tr>\'; rows+=\'<tr><td colspan="3" class="right"><button class="btn light" data-act="selectCompanyFiles" data-arg="\'+co.id+\'::\'+fname+'">Upload to '+fname+'</button> '+(fname==='General'?'':'<button class="btn light" data-act="deleteCompanyFolder" data-arg="'+co.id+'::'+fname+'">Delete folder</button>')+'</td></tr>'; if(!files.length){ rows+="<tr><td colspan=\"3\" class=\"muted\">No files</td></tr>";} for(const ff of files){ const a=co.id+"::"+fname+"::"+ff.name; rows+="<tr><td>"+ff.name+"</td><td>"+ff.size+"</td><td class=\"right\">"+(ff.dataUrl?('<button class=\"btn light\" data-act=\"viewCompanyDoc\" data-arg=\"'+a+'\">View</button> '):'')+"<button class=\"btn light\" data-act=\"removeCompanyDoc\" data-arg=\""+a+"\">Remove</button></td></tr>"; } } return "<table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>"+rows+"</tbody></table>"; })() + '</div>'
     + '</div>';
 
   return Shell(header + details + contactsSection + addresses + related + docs, 'companies');
@@ -391,6 +505,12 @@ if(act==='exitPortal'){App.set({asUser:null,route:'contacts'}); return;}
 // resources actions
 if(act==='selectResTemplates'){const fi=document.getElementById('rs-file-templates'); if(fi) fi.click(); return;}
 if(act==='selectResProcedures'){const fi=document.getElementById('rs-file-procedures'); if(fi) fi.click(); return;}
+// company docs
+if(act==='addCompanyFolderPrompt'){ const co=findCompany(arg); if(!co) return; const name=prompt('New folder name'); if(!name) return; co.folders = co.folders||{General:[]}; co.folders[name]=co.folders[name]||[]; App.set({}); return; }
+if(act==='selectCompanyFiles'){ App.state.currentCompanyUploadTarget=arg||((App.state.currentCompanyId||'')+'::General'); const fi=document.getElementById('co-file-input'); if(fi) fi.click(); return; }
+if(act==='viewCompanyDoc'){ const p=arg.split('::'); const co=findCompany(p[0]); if(!co) return; const list=(co.folders&&co.folders[p[1]])||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
+if(act==='removeCompanyDoc'){ const p=arg.split('::'); const co=findCompany(p[0]); if(!co) return; const fname=p[2]; co.folders[p[1]]=(co.folders[p[1]]||[]).filter(x=>x.name!==fname); App.set({}); return; }
+if(act==='deleteCompanyFolder'){ const p=arg.split('::'); const co=findCompany(p[0]); if(!co) return; const folder=p[1]; if(folder==='General'){ alert('Cannot delete General'); return; } if(confirm('Delete folder '+folder+' and its files?')){ delete co.folders[folder]; App.set({}); } return; }
 if(act==='viewResource'){const p=arg.split('::'); const kind=p[0]; const name=p[1]; const list=(kind==='templates')?DATA.resources.templates:DATA.resources.procedures; const f=list.find(x=>x.name===name && x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return;}
 if(act==='removeResource'){const p=arg.split('::'); const kind=p[0]; const name=p[1]; if(kind==='templates'){DATA.resources.templates=DATA.resources.templates.filter(x=>x.name!==name);} else {DATA.resources.procedures=DATA.resources.procedures.filter(x=>x.name!==name);} App.set({}); return;}
 
@@ -398,7 +518,23 @@ if(act==='removeResource'){const p=arg.split('::'); const kind=p[0]; const name=
 if(act==='resetCaseFilters'){App.state.casesFilter={q:""}; try{localStorage.removeItem('synergy_filters_cases_v2104');}catch(_){ } App.set({}); return;}
 });
 
+
 document.addEventListener('change',e=>{
+  if(e.target && e.target.id==='co-file-input'){
+    const fi=e.target;
+    const target=App.state.currentCompanyUploadTarget || ((App.state.currentCompanyId||'')+'::General');
+    const parts=(target||'').split('::');
+    const companyId=parts[0], folder=parts[1]||'General';
+    const co=findCompany(companyId);
+    if(!co){ fi.value=''; return; }
+    co.folders = co.folders || {General:[]};
+    const list = co.folders[folder] = co.folders[folder] || [];
+    const toRead=Array.from(fi.files||[]);
+    const jobs=toRead.map(f=>new Promise(res=>{ const r=new FileReader(); r.onload=()=>res({name:f.name,size:f.size,dataUrl:r.result}); r.readAsDataURL(f);}));
+    Promise.all(jobs).then(files=>{ files.forEach(ff=>list.push(ff)); fi.value=''; App.set({}); });
+    return;
+  }
+  
   if(e.target && e.target.id==='flt-q'){const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({});}
 });
 
