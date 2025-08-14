@@ -32,7 +32,13 @@ const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
 
 // ---- Activity / Audit helpers ----
 function nowStamp(){ return new Date().toISOString().replace('T',' ').slice(0,16); }
-function actor(){ return (DATA.me && DATA.me.email) || 'admin@synergy.com'; }
+function actor(){
+  try {
+    return (typeof DATA!=='undefined' && DATA.me && DATA.me.email) ? DATA.me.email : 'system@synergy';
+  } catch(e){
+    return 'system@synergy';
+  }
+}
 
 function ensureActivity(cs){ cs.activity = cs.activity || []; return cs.activity; }
 function logCase(cs, type, details){
@@ -40,7 +46,7 @@ function logCase(cs, type, details){
   a.unshift({ time: nowStamp(), type, by: actor(), details: details || '' });
 }
 
-function getAudit(){ try{ if(!DATA.audit) DATA.audit = []; }catch(_){ /* DATA not ready yet */ } return (typeof DATA!=='undefined' && DATA.audit) ? DATA.audit : []; }
+function getAudit(){ try{ if(typeof DATA!=='undefined'){ DATA.audit = DATA.audit || []; return DATA.audit; } }catch(_){} return []; }
 function logAudit(type, payload){
   const audit = getAudit();
   audit.unshift({ time: nowStamp(), type, by: actor(), ...payload });
@@ -82,8 +88,6 @@ const DATA={
   timesheets:[],
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
-DATA.audit = DATA.audit || [];
-
 
 // Ensure one contact has email & a little session history for demo
 (function(){
