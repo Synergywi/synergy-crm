@@ -30,36 +30,8 @@ function saveUserSessions(){
 function uid(){return "id-"+Math.random().toString(36).slice(2,9);}
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
 
-// ---- Activity / Audit helpers ----
-function nowStamp(){ return new Date().toISOString().replace('T',' ').slice(0,16); }
-function actor(){
-  try {
-    return (typeof DATA!=='undefined' && DATA.me && DATA.me.email) ? DATA.me.email : 'system@synergy';
-  } catch(e){
-    return 'system@synergy';
-  }
-}
-
-function ensureActivity(cs){ cs.activity = cs.activity || []; return cs.activity; }
-function logCase(cs, type, details){
-  const a = ensureActivity(cs);
-  a.unshift({ time: nowStamp(), type, by: actor(), details: details || '' });
-}
-
-function getAudit(){ try{ if(typeof DATA!=='undefined'){ DATA.audit = DATA.audit || []; return DATA.audit; } }catch(_){} return []; }
-function logAudit(type, payload){
-  const audit = getAudit();
-  audit.unshift({ time: nowStamp(), type, by: actor(), ...payload });
-}
-
 // Seed
-function mkCase(y,seq,p){
-  let b={id:uid(),fileNumber:"INV-"+y+"-"+("00"+seq).slice(-3),title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+("0"+((seq%12)||1)).slice(-2),notes:[],tasks:[],folders:{General:[]},activity:[]};
-  Object.assign(b,p||{});
-  // Record creation event
-  b.activity.unshift({ time: nowStamp(), type: "created", by: actor(), details: "Case created" });
-  return b;
-}
+function mkCase(y,seq,p){let b={id:uid(),fileNumber:"INV-"+y+"-"+("00"+seq).slice(-3),title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+("0"+((seq%12)||1)).slice(-2),notes:[],tasks:[],folders:{General:[]}}; Object.assign(b,p||{}); return b;}
 const DATA={
   users:[
     {name:"Admin",email:"admin@synergy.com",role:"Admin"},
@@ -183,17 +155,7 @@ function CasePage(id){
   }
   const docs = '<div class="section"><header><h3 class="section-title">Case Documents</h3><div><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div></header><input type="file" id="file-input" multiple style="display:none"><div style="margin-top:8px"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div></div>';
 
-  const activityRows = (cs.activity && cs.activity.length)
-    ? cs.activity.map(ev=>(
-        '<tr><td>'+ev.time+'</td><td>'+ev.by+'</td><td><span class="chip">'+ev.type+'</span></td><td>'+ (ev.details||'') +'</td></tr>'
-      )).join('')
-    : '<tr><td colspan="4" class="muted">No activity yet.</td></tr>';
-
-  const activity = '<div class="section"><header><h3 class="section-title">Activity</h3></header>'
-    + '<table><thead><tr><th>Time</th><th>By</th><th>Type</th><th>Details</th></tr></thead>'
-    + '<tbody>'+activityRows+'</tbody></table></div>';
-
-  return Shell(header + leftDetails + blocks + docs + activity, 'cases');
+  return Shell(header + leftDetails + blocks + docs, 'cases');
 }
 
 function Contacts(){const d=App.get(); const coName=id=>{const co=findCompany(id); return co?co.name:"";}; let rows=''; for(const c of d.contacts){rows+='<tr><td>'+c.name+'</td><td>'+c.email+'</td><td>'+coName(c.companyId)+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New Contact</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');}
@@ -215,6 +177,52 @@ return Shell(html,'contacts');}
 
 function Companies(){const d=App.get(); const countContacts=cid=>d.contacts.filter(c=>c.companyId===cid).length; const countCases=cid=>d.cases.filter(c=>c.companyId===cid).length; let rows=''; for(const co of d.companies){rows+='<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+countContacts(co.id)+'</td><td>'+countCases(co.id)+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New Company</button></header><table><thead><tr><th>ID</th><th>Name</th><th>Contacts</th><th>Cases</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies');}
 
+function CompanyPage(id){
+  const d=App.get(), co=findCompany(id);
+  if(!co){
+    alert('Company not found');
+    App.set({route:'companies'});
+    return Shell('<div class="card">Company not found.</div>','companies');
+  }
+
+  const header = '<div class="card">'
+    + '<div style="display:flex;align-items:center;gap:8px">'
+    +   '<h2>Company</h2><div class="sp"></div>'
+    +   '<button class="btn" data-act="saveCompany" data-arg="'+co.id+'">Save</button> '
+    +   '<button class="btn danger" data-act="deleteCompany" data-arg="'+co.id+'">Delete</button> '
+    +   '<button class="btn light" data-act="route" data-arg="companies">Back to Companies</button>'
+    + '</div>'
+    + '</div>';
+
+  const details = '<div class="section">'
+    + '<header><h3 class="section-title">Company Details</h3></header>'
+    + '<div class="card">'
+    +   '<div class="grid cols-2">'
+    +     '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
+    +     '<div><label>Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+
+  const contactRows = (d.contacts.filter(c=>c.companyId===co.id).map(c=>(
+    '<tr><td>'+c.name+'</td><td>'+(c.email||'')+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>'
+  )).join('')) || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
+
+  const caseRows = (d.cases.filter(cs=>cs.companyId===co.id).map(cs=>(
+    '<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>'
+  )).join('')) || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
+
+  const related = '<div class="grid cols-2">'
+    + '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+contactRows+'</tbody></table></div></div>'
+    + '<div class="section"><header><h3 class="section-title">Cases</h3></header>'
+    +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
+    + '</div>';
+
+  return Shell(header + details + related, 'companies');
+}
+
+
 function Documents(){const d=App.get(); let rows=''; for(const c of d.cases){let count=0; for(const k in c.folders){if(Object.prototype.hasOwnProperty.call(c.folders,k)) count+=c.folders[k].length;} rows+='<tr><td>'+c.fileNumber+'</td><td>'+count+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>'; } return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case ID</th><th>Files</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents');}
 
 function Resources(){const d=App.get(); if(!d.resources) d.resources={templates:[],procedures:[]}; const rows=kind=>{const list=(kind==='templates')?d.resources.templates:d.resources.procedures; if(!list.length) return '<tr><td colspan="3" class="muted">No items yet.</td></tr>'; return list.map(it=>{const arg=kind+'::'+it.name; return '<tr><td>'+it.name+'</td><td>'+it.size+'</td><td class="right">'+(it.dataUrl?('<button class="btn light" data-act="viewResource" data-arg="'+arg+'">View</button> '):'')+'<button class="btn light" data-act="removeResource" data-arg="'+arg+'">Remove</button></td></tr>';}).join(''); }; const html='<div class="section"><header><h3 class="section-title">Investigation Templates</h3><div><button class="btn light" data-act="selectResTemplates">Select files</button></div></header><input type="file" id="rs-file-templates" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('templates')+'</tbody></table></div><div class="section"><header><h3 class="section-title">Procedures</h3><div><button class="btn light" data-act="selectResProcedures">Select files</button></div></header><input type="file" id="rs-file-procedures" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('procedures')+'</tbody></table></div>'; return Shell(html,'resources');}
@@ -227,29 +235,45 @@ document.addEventListener('click',e=>{let t=e.target; while(t&&t!==document&&!t.
 // nav
 if(act==='route'){App.set({route:arg});return;}
 if(act==='openCompany'){App.set({currentCompanyId:arg,route:'company'});return;}
-if(act==='newCompany'){const nid='C-'+String(DATA.companies.length+1).padStart(3,'0'); const co={id:nid,name:'New Company',folders:{General:[]}}; DATA.companies.unshift(co); App.set({currentCompanyId:co.id,route:'company'}); return;}
-if(act==='saveCompany'){const co=findCompany(arg); if(!co) return; co.name=document.getElementById('co-name').value; alert('Company saved'); return;}
-if(act==='deleteCompany'){const co=findCompany(arg); if(!co) return; const hasCases=DATA.cases.some(c=>c.companyId===co.id); if(hasCases && !confirm('This company has linked cases. Delete anyway?')) return; DATA.companies=DATA.companies.filter(c=>c.id!==co.id); if(hasCases){DATA.cases=DATA.cases.filter(c=>c.companyId!==co.id);} App.set({route:'companies',currentCompanyId:null}); return;}
-if(act==='route'){App.set({route:arg});return;}
+if(act==='newCompany'){
+  const nid='C-'+String(DATA.companies.length+1).padStart(3,'0');
+  const co={id:nid,name:'New Company',folders:{General:[]}};
+  DATA.companies.unshift(co);
+  App.set({currentCompanyId:co.id,route:'company'});
+  return;
+}
+if(act==='saveCompany'){
+  const co=findCompany(arg); if(!co) return;
+  const nameEl=document.getElementById('co-name'); if(nameEl) co.name=nameEl.value;
+  alert('Company saved'); return;
+}
+if(act==='deleteCompany'){
+  const co=findCompany(arg); if(!co) return;
+  const hasCases=DATA.cases.some(c=>c.companyId===co.id);
+  if(hasCases && !confirm('This company has linked cases. Delete anyway?')) return;
+  DATA.companies=DATA.companies.filter(c=>c.id!==co.id);
+  if(hasCases){ DATA.cases=DATA.cases.filter(c=>c.companyId!==co.id); }
+  App.set({route:'companies',currentCompanyId:null}); return;
+}
+
 if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
 
 // cases
 if(act==='addQuickNote'){ const cs=findCase(arg); if(!cs) return; const text=prompt('Add a note'); if(!text) { return; } const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes = cs.notes||[]; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
 
-if(act==='newCase'){const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]},activity:[]}; cs.activity.unshift({ time: nowStamp(), type: "created", by: actor(), details: "Case created" }); d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'});return;}
-if(act==='saveCase'){const cs=findCase(arg); if(!cs) return; const before={fileNumber:cs.fileNumber,title:cs.title,organisation:cs.organisation,companyId:cs.companyId,investigatorEmail:cs.investigatorEmail,investigatorName:cs.investigatorName,status:cs.status,priority:cs.priority}; const getV=id=>{const el=document.getElementById(id); return el?el.value:null;}; const setIf=(key,val)=>{ if(val!=null){ cs[key]=val; } }; setIf('title', getV('c-title')); setIf('organisation', getV('c-org')); const coVal=getV('c-company'); if(coVal!=null) cs.companyId=coVal; const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; } setIf('status', getV('c-status')); setIf('priority', getV('c-priority')); const idEl=document.getElementById('c-id'); if(idEl && idEl.value){ cs.fileNumber=idEl.value.trim(); } const after={fileNumber:cs.fileNumber,title:cs.title,organisation:cs.organisation,companyId:cs.companyId,investigatorEmail:cs.investigatorEmail,investigatorName:cs.investigatorName,status:cs.status,priority:cs.priority}; const changed=[]; Object.keys(after).forEach(k=>{ if(before[k]!==after[k]){ if(k==='status'){ logCase(cs,'status',`${before[k]} → ${after[k]}`); } else { changed.push(`${k}: "${before[k]||''}" → "${after[k]||''}"`); } } }); if(changed.length){ logCase(cs,'edit',changed.join(' | ')); } alert('Case saved'); return;}
-
-if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){ alert('Case not found'); return; } if(confirm('Delete this case ('+(cs.fileNumber||cs.title||cs.id)+') ?')){ try { logAudit('case.deleted', { caseId: cs.id, fileNumber: cs.fileNumber, title: cs.title }); } catch(_){} try { logCase(cs, 'deleted', 'Case removed by user'); } catch(_){} DATA.cases = DATA.cases.filter(c=>c.id!==cs.id); App.set({route:'cases', currentCaseId:null}); } return; }
-if(act==='addNote'){const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); logCase(cs,'note.added',text.slice(0,120)); App.set({}); return;}
-if(act==='addStdTasks'){const cs=findCase(arg); if(!cs) return; const base=cs.tasks, add=['Gather documents','Interview complainant','Interview respondent','Write report']; add.forEach(a=>base.push({id:'T-'+(base.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); logCase(cs,'tasks.bulkAdded',`${add.length} standard tasks`); App.set({}); return;}
-if(act==='addTask'){const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel.options[sel.selectedIndex].text; const title=document.getElementById('task-title').value; const due=document.getElementById('task-due').value; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title,assignee:who,due,status:'Open'}); logCase(cs,'task.added',`"${title}" → ${who}${due ? (' (due '+due+')') : ''}`); App.set({}); return;}
+if(act==='newCase'){const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'});return;}
+if(act==='saveCase'){const cs=findCase(arg); if(!cs) return; const getV=id=>{const el=document.getElementById(id); return el?el.value:null;}; const setIf=(key,val)=>{ if(val!=null){ cs[key]=val; } }; setIf('title', getV('c-title')); setIf('organisation', getV('c-org')); const coVal=getV('c-company'); if(coVal!=null) cs.companyId=coVal; const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; } setIf('status', getV('c-status')); setIf('priority', getV('c-priority')); const idEl=document.getElementById('c-id'); if(idEl && idEl.value){ cs.fileNumber=idEl.value.trim(); } alert('Case saved'); return;}
+if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){ alert('Case not found'); return; } if(confirm('Delete this case ('+(cs.fileNumber||cs.title||cs.id)+') ?')){ DATA.cases = DATA.cases.filter(c=>c.id!==cs.id); App.set({route:'cases', currentCaseId:null}); } return; }
+if(act==='addNote'){const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return;}
+if(act==='addStdTasks'){const cs=findCase(arg); if(!cs) return; const base=cs.tasks, add=['Gather documents','Interview complainant','Interview respondent','Write report']; add.forEach(a=>base.push({id:'T-'+(base.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return;}
+if(act==='addTask'){const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel.options[sel.selectedIndex].text; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,assignee:who,due:document.getElementById('task-due').value,status:'Open'}); App.set({}); return;}
 
 // case docs
-if(act==='addFolderPrompt'){const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; logCase(cs,'folder.added',name); App.set({}); return;}
+if(act==='addFolderPrompt'){const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; App.set({}); return;}
 if(act==='selectFiles'){App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return;}
 if(act==='viewDoc'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return;}
-if(act==='removeDoc'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const fname=p[2]; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==fname); logCase(cs,'doc.removed',`${fname} from ${p[1]}`); App.set({}); return;}
-if(act==='deleteFolder'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){delete cs.folders[folder]; logCase(cs,'folder.deleted',folder); App.set({});} return;}
+if(act==='removeDoc'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); App.set({}); return;}
+if(act==='deleteFolder'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){delete cs.folders[folder]; App.set({});} return;}
 
 // contacts
 if(act==='openContact'){App.set({currentContactId:arg,route:'contact'});return;}
@@ -273,74 +297,10 @@ if(act==='removeResource'){const p=arg.split('::'); const kind=p[0]; const name=
 
 // filters
 if(act==='resetCaseFilters'){App.state.casesFilter={q:""}; try{localStorage.removeItem('synergy_filters_cases_v2104');}catch(_){ } App.set({}); return;}
-}
-
-function CompanyPage(id){
-  const d=App.get(), co=findCompany(id);
-  if(!co){ alert('Company not found'); App.set({route:'companies'}); return Shell('<div class="card">Company not found.</div>','companies'); }
-
-  const header = '<div class="card">'
-    + '<div style="display:flex;align-items:center;gap:8px">'
-    +   '<h2>Company</h2><div class="sp"></div>'
-    +   '<button class="btn" data-act="saveCompany" data-arg="'+co.id+'">Save</button>'
-    +   '<button class="btn danger" data-act="deleteCompany" data-arg="'+co.id+'">Delete</button>'
-    +   '<button class="btn light" data-act="route" data-arg="companies">Back to Companies</button>'
-    + '</div>'
-    + '</div>';
-
-  const details = '<div class="section">'
-    + '<header><h3 class="section-title">Company Details</h3></header>'
-    + '<div class="card">'
-    +   '<div class="grid cols-2">'
-    +     '<div><label>ID</label><input class="input" value="'+co.id+'" disabled></div>'
-    +     '<div><label>Name</label><input class="input" id="co-name" value="'+(co.name||'')+'"></div>'
-    +   '</div>'
-    + '</div>'
-    + '</div>';
-
-  const contactRows = d.contacts.filter(c=>c.companyId===co.id)
-    .map(c=>'<tr><td>'+c.name+'</td><td>'+ (c.email||'') +'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>').join('')
-    || '<tr><td colspan="3" class="muted">No contacts yet.</td></tr>';
-
-  const caseRows = d.cases.filter(cs=>cs.companyId===co.id)
-    .map(cs=>'<tr><td>'+cs.fileNumber+'</td><td>'+cs.title+'</td><td>'+cs.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cs.id+'">Open Case</button></td></tr>').join('')
-    || '<tr><td colspan="4" class="muted">No cases yet.</td></tr>';
-
-  const related = '<div class="grid cols-2">'
-    + '<div class="section"><header><h3 class="section-title">Contacts</h3></header>'
-    +   '<div class="card"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+contactRows+'</tbody></table></div></div>'
-    + '<div class="section"><header><h3 class="section-title">Cases</h3></header>'
-    +   '<div class="card"><table><thead><tr><th>Case ID</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+caseRows+'</tbody></table></div></div>'
-    + '</div>';
-
-  return Shell(header + details + related, 'companies');
-}
-
-);
+});
 
 document.addEventListener('change',e=>{
   if(e.target && e.target.id==='flt-q'){const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({});}
-  if(e.target && e.target.id==='file-input'){
-    const fi = e.target;
-    const target = App.state.currentUploadTarget || ((App.state.currentCaseId||'')+'::General');
-    const parts = (target||'').split('::');
-    const caseId = parts[0], folder = parts[1]||'General';
-    const cs = findCase(caseId);
-    if(!cs){ fi.value=''; return; }
-    const list = cs.folders[folder] = cs.folders[folder] || [];
-    const toRead = Array.from(fi.files||[]);
-    const jobs = toRead.map(f => new Promise(res=>{
-      const r = new FileReader();
-      r.onload = () => res({ name: f.name, size: f.size, dataUrl: r.result });
-      r.readAsDataURL(f);
-    }));
-    Promise.all(jobs).then(files=>{
-      files.forEach(ff => list.push(ff));
-      if(files.length){ logCase(cs,'doc.uploaded', `${files.length} file(s) → ${folder}`); }
-      fi.value='';
-      App.set({});
-    });
-  }
 });
 
 document.addEventListener('DOMContentLoaded',()=>{ try{ loadUserSessions(); }catch(_){ } try{const f=localStorage.getItem('synergy_filters_cases_v2104'); if(f) App.state.casesFilter=JSON.parse(f)||App.state.casesFilter;}catch(_){ } App.set({route:'dashboard'});});
