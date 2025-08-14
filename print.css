@@ -1,5 +1,1 @@
-/* Minimal print tweaks for the host page */
-@media print {
-  .toolbar, #boot { display: none !important; }
-  body { background: #fff; }
-}
+/* print styles */
