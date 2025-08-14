@@ -1,6 +1,6 @@
 
 (function(){ "use strict";
-const BUILD="v2.10.9"; const STAMP=(new Date()).toISOString();
+const BUILD="v2.10.7"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM "+BUILD+" • "+STAMP);
 function uid(){return "id-"+Math.random().toString(36).slice(2,9);}
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
@@ -216,13 +216,13 @@ function Shell(content,active){return Topbar()+'<div class="shell">'+Sidebar(act
 // Dashboard
 function NotificationsCard(){const pending=DATA.timesheets.filter(t=>t.status==="Submitted"); if(!pending.length) return ''; let items=pending.map(t=>{const u=findUserByEmail(t.investigatorEmail)||{name:t.investigatorEmail}; const label=u.name+" • "+t.periodStart+" to "+t.periodEnd; return '<li style="padding:6px 0;display:flex;gap:8px;align-items:center"><span class="chip">Timesheet</span> '+label+' <div class="sp"></div><button class="btn light" data-act="openAdminTimesheet" data-arg="'+t.id+'">Review</button></li>';}).join(''); return '<div class="section"><header><h3 class="section-title">Notifications</h3></header><ul style="list-style:none;margin:0;padding:0">'+items+'</ul></div>';}
 
-function Dashboard(){const d=App.get(); let rows=''; for(const c of d.cases.slice(0,6)) rows+='<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>'; const tbl='<table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'; const html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div><button class="btn light" data-act="exportSnapshot">Export snapshot</button><button class="btn light" data-act="importSnapshot">Import snapshot</button></div><input type="file" id="snapshot-input" accept="application/json" style="display:none"><div class="mono">Build: '+STAMP+'</div></div>'+NotificationsCard()+'<div class="section"><header><h3 class="section-title">Active Cases</h3></header>'+tbl+'</div>'; return Shell(html,'dashboard');}
+function Dashboard(){const d=App.get(); let rows=''; for(const c of d.cases.slice(0,6)) rows+='<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button> <button class="btn danger" data-act="delCase" data-arg=""+c.id+"">Delete</button></td></tr>'; const tbl='<table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'; const html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div><button class="btn light" data-act="exportSnapshot">Export snapshot</button><button class="btn light" data-act="importSnapshot">Import snapshot</button></div><input type="file" id="snapshot-input" accept="application/json" style="display:none"><div class="mono">Build: '+STAMP+'</div></div>'+NotificationsCard()+'<div class="section"><header><h3 class="section-title">Active Cases</h3></header>'+tbl+'</div>'; return Shell(html,'dashboard');}
 
 // Cases
 function Cases(){const d=App.get(), f=App.state.casesFilter||{q:""}; const list=d.cases.filter(c=>{if(!f.q) return true; const q=f.q.toLowerCase(); return (c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);}); let rows=''; for(const cc of list){rows+='<tr><td>'+cc.fileNumber+'</td><td>'+cc.title+'</td><td>'+cc.organisation+'</td><td>'+cc.investigatorName+'</td><td>'+cc.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cc.id+'">Open</button></td></tr>';} const tools='<div class="grid cols-4" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="'+(f.q||'')+'"></div><div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>'; return Shell('<div class="section"><header><h3 class="section-title">Cases</h3></header>'+tools+'<table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases');}
 
 function CasePage(id){const d=App.get(), cs=findCase(id); if(!cs) return Shell('<div class="card">Case not found.</div>','cases'); const invOpts=()=>d.users.filter(u=>["Investigator","Reviewer","Admin"].includes(u.role)).map(u=>'<option '+(u.email===cs.investigatorEmail?'selected':'')+' value="'+u.email+'">'+u.name+' ('+u.role+')</option>').join(''); const coOpts=()=>d.companies.map(co=>'<option '+(co.id===cs.companyId?'selected':'')+' value="'+co.id+'">'+co.name+' ('+co.id+')</option>').join(''); if(!cs.folders) cs.folders={General:[]};
-const header='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ID: '+cs.fileNumber+'</h2><div class="sp"></div><button class="btn" data-act="saveCase" data-arg="'+id+'">Save Case</button><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div><div class="grid cols-2" style="margin-top:12px"><div><label>Title</label><input class="input" id="c-title" value="'+(cs.title||'')+'"></div><div><label>Organisation (display)</label><input class="input" id="c-org" value="'+(cs.organisation||'')+'"></div><div><label>Company</label><select class="input" id="c-company">'+coOpts()+'</select></div><div><label>Investigator</label><select class="input" id="c-inv">'+invOpts()+'</select></div><div><label>Status</label><select class="input" id="c-status"><option'+(cs.status==='Planning'?' selected':'')+'>Planning</option><option'+(cs.status==='Investigation'?' selected':'')+'>Investigation</option><option'+(cs.status==='Evidence Review'?' selected':'')+'>Evidence Review</option><option'+(cs.status==='Reporting'?' selected':'')+'>Reporting</option><option'+(cs.status==='Closed'?' selected':'')+'>Closed</option></select></div><div><label>Priority</label><select class="input" id="c-priority"><option'+(cs.priority==='Low'?' selected':'')+'>Low</option><option'+(cs.priority==='Medium'?' selected':'')+'>Medium</option><option'+(cs.priority==='High'?' selected':'')+'>High</option><option'+(cs.priority==='Critical'?' selected':'')+'>Critical</option></select></div></div></div>';
+const header='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ID: '+cs.fileNumber+'</h2><div class="sp"></div><button class="btn" data-act="saveCase" data-arg="'+id+'">Save Case</button> <button class="btn danger" data-act="delCase" data-arg=""+id+"">Delete Case</button><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div><div class="grid cols-2" style="margin-top:12px"><div><label>Title</label><input class="input" id="c-title" value="'+(cs.title||'')+'"></div><div><label>Organisation (display)</label><input class="input" id="c-org" value="'+(cs.organisation||'')+'"></div><div><label>Company</label><select class="input" id="c-company">'+coOpts()+'</select></div><div><label>Investigator</label><select class="input" id="c-inv">'+invOpts()+'</select></div><div><label>Status</label><select class="input" id="c-status"><option'+(cs.status==='Planning'?' selected':'')+'>Planning</option><option'+(cs.status==='Investigation'?' selected':'')+'>Investigation</option><option'+(cs.status==='Evidence Review'?' selected':'')+'>Evidence Review</option><option'+(cs.status==='Reporting'?' selected':'')+'>Reporting</option><option'+(cs.status==='Closed'?' selected':'')+'>Closed</option></select></div><div><label>Priority</label><select class="input" id="c-priority"><option'+(cs.priority==='Low'?' selected':'')+'>Low</option><option'+(cs.priority==='Medium'?' selected':'')+'>Medium</option><option'+(cs.priority==='High'?' selected':'')+'>High</option><option'+(cs.priority==='Critical'?' selected':'')+'>Critical</option></select></div></div></div>';
 
 let notesRows=(cs.notes&&cs.notes.length)?'':'<tr><td colspan="3" class="muted">No notes yet.</td></tr>';
 for(const nn of (cs.notes||[])){notesRows+='<tr><td>'+nn.time+'</td><td>'+nn.by+'</td><td>'+nn.text+'</td></tr>';}
@@ -242,7 +242,7 @@ return Shell(header+blocks+docs,'cases');
 }
 
 // Contacts
-function Contacts(){const d=App.get(); const coName=id=>{const co=findCompany(id); return co?co.name:"";}; let rows=''; for(const c of d.contacts){rows+='<tr><td>'+c.name+'</td><td>'+c.email+'</td><td>'+coName(c.companyId)+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New Contact</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');}
+function Contacts(){const d=App.get(); const coName=id=>{const co=findCompany(id); return co?co.name:"";}; let rows=''; for(const c of d.contacts){rows+='<tr><td>'+c.name+'</td><td>'+c.email+'</td><td>'+coName(c.companyId)+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button> <button class="btn danger" data-act="delContact" data-arg=""+c.id+"">Delete</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New Contact</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');}
 
 function ContactPage(id){const d=App.get(), c=findContact(id); if(!c) return Shell('<div class="card">Contact not found.</div>','contacts'); const coOpts=()=>['<option value="">(No linked company)</option>'].concat(d.companies.map(co=>'<option '+(co.id===c.companyId?'selected':'')+' value="'+co.id+'">'+co.name+' ('+co.id+')</option>')).join(''); let existing=d.users.find(u=>(u.email||'').toLowerCase()===(c.email||'').toLowerCase())||null; let headerBtns='', portalBody='';
 if(c.email){
@@ -256,7 +256,7 @@ if(c.email){
 } else {
   portalBody='<div class="muted">Add an email to enable portal access.</div>';
 }
-let html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Contact</h2><div class="sp"></div><button class="btn" data-act="saveContact" data-arg="'+id+'">Save</button><button class="btn light" data-act="route" data-arg="contacts">Back to Contacts</button></div><div class="grid cols-4" style="margin-top:12px"><div><label>Contact Name</label><input class="input" id="ct-name" value="'+(c.name||'')+'"></div><div><label>Email</label><input class="input" id="ct-email" value="'+(c.email||'')+'"></div><div><label>Phone</label><input class="input" id="ct-phone" value="'+(c.phone||'')+'"></div><div><label>Position/Org</label><input class="input" id="ct-org" value="'+(c.org||'')+'"></div><div style="grid-column:span 2"><label>Link to Company</label><select class="input" id="ct-company">'+coOpts()+'</select></div><div style="grid-column:span 4"><label>Notes</label><textarea class="input" id="ct-notes">'+(c.notes||'')+'</textarea></div></div></div><div class="section"><header><h3 class="section-title">Portal Access</h3><div>'+headerBtns+'</div></header>'+ portalBody +'</div>'; // --- Inject "Last seen" badge next to the name (in the <h2>) ---
+let html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Contact</h2><div class="sp"></div><button class="btn" data-act="saveContact" data-arg="'+id+'">Save</button> <button class="btn danger" data-act="delContact" data-arg=""+id+"">Delete Contact</button><button class="btn light" data-act="route" data-arg="contacts">Back to Contacts</button></div><div class="grid cols-4" style="margin-top:12px"><div><label>Contact Name</label><input class="input" id="ct-name" value="'+(c.name||'')+'"></div><div><label>Email</label><input class="input" id="ct-email" value="'+(c.email||'')+'"></div><div><label>Phone</label><input class="input" id="ct-phone" value="'+(c.phone||'')+'"></div><div><label>Position/Org</label><input class="input" id="ct-org" value="'+(c.org||'')+'"></div><div style="grid-column:span 2"><label>Link to Company</label><select class="input" id="ct-company">'+coOpts()+'</select></div><div style="grid-column:span 4"><label>Notes</label><textarea class="input" id="ct-notes">'+(c.notes||'')+'</textarea></div></div></div><div class="section"><header><h3 class="section-title">Portal Access</h3><div>'+headerBtns+'</div></header>'+ portalBody +'</div>'; // --- Inject "Last seen" badge next to the name (in the <h2>) ---
   (function(){
     try {
       var email = (c && c.email) ? c.email : '';
@@ -406,10 +406,21 @@ document.addEventListener('click',e=>{let t=e.target; while(t&&t!==document&&!t.
 // nav
 if(act==='route'){App.set({route:arg});return;}
 if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
+// delete case
+if(act==='delCase'){ 
+  const id = arg;
+  const cs = (DATA.cases||[]).find(c=>c.id===id);
+  if(!cs){ alert('Case not found'); return; }
+  if(confirm('Delete case '+(cs.fileNumber||'')+'? This cannot be undone.')){
+    DATA.cases = (DATA.cases||[]).filter(c=>c.id!==id);
+    App.set({route:'cases'});
+  }
+  return;
+}
+
 
 // cases
 if(act==='newCase'){const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'});return;}
-if(act==='deleteCase'){ const cs=findCase(arg); if(!cs) return; if(confirm('Delete this case? This cannot be undone.')){ DATA.cases = DATA.cases.filter(c=>c.id!==arg); App.set({route:'cases', currentCaseId:null}); } return; }
 if(act==='saveCase'){const cs=findCase(arg); if(!cs) return; cs.title=document.getElementById('c-title').value; cs.organisation=document.getElementById('c-org').value; cs.companyId=document.getElementById('c-company').value; const invEmail=document.getElementById('c-inv').value; const u=d.users.find(x=>x.email===invEmail)||null; cs.investigatorEmail=invEmail; cs.investigatorName=u?u.name:''; cs.status=document.getElementById('c-status').value; cs.priority=document.getElementById('c-priority').value; alert('Case saved'); return;}
 if(act==='addNote'){const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return;}
 if(act==='addStdTasks'){const cs=findCase(arg); if(!cs) return; const base=cs.tasks, add=['Gather documents','Interview complainant','Interview respondent','Write report']; add.forEach(a=>base.push({id:'T-'+(base.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return;}
@@ -424,8 +435,23 @@ if(act==='deleteFolder'){const p=arg.split('::'); const cs=findCase(p[0]); if(!c
 
 // contacts
 if(act==='openContact'){App.set({currentContactId:arg,route:'contact'});return;}
+// delete contact
+if(act==='delContact'){
+  const id = arg;
+  const c = (DATA.contacts||[]).find(x=>x.id===id);
+  if(!c){ alert('Contact not found'); return; }
+  if(confirm('Delete contact '+(c.name||'')+'? This cannot be undone.')){
+    DATA.contacts = (DATA.contacts||[]).filter(x=>x.id!==id);
+    // Also remove any portal user with same email (if exists)
+    if(c.email){
+      DATA.users = (DATA.users||[]).filter(u => (u.email||'').toLowerCase() !== (c.email||'').toLowerCase());
+    }
+    App.set({route:'contacts'});
+  }
+  return;
+}
+
 if(act==='newContact'){const c={id:uid(),name:'New Contact',email:'',phone:'',org:'',companyId:'',notes:''}; d.contacts.unshift(c); App.set({currentContactId:c.id,route:'contact'}); return;}
-if(act==='deleteContact'){ const idx=DATA.contacts.findIndex(x=>x.id===arg); if(idx>-1 && confirm('Delete this contact? This cannot be undone.')){ DATA.contacts.splice(idx,1); App.set({route:'contacts', currentContactId:null}); } return; }
 if(act==='saveContact'){const c=findContact(arg); if(!c) return; c.name=document.getElementById('ct-name').value; c.email=document.getElementById('ct-email').value; c.phone=document.getElementById('ct-phone').value; c.org=document.getElementById('ct-org').value; c.companyId=document.getElementById('ct-company').value; c.notes=document.getElementById('ct-notes').value; alert('Contact saved'); return;}
 
 // portal access
