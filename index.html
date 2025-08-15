@@ -6,55 +6,97 @@
     <title>Synergy CRM</title>
     <link rel="stylesheet" href="print.css">
     <style>
-      :root{
-        --nav-bg:#0f2533;
-        --nav-bg-hover:#123244;
-        --nav-active:#1c3e57;
-        --accent:#2563eb;
-        --card:#ffffff;
-        --card-br:#e2e8f0;
-        --section-h:#edf6ff;
-      }
       body{font:14px -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f5f7fb;color:#0f1b2d;margin:0}
       .topbar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:10px 16px;background:#092c3e;color:#fff;border-bottom:1px solid #073346}
       .brand{font-weight:700}
       .sp{flex:1}
       .badge{background:#1f8b4c;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
       .shell{display:flex;min-height:calc(100vh - 48px)}
-      aside.sidebar{width:200px;background:var(--nav-bg);color:#e9f2f6;padding:16px 0 24px}
-      aside.sidebar h3{font-size:12px;font-weight:700;margin:0 16px 6px;color:#b8d5e4;text-transform:uppercase;letter-spacing:.08em}
+      aside.sidebar{width:180px;background:#123243;color:#cfe9f4;padding:16px 0 24px}
+      aside.sidebar h3{font-size:13px;font-weight:700;margin:0 16px 6px;color:#a9d3e4;text-transform:uppercase;letter-spacing:.08em}
       .nav{list-style:none;padding:0;margin:0}
-      .nav li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;border-radius:8px;margin:2px 8px;color:#e9f2f6}
-      .nav li:hover{background:var(--nav-bg-hover)}
-      .nav li.active{background:var(--nav-active);border-left-color:#67b7ff;color:#fff}
+      .nav li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent}
+      .nav li:hover{background:#0b2b3d}
+      .nav li.active{background:#0d3a51;border-left-color:#31a6ff;color:#fff}
       main.main{flex:1;padding:18px}
-      .card{background:var(--card);border:1px solid var(--card-br);border-radius:12px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+      .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
       .section{margin:0 0 18px}
-      .section header{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;background:var(--section-h);padding:8px 10px;border-radius:8px}
+      .section header{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
       .section-title{font-size:15px;margin:0}
       .grid{display:grid;gap:10px}
       .cols-1{grid-template-columns:1fr}
       .cols-2{grid-template-columns:1fr 1fr}
       .cols-3{grid-template-columns:1fr 1fr 1fr}
-      .cols-4{grid-template-columns:repeat(4, 1fr)}
       label{display:block;font-size:12px;margin:4px 0 6px;color:#475569}
       .input{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
-      textarea.input{min-height:70px}
       table{width:100%;border-collapse:collapse}
       th,td{padding:10px;border-bottom:1px solid #edf2f7;vertical-align:top}
       thead th{background:#f8fafc;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.06em}
       .right{text-align:right}
-      .btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer}
+      .btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer}
       .btn.light{background:#e2e8f0;color:#0f172a}
       .btn.success{background:#059669}
       .btn.danger{background:#dc2626}
       .chip{background:#0ea5e9;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
       #boot{position:fixed;right:10px;bottom:8px;font-size:12px;color:#64748b}
-    </style>
-  </head>
+    
+/* Uniform section headers + blue header buttons */
+.section {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background: #fff;
+}
+.section header {
+  background: #e6f0fa;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 12px;
+  border: none;
+}
+.section-title {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 600;
+  color: #0f1b2d;
+}
+.section header .btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+</style>
+  <style>
+/* Softer sidebar + clearer section headers */
+:root{
+  --sidebar-bg:#123445; --sidebar-fg:#e7f2f9; --sidebar-hover:#17465f; --sidebar-active:#0ea5e9;
+  --section-bg:#eef6fb; --card-border:#d9e6ee;
+}
+aside.sidebar{background:var(--sidebar-bg)!important;color:var(--sidebar-fg)!important}
+.nav li{color:var(--sidebar-fg)!important}
+.nav li.active{background:#0d3a51!important;border-left-color:var(--sidebar-active)!important;color:#fff!important}
+.nav li:hover{background:var(--sidebar-hover)!important}
+.section>header{background:var(--section-bg)!important;border:1px solid var(--card-border)!important;border-bottom:none!important;border-radius:10px 10px 0 0!important;padding:6px 10px}
+.card{border:1px solid var(--card-border)!important;border-radius:10px!important}
+</style>
+
+<style>
+:root{
+  --sidebar-bg:#123445; --sidebar-fg:#e7f2f9; --sidebar-hover:#17465f; --sidebar-active:#0ea5e9;
+  --section-bg:#eef6fb; --card-border:#d9e6ee;
+}
+aside, .leftnav, .sidebar { background:var(--sidebar-bg)!important; color:var(--sidebar-fg)!important; }
+.leftnav a, .sidebar a { color:var(--sidebar-fg)!important; }
+.leftnav a.active, .sidebar a.active { background:rgba(255,255,255,.08)!important; border-left:3px solid var(--sidebar-active)!important; }
+.leftnav a:hover, .sidebar a:hover { background:var(--sidebar-hover)!important; }
+.section>header, .section-title { background:var(--section-bg)!important; border:1px solid var(--card-border)!important; border-bottom:none!important; border-radius:10px 10px 0 0!important; }
+.card { border:1px solid var(--card-border)!important; border-radius:10px!important; }
+</style>
+
+</head>
   <body>
     <div id="boot">Booting…</div>
     <div id="app"></div>
-    <script src="app.js?v=profile-theme"></script>
+    <script src="app.js?v=company-profile-1755234156"></script>
   </body>
 </html>
