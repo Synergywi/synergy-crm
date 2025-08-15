@@ -8,3 +8,12 @@
 .tabpanel.active{display:block}
 /* helper */
 ._tabwrap{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px}
+
+
+/* --- Tabs add-on (safe, minimal) --- */
+.tabsbar{display:flex;gap:8px;border-bottom:1px solid #e2e8f0;margin:8px 0 12px 0;flex-wrap:wrap}
+.tabbtn{padding:8px 12px;border-radius:8px 8px 0 0;background:#eef2ff;border:1px solid #e2e8f0;border-bottom-color:transparent;color:#1e293b;font-weight:600;cursor:pointer}
+.tabbtn.active{background:#ffffff;border-color:#e2e8f0}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+.tabwrap.card{padding:0 14px 14px 14px}
