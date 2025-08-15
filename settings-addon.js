@@ -1,1 +1,1 @@
-// settings addon (future feature flags)
+// settings addon placeholder
