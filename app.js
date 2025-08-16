@@ -678,7 +678,7 @@ if(!DATA.calendar){ DATA.calendar=[]; }
     ev(21,13,14, u[2], "Draft report sync", "Zoom", "Appointment"),
     ev(26, 9,10, u[0], "Admin all-hands", "Boardroom", "Appointment")
   );
-})();
+
 
 // App state for calendar
 if(!App.state.calendar){ App.state.calendar={ view:"month", ym:(new Date()).toISOString().slice(0,7), selectedDate:(new Date()).toISOString().slice(0,10), filterUsers:"ALL" }; }
@@ -890,4 +890,3 @@ document.addEventListener('change', e=>{
 });
 /* ===== End Calendar Feature ===== */
 
-})();
