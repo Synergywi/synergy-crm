@@ -1,1 +1,1 @@
-// placeholder for settings add-on
+// reserved for future feature flags
