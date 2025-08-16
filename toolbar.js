@@ -1,1 +1,1 @@
-// toolbar placeholder
+// Toolbar (placeholder)
