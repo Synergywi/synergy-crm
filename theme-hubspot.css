@@ -1,5 +1,5 @@
 
-/* chip + legend styles */
+/* HubSpot-like chip & legend styles */
 .chip{display:inline-block;padding:2px 10px;font-size:12px;border-radius:999px;font-weight:700;line-height:1.6;border:1px solid transparent}
 .chip.ok{background:#eafaf1;color:#0a7a3e;border-color:#c7f0d7}
 .chip.warn{background:#fff3e8;color:#92400e;border-color:#ffe0c7}
