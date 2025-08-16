@@ -57,7 +57,7 @@ const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,cur
   settings:{emailAlerts:true, darkMode:false}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 /* ui helpers */
-function Topbar(){ const me=(DATA.me||{}); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div><span class="badge">Soft Stable ${BUILD}</span></div>`; }
+function Topbar(){ const me=(DATA.me||{}); const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':""); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`; }
 function Sidebar(active){
   const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
   return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">${items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
@@ -300,7 +300,7 @@ function Resources(){
 
 function Admin(){
   const tab=App.state.tabs.admin;
-  const users=`<div class="card"><h3 class="section-title">Users</h3><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>${DATA.users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td class="right"><button class="btn light" data-act="impersonate" data-arg="${u.email}">Impersonate</button></td></tr>`).join("")}</tbody></table><div class="right" style="margin-top:8px"><button class="btn" data-act="addUser">Add User</button></div></div>`;
+  const users=`<div class="card"><h3 class="section-title">Users</h3><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>${DATA.users.map(u=>`<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td class="right"><button class="btn light" data-act="impersonate" data-arg="${u.email}">Impersonate</button></td></tr>`).join("")}</tbody></table><div class="right" style="margin-top:8px">${(DATA.me&&DATA.me.role!=="Admin")?'<button class="btn light" data-act="clearImpersonation">Revert to Admin</button>':""} <button class="btn" data-act="addUser">Add User</button></div></div>`;
   const s=App.state.settings||{emailAlerts:true,darkMode:false};
   const settings=`<div class="card"><h3 class="section-title">Settings</h3>
     <label><input type="checkbox" id="set-email" ${s.emailAlerts?'checked':''}> Email alerts</label>
@@ -396,13 +396,15 @@ document.addEventListener('click', e=>{
   if(act==='downloadTemplate'){ alert('Downloading '+arg+' ... (demo)'); return; }
   if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; App.set({}); return; }
   if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; App.set({}); return; }
-  if(act==='impersonate'){ const u=DATA.users.find(x=>x.email===arg); if(!u){alert('User not found'); return;} DATA.me={name:u.name,email:u.email,role:u.role}; alert('Now acting as '+u.name+' ('+u.role+')'); App.set({}); return; }
+  if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); App.set({}); return; }
+  if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); App.set({}); return; }
 });
 
 document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
-document.addEventListener('DOMContentLoaded', ()=>{
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
+  
   // Baseline Integrity Guard
   try{
     const reqVars=["--bg","--ink","--brand","--primary","--accent"];
