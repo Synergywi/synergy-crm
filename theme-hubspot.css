@@ -1,5 +1,5 @@
 
-/* HubSpot-like overrides */
+/* HubSpot-like overrides layered on top */
 :root{ --hs-orange:#ff7a59; --hs-orange-600:#ff633a; --border:#e6edf5; }
 .topbar{ background:#fff !important; color:#2e475d !important; border-bottom:1px solid var(--border) !important; box-shadow:0 2px 6px rgba(2,6,23,.05) !important; }
 .topbar .brand{ color:#2e475d !important }
