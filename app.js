@@ -70,12 +70,24 @@
     get(){ return DATA; }
   };
 
+
+  function __refreshCaseChips(){
+    try{
+      var s=document.getElementById("c-status");
+      var p=document.getElementById("c-priority");
+      var st=document.getElementById("status-chip-preview");
+      var pt=document.getElementById("priority-chip-preview");
+      if(s && st){ st.innerHTML = statusChip(s.value); }
+      if(p && pt){ pt.innerHTML = priorityChip(p.value); }
+    }catch(e){}
+  }
+
   // ---------- Layout ----------
   const Topbar=()=> `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><button class="btn light" data-act="toggleSidebar">Toggle sidebar</button> <span class="badge">Soft Stable ${BUILD}</span></div>`;
   const Sidebar=(active)=>{
     const items=[["dashboard","Dashboard"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["resources","Resources"],["admin","Admin"]];
     return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">`+
-      items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")+
+      items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}"><span class="nav-ico">${k==="dashboard"?"🏠":k==="cases"?"📁":k==="contacts"?"👤":k==="companies"?"🏢":k==="resources"?"📚":"⚙️"}</span><span class="nav-text">${v}</span></li>`).join("")+
       `</ul></aside>`;
   };
   const Shell=(content,active)=> Topbar()+`<div class="shell">`+Sidebar(active)+`<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`;
@@ -110,13 +122,17 @@ function statusChip(s){
   function Cases(){
     const f=App.state.casesFilter||{q:""};
     const list=DATA.cases.filter(c=>{
-      if(!f.q) return true;
-      const q=f.q.toLowerCase();
-      return (c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);
+      const q=(f.q||"").toLowerCase();
+      if(q){
+        const hit=(c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);
+        if(!hit) return false;
+      }
+      if(f.status && c.status!==f.status) return false;
+      if(f.priority && c.priority!==f.priority) return false;
+      return true;
     });
     const rows=list.map(cc=>`<tr><td>${cc.fileNumber}</td><td>${cc.title}</td><td>${cc.organisation}</td><td>${cc.investigatorName}</td><td>'+statusChip(cc.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${cc.id}">Open</button></td></tr>`).join("");
-    const tools=`<div class="grid cols-3" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="${f.q||''}"></div>
-      <div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>`;
+    const tools=`<div class="grid cols-3" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="${f.q||''}"><select class="input" id="flt-status"><option value="">All statuses</option>${["Planning","Investigation","Evidence Review","Reporting","Closed"].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join("")}</select><select class="input" id="flt-priority"><option value="">All priorities</option>${["Low","Medium","High","Critical"].map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join("")}</select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div><div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>`;
     return Shell(`<div class="section"><header><h3 class="section-title">Cases</h3></header>'+statusPriorityLegend()+'${tools}
       <table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,"cases");
   }
@@ -148,14 +164,14 @@ function statusChip(s){
           <div><label>Case ID</label><input class="input" id="c-id" value="${cs.fileNumber||''}"></div>
           <div><label>Organisation (display)</label><input class="input" id="c-org" value="${cs.organisation||''}"></div>
           <div><label>Title</label><input class="input" id="c-title" value="${cs.title||''}"></div>
-          <div><label>Company</label><select class="input" id="c-company">${coOpts()}</select></div>
-          <div><label>Investigator</label><select class="input" id="c-inv">${invOpts()}</select></div>
-          <div><label>Status</label><select class="input" id="c-status">
+          <div><label>Company</label><select class="input" id="c-company">${coOpts()}</select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
+          <div><label>Investigator</label><select class="input" id="c-inv">${invOpts()}</select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
+          <div><label>Status</label><div class="grid cols-2" style="grid-template-columns:1fr auto; align-items:center"><select class="input" id="c-status">
             ${["Planning","Investigation","Evidence Review","Reporting","Closed"].map(s=>`<option${cs.status===s?' selected':''}>${s}</option>`).join("")}
-          </select></div>
-          <div><label>Priority</label><select class="input" id="c-priority">
+          </select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
+          <div><label>Priority</label><div class="grid cols-2" style="grid-template-columns:1fr auto; align-items:center"><select class="input" id="c-priority">
             ${["Low","Medium","High","Critical"].map(s=>`<option${cs.priority===s?' selected':''}>${s}</option>`).join("")}
-          </select></div>
+          </select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
         </div>
       </div>
     </div>`;
@@ -247,7 +263,7 @@ function statusChip(s){
         <div><label>Email</label><input class="input" id="ct-email" value="${c.email||''}"></div>
         <div><label>Phone</label><input class="input" id="ct-phone" value="${c.phone||''}"></div>
         <div><label>Position/Org</label><input class="input" id="ct-org" value="${c.org||''}"></div>
-        <div style="grid-column:span 2"><label>Link to Company</label><select class="input" id="ct-company">${coOpts()}</select></div>
+        <div style="grid-column:span 2"><label>Link to Company</label><select class="input" id="ct-company">${coOpts()}</select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
         <div style="grid-column:span 4"><label>Notes</label><textarea class="input" id="ct-notes">${c.notes||''}</textarea></div>
       </div>
     </div>`;
@@ -257,7 +273,7 @@ function statusChip(s){
         <div><label>Status</label><div class="badge" style="background:${c.portal.enabled?'#059669':'#d1d5db'}">${c.portal.enabled?'Enabled':'Disabled'}</div></div>
         <div><label>Role</label><select class="input" id="ct-role">
           ${["Investigator","Reviewer","Admin"].map(r=>`<option${c.portal.role===r?' selected':''}>${r}</option>`).join("")}
-        </select></div>
+        </select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div>
         <div class="right" style="grid-column:span 4;margin-top:8px">
           <button class="btn light" data-act="viewPortal" data-arg="${id}">View portal</button>
           <button class="btn light" data-act="updateRole" data-arg="${id}">Update Role</button>
@@ -371,7 +387,7 @@ function statusChip(s){
     $("#boot").textContent="Rendering "+r+"…";
     if(r==="dashboard") el.innerHTML=Dashboard();
     else if(r==="cases") el.innerHTML=Cases();
-    else if(r==="case") el.innerHTML=CasePage(App.state.currentCaseId);
+    else if(r==="case"){ el.innerHTML=CasePage(App.state.currentCaseId); __refreshCaseChips(); }
     else if(r==="contacts") el.innerHTML=Contacts();
     else if(r==="contact") el.innerHTML=ContactPage(App.state.currentContactId);
     else if(r==="companies") el.innerHTML=Companies();
@@ -494,10 +510,13 @@ function statusChip(s){
     next();
   }
 
-  document.addEventListener("change", e=>{
+  document.addEventListener("change", e=>{ __refreshCaseChips();
     const t=e.target;
     if(!t) return;
     if(t.id==="flt-q"){ const f=App.state.casesFilter||{q:""}; f.q=t.value; App.state.casesFilter=f; try{localStorage.setItem("synergy_filters_cases_v2130", JSON.stringify(f));}catch(_){ } App.set({}); }
+    if(t.id==="flt-status"){ const f=App.state.casesFilter||{q:""}; f.status=t.value||""; App.state.casesFilter=f; try{localStorage.setItem("synergy_filters_cases_v2130", JSON.stringify(f));}catch(_){ } App.set({}); }
+    if(t.id==="flt-priority"){ const f=App.state.casesFilter||{q:""}; f.priority=t.value||""; App.state.casesFilter=f; try{localStorage.setItem("synergy_filters_cases_v2130", JSON.stringify(f));}catch(_){ } App.set({}); }
+    
     if(t.id==="case-file-any"){ const p=(App.state.currentUploadTarget||"").split("::"); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]||"General"; cs.folders[folder]=cs.folders[folder]||[]; readFiles(t.files,(obj)=>cs.folders[folder].push(obj),()=>App.set({caseTab:"docs"})); t.value=""; }
     if(t.id==="co-file-input"){ const p=(App.state.currentCompanyUploadTarget||"").split("::"); const co=findCompany(p[0]); if(!co) return; const folder=p[1]||"General"; co.folders[folder]=co.folders[folder]||[]; readFiles(t.files,(obj)=>co.folders[folder].push(obj),()=>App.set({companyTab:"docs"})); t.value=""; }
   });
