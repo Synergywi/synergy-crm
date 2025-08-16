@@ -369,6 +369,25 @@ function pushCalNotification(action, ev){
   }catch(e){ console.warn("pushCalNotification failed", e); }
 }
 
+
+/* ===== Persistence (localStorage) ===== */
+function saveData(){
+  try{
+    const payload={companies:DATA.companies, contacts:DATA.contacts, cases:DATA.cases, calendar:DATA.calendar};
+    localStorage.setItem("synergy_data_v1", JSON.stringify(payload));
+  }catch(e){ console.warn("saveData failed", e); }
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem("synergy_data_v1"); if(!raw) return;
+    const obj=JSON.parse(raw)||{};
+    if(Array.isArray(obj.companies)) DATA.companies=obj.companies;
+    if(Array.isArray(obj.contacts)) DATA.contacts=obj.contacts;
+    if(Array.isArray(obj.cases)) DATA.cases=obj.cases;
+    if(Array.isArray(obj.calendar)) DATA.calendar=obj.calendar;
+  }catch(e){ console.warn("loadData failed", e); }
+}
+
 /* render */
 function render(){
   const r=App.state.route, el=document.getElementById('app');
@@ -397,7 +416,7 @@ document.addEventListener('click', e=>{
   if(act==='tab'){ const scope=t.getAttribute('data-scope'); const tabs=Object.assign({},App.state.tabs); tabs[scope]=arg; App.set({tabs}); return; }
 
   if(act==='openCase'){ App.set({currentCaseId:arg,route:'case'}); return; }
-  if(act==='newCase'){ App.state.tabs.cases='new'; App.set({}); return; }
+  if(act==='newCase'){ App.state.tabs.cases='new'; saveData(); App.set({}); return; }
   if(act==='createCase'){
     const title=document.getElementById('nc-title').value||'New case';
     const org=document.getElementById('nc-org').value||'';
@@ -405,7 +424,7 @@ document.addEventListener('click', e=>{
     const company=document.getElementById('nc-company').value||'C-001';
     const seq=('00'+(DATA.cases.length+1)).slice(-3);
     const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title,organisation:org,companyId:company,investigatorEmail:invEmail,investigatorName:inv.name,status:'Planning',priority:'Medium',created:(new Date()).toISOString().slice(0,7),relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;
+    DATA.cases.unshift(cs); saveData(); App.set({currentCaseId:cs.id,route:'case'}); return;
   }
   if(act==='saveCase'){
     const cs=findCase(arg); if(!cs) return;
@@ -416,50 +435,50 @@ document.addEventListener('click', e=>{
     const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; }
     setIf('status',getV('c-status')); setIf('priority',getV('c-priority'));
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    alert('Case saved'); return;
+    alert('Case saved'); saveData(); return;
   }
-  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); App.set({route:'cases'});} return; }
-  if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
-  if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return; }
-  if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); App.set({}); return; }
+  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); saveData(); App.set({route:'cases'});} return; }
+  if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); saveData(); App.set({}); return; }
+  if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); saveData(); App.set({}); return; }
+  if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); saveData(); App.set({}); return; }
 
-  if(act==='linkContact'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('rel-contact'); const id=sel?sel.value:null; if(!id) return; cs.relatedContactIds=Array.from(new Set([...(cs.relatedContactIds||[]), id])); App.set({}); return; }
-  if(act==='unlinkContact'){ const [cid,pid]=arg.split('::'); const cs=findCase(cid); if(!cs) return; cs.relatedContactIds=(cs.relatedContactIds||[]).filter(x=>x!==pid); App.set({}); return; }
-  if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; App.set({}); return; }
+  if(act==='linkContact'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('rel-contact'); const id=sel?sel.value:null; if(!id) return; cs.relatedContactIds=Array.from(new Set([...(cs.relatedContactIds||[]), id])); saveData(); App.set({}); return; }
+  if(act==='unlinkContact'){ const [cid,pid]=arg.split('::'); const cs=findCase(cid); if(!cs) return; cs.relatedContactIds=(cs.relatedContactIds||[]).filter(x=>x!==pid); saveData(); App.set({}); return; }
+  if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; saveData(); App.set({}); return; }
 
   if(act==='openContact'){ App.set({currentContactId:arg,route:'contact'}); return; }
-  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); App.set({route:'contacts'}); return; }
-  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); App.set({route:'contacts'}); return; }
+  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); saveData(); App.set({route:'contacts'}); return; }
+  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); saveData(); App.set({route:'contacts'}); return; }
 
   if(act==='openCompany'){ App.set({currentCompanyId:arg,route:'company'}); return; }
-  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); App.set({route:'companies'}); return; }
-  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); App.set({}); return; }
+  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); saveData(); App.set({route:'companies'}); return; }
+  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); saveData(); App.set({}); return; }
 
-  if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; App.set({}); return; }
+  if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; saveData(); App.set({}); return; }
   if(act==='deleteCompanyFolder'){ const [id,folder]=arg.split('::'); const co=findCompany(id); if(!co) return; if(confirm('Delete folder '+folder+' ?')){ delete co.folders[folder]; App.set({}); } return; }
   if(act==='selectCompanyFiles'){ const [id,folder]=arg.split('::'); const inp=document.getElementById('company-file-input'); if(!inp) return;
     inp.onchange=function(ev){ const files=Array.from(ev.target.files||[]); const co=findCompany(id); if(!co) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[folder]) co.folders[folder]=[]; files.forEach(f=>{ const reader=new FileReader(); reader.onload=e=>{ co.folders[folder].push({name:f.name,size:(f.size||0)+' bytes',dataUrl:e.target.result}); App.set({}); }; reader.readAsDataURL(f); }); inp.value=''; };
     inp.click(); return; }
   if(act==='viewCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; const f=(co.folders[folder]||[]).find(x=>x.name===name); if(!f||!f.dataUrl){ alert('No file data.'); return; } const w=window.open(); w.document.write('<iframe src="'+f.dataUrl+'" style="border:0;width:100%;height:100%"></iframe>'); return; }
-  if(act==='removeCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; co.folders[folder]=(co.folders[folder]||[]).filter(x=>x.name!==name); App.set({}); return; }
+  if(act==='removeCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; co.folders[folder]=(co.folders[folder]||[]).filter(x=>x.name!==name); saveData(); App.set({}); return; }
 
-  if(act==='addFolderPrompt'){ const [id]=arg.split('::'); const nm=prompt('New folder name'); if(!nm) return; const cs=findCase(id); if(!cs) return; if(!cs.folders[nm]) cs.folders[nm]=[]; App.set({}); return; }
+  if(act==='addFolderPrompt'){ const [id]=arg.split('::'); const nm=prompt('New folder name'); if(!nm) return; const cs=findCase(id); if(!cs) return; if(!cs.folders[nm]) cs.folders[nm]=[]; saveData(); App.set({}); return; }
   if(act==='deleteFolder'){ const [id,folder]=arg.split('::'); const cs=findCase(id); if(!cs) return; if(confirm('Delete folder '+folder+' ?')){ delete cs.folders[folder]; App.set({}); } return; }
   if(act==='selectFiles'){ const [id,folder]=arg.split('::'); const inp=document.getElementById('file-input'); if(!inp) return;
     inp.onchange=function(ev){ const files=Array.from(ev.target.files||[]); const cs=findCase(id); if(!cs) return; if(!cs.folders[folder]) cs.folders[folder]=[]; files.forEach(f=>{ const reader=new FileReader(); reader.onload=e=>{ cs.folders[folder].push({name:f.name,size:(f.size||0)+' bytes',dataUrl:e.target.result}); App.set({}); }; reader.readAsDataURL(f); }); inp.value=''; };
     inp.click(); return; }
   if(act==='viewDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; const f=(cs.folders[folder]||[]).find(x=>x.name===name); if(!f||!f.dataUrl){ alert('No file data.'); return; } const w=window.open(); w.document.write('<iframe src="'+f.dataUrl+'" style="border:0;width:100%;height:100%"></iframe>'); return; }
-  if(act==='removeDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; cs.folders[folder]=(cs.folders[folder]||[]).filter(x=>x.name!==name); App.set({}); return; }
+  if(act==='removeDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; cs.folders[folder]=(cs.folders[folder]||[]).filter(x=>x.name!==name); saveData(); App.set({}); return; }
 
   if(act==='downloadTemplate'){ alert('Downloading '+arg+' ... (demo)'); return; }
-  if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; App.set({}); return; }
-  if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; App.set({}); return; }
-  if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); App.set({}); return; }
+  if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; saveData(); App.set({}); return; }
+  if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; saveData(); App.set({}); return; }
+  if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); saveData(); App.set({}); return; }
   if(act==='readNotif'){ const id=arg; const list=App.state.notifications||[]; const it=list.find(n=>n.id===id); if(it && !it.read){ it.read=true; App.state.notificationsUnread=Math.max(0,(App.state.notificationsUnread||0)-1); try{ localStorage.setItem('synergy_notifs', JSON.stringify(list)); localStorage.setItem('synergy_notifs_unread', String(App.state.notificationsUnread)); }catch(_){ } App.set({}); } return; }
 if(act==='openNotif'){ const id=arg; const list=App.state.notifications||[]; const it=list.find(n=>n.id===id); if(it){ if(!it.read){ it.read=true; App.state.notificationsUnread=Math.max(0,(App.state.notificationsUnread||0)-1); } try{ localStorage.setItem('synergy_notifs', JSON.stringify(list)); localStorage.setItem('synergy_notifs_unread', String(App.state.notificationsUnread)); }catch(_){ } if(it.startISO){ const d=new Date(it.startISO); const ym = d.toISOString().slice(0,7); App.state.calendar=Object.assign({},App.state.calendar,{ym,selectedDate:d.toISOString().slice(0,10),view:'agenda'}); } App.set({route:'calendar'}); } return; }
-if(act==='markNotifsRead'){ App.state.notificationsUnread=0; try{ localStorage.setItem('synergy_notifs_unread','0'); }catch(_){ } App.set({}); return; }
+if(act==='markNotifsRead'){ App.state.notificationsUnread=0; try{ localStorage.setItem('synergy_notifs_unread','0'); }catch(_){ } saveData(); App.set({}); return; }
   if(act==='gotoNotifications'){ App.state.tabs.dashboard='overview'; App.set({route:'dashboard'}); return; }
-  if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); App.set({}); return; }
+  if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); saveData(); App.set({}); return; }
 });
 
 document.addEventListener('change', e=>{
@@ -467,6 +486,7 @@ document.addEventListener('change', e=>{
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
   try{ const ns=JSON.parse(localStorage.getItem('synergy_notifs')||'[]'); const nu=parseInt(localStorage.getItem('synergy_notifs_unread')||'0',10); App.state.notifications = ns; App.state.notificationsUnread = isNaN(nu)?0:nu; }catch(_){ App.state.notifications=[]; App.state.notificationsUnread=0; }
+  loadData();
   
   // Baseline Integrity Guard
   try{
@@ -617,9 +637,11 @@ function Calendar(){
     const editId = (App.state.calendar||{}).editId;
   const editing = editId ? (DATA.calendar||[]).find(e=>e.id===editId) : null;
   const editBanner = editing ? `<div class="card"><strong>Editing:</strong> ${editing.title} — ${new Date(editing.startISO).toLocaleString()} <div class="right"><button class="btn" data-act="saveEventEdit">Save changes</button> <button class="btn light" data-act="cancelEventEdit">Cancel</button></div></div>` : '';
+
 const form = (()=>{
     const selDate = calState.selectedDate || new Date().toISOString().slice(0,10);
     const isAdminOwner = isAdmin ? `<div><label>Owner</label><select class="input" id="ev-owner">${DATA.users.map(u=>`<option value="${u.email}" ${u.email===me.email?'selected':''}>${u.name}</option>`).join("")}</select></div>` : "";
+    const caseSelect = `<div><label>Case (optional)</label><select class="input" id="ev-case"><option value="">— None —</option>${DATA.cases.map(cs=>`<option value="${cs.id}">${cs.fileNumber} — ${cs.title}</option>`).join("")}</select></div>`;
     return `<div class="card"><h3 class="section-title">Add ${isAdmin?"Event (any user)":"My Event"}</h3>
       <div class="grid cols-3">
         <div><label>Title</label><input class="input" id="ev-title" placeholder="Appointment or note"></div>
@@ -628,6 +650,7 @@ const form = (()=>{
         <div><label>Start</label><input class="input" id="ev-start" type="time" value="09:00"></div>
         <div><label>End</label><input class="input" id="ev-end" type="time" value="10:00"></div>
         <div><label>Location</label><input class="input" id="ev-loc" placeholder="Room/Zoom/etc."></div>
+        ${caseSelect}
         ${isAdminOwner}
       </div>
       <div class="right" style="margin-top:8px">
@@ -635,6 +658,7 @@ const form = (()=>{
       </div>
     </div>`;
   })();
+
 
   const monthGrid = `<div class="card"><div class="cal-wrap">${toolbar}
       <div class="cal-head">
@@ -678,16 +702,16 @@ document.addEventListener('click', e=>{
     const eISO = date+"T"+end+":00";
     const caseId = (document.getElementById('ev-case')||{}).value || '';
     const ev={id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId};
-    DATA.calendar.push(ev);
+    DATA.calendar.push(ev); saveData();
     pushCalNotification('created', ev);
     alert('Event added');
-    App.set({}); return;
+    saveData(); App.set({}); return;
   }
   if(act==='editEvent'){
   const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return;
   const me=DATA.me||{email:'',role:''}; const canEdit=(me.role==='Admin'||me.email===ev.ownerEmail);
   if(!canEdit){ alert('You do not have permission to edit this event.'); return; }
-  App.state.calendar = Object.assign({}, App.state.calendar, { editId:id, view:'month' }); App.set({}); return;
+  App.state.calendar = Object.assign({}, App.state.calendar, { editId:id, view:'month' }); saveData(); App.set({}); return;
 }
 if(act==='saveEventEdit'){
   const id=(App.state.calendar||{}).editId; if(!id) return; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return;
@@ -702,14 +726,14 @@ if(act==='saveEventEdit'){
   const caseId=(document.getElementById('ev-case')||{}).value||ev.caseId||'';
   ev.title=title; ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00'; ev.location=loc; ev.type=type; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId;
   try{ pushCalNotification('updated', ev); }catch(_){ }
-  App.state.calendar.editId=null; alert('Event updated'); App.set({}); return;
+  App.state.calendar.editId=null; alert('Event updated'); saveData(); App.set({}); return;
 }
-if(act==='cancelEventEdit'){ App.state.calendar.editId=null; App.set({}); return; }
+if(act==='cancelEventEdit'){ App.state.calendar.editId=null; saveData(); App.set({}); return; }
 if(act==='deleteEvent'){
     const ev=(DATA.calendar||[]).find(e=>e.id===arg);
-    DATA.calendar = (DATA.calendar||[]).filter(e=>e.id!==arg);
+    DATA.calendar = (DATA.calendar||[]).filter(e=>e.id!==arg); saveData();
     if(ev) pushCalNotification('deleted', ev);
-    App.set({}); return;
+    saveData(); App.set({}); return;
   }
   if(act==='openEvent'){
     const ev=(DATA.calendar||[]).find(x=>x.id===arg);
