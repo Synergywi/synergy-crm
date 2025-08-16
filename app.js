@@ -159,6 +159,7 @@ function CasePage(id){
 
   const caseEvents = (DATA.calendar||[]).filter(e=>e.caseId===cs.id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
   const ceRows = caseEvents.map(e=>{ const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&& (DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td>${e.title}</td><td>${e.ownerName||e.ownerEmail||''}</td><td class='right'>${canEdit?`<button class='btn light' data-act='editEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">No events for this case.</td></tr>';
+    const isAdminOwnerCase = (DATA.me && DATA.me.role==='Admin') ? `<div><label>Owner</label><select class='input' id='ev-owner'>${DATA.users.map(u=>`<option value='${u.email}' ${u.email===(cs.investigatorEmail||DATA.me.email)?'selected':''}>${u.name} (${u.role})</option>`).join('')}</select></div>` : '';
   const caseCalAdd = `<div class='card'><h3 class='section-title'>Add case event</h3><div class='grid cols-3'>
     <div><label>Title</label><input class='input' id='ev-title'></div>
     <div><label>Date</label><input class='input' id='ev-date' type='date' value='${(new Date()).toISOString().slice(0,10)}'></div>
@@ -166,6 +167,7 @@ function CasePage(id){
     <div><label>Start</label><input class='input' id='ev-start' type='time' value='09:00'></div>
     <div><label>End</label><input class='input' id='ev-end' type='time' value='10:00'></div>
     <div><label>Location</label><input class='input' id='ev-loc' placeholder='Room/Zoom/etc.'></div>
+    ${isAdminOwnerCase}
     <input type='hidden' id='ev-case' value='${cs.id}'>
   </div><div class='right' style='margin-top:8px'><button class='btn' data-act='createEvent'>Add Event</button></div></div>`;
   const caseCalendar = `<div class='card'><h3 class='section-title'>Case Calendar</h3><table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Owner</th><th></th></tr></thead><tbody>${ceRows}</tbody></table></div>` + caseCalAdd;
