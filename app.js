@@ -75,23 +75,29 @@ function Tabs(scope, items){
 }
 
 /* pages */
+
 function Dashboard(){
   const tab=App.state.tabs.dashboard;
   const rows=DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${statusChip(c.status)}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
   const isAdmin = (DATA.me && DATA.me.role === 'Admin');
   const unread = App.state.notificationsUnread || 0;
-  const notifRows = (App.state.notifications||[]).slice(0,10).map(n=>{
+  const showAll = !!App.state.notificationsShowAll;
+  const visible = (App.state.notifications||[]).filter(n => showAll ? true : !n.read).slice(0,10);
+  const notifRows = visible.map(n=>{
     const ts = new Date(n.when).toLocaleString();
-    const who = n.owner ? ' — '+n.owner : '';
-    const act = n.action==='created' ? 'added' : (n.action==='deleted' ? 'deleted' : 'updated');
+    const who = n.owner ? ` — ${n.owner}` : '';
     const day = n.startISO ? ' ('+new Date(n.startISO).toLocaleDateString()+')' : '';
-    return `<tr><td>${ts}</td><td>${n.title}${day}${who}</td><td>${act}</td><td class="right"><button class="btn light" data-act="route" data-arg="calendar">Open</button></td></tr>`;
+    const actions = `<button class="btn light" data-act="openNotif" data-arg="${n.id}">Open</button> <button class="btn light" data-act="readNotif" data-arg="${n.id}">Dismiss</button>`;
+    return `<tr><td>${ts}</td><td>${n.title}${day}${who}</td><td>${n.action}</td><td class="right">${actions}</td></tr>`;
   }).join('') || '<tr><td colspan="4" class="muted">No calendar activity yet.</td></tr>';
-  const notifCard = !isAdmin ? '' : `<div class="section"><header style="display:flex;align-items:center;gap:8px;justify-content:space-between"><h3 class="section-title">Calendar updates ${unread?`<span class="notif-badge">${unread}</span>`:''}</h3><div><button class="btn light" data-act="markNotifsRead">Mark all read</button></div></header><table><thead><tr><th>Time</th><th>Event</th><th>Action</th><th></th></tr></thead><tbody>${notifRows}</tbody></table></div>`;
+  const toggler = showAll ? '<button class="btn light" data-act="notifShowUnread">Show unread</button>' : '<button class="btn light" data-act="notifShowAll">Show all</button>';
+  const notifCard = !isAdmin ? '' : `<div class="section"><header style="display:flex;align-items:center;gap:8px;justify-content:space-between"><h3 class="section-title">Calendar updates ${unread?`<span class="notif-badge">${unread}</span>`:''}</h3><div>${toggler} <button class="btn light" data-act="markNotifsRead">Mark all read</button></div></header><table><thead><tr><th>Time</th><th>Event</th><th>Action</th><th></th></tr></thead><tbody>${notifRows}</tbody></table></div>`;
   const overview=`<div class="card"><h3>Welcome</h3><div class="muted">${STAMP}</div></div>${notifCard}<div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   const week=`<div class="card"><h3>This Week</h3><div class="muted">New cases: ${DATA.cases.filter(c=>c.created.startsWith(String(YEAR)+"-")).length}</div></div>`;
   return Shell(Tabs('dashboard',[['overview','Overview'],['week','This Week']]) + (tab==='overview'?overview:week), 'dashboard');
 }
+
+
 
 function Cases(){
   const tab=App.state.tabs.cases, f=App.state.casesFilter||{q:""};
