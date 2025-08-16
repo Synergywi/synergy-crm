@@ -1,1 +1,1 @@
-// reserved for future toolbar helpers
+// toolbar placeholder
