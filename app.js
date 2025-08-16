@@ -280,33 +280,15 @@ function Documents(){
   return Shell(Tabs('documents',[['templates','Templates'],['procedures','Procedures']]) + (tab==='templates'?templatesView:proceduresView), 'documents');
 }
 
+
 function Resources(){
   const tab=App.state.tabs.resources;
   const links=`<div class="card"><h3 class="section-title">Links</h3><div class="grid cols-2">${DATA.resources.links.map(l=>`<div><a href="${l.url}">${l.title}</a></div>`).join("")}</div></div>`;
   const faqs=`<div class="card"><h3 class="section-title">FAQs</h3>${DATA.resources.faqs.map(f=>`<div style="margin:6px 0"><strong>${esc(f.q)}</strong><div class="muted">${esc(f.a)}</div></div>`).join("")}</div>`;
-  const guides=`<div class="card"><h3 class="section-title">Guides</h3><ul>${DATA.resources.g
-u
-i
-d
-e
-s
-.
-m
-a
-p
-(
-g
-=
->
-`
-<
-l
-i
->
-$
-{
-g
+  const guides=`<div class="card"><h3 class="section-title">Guides</h3><ul>${DATA.resources.guides.map(g=>`<li>${g}</li>`).join("")}</ul></div>`;
+  return Shell(Tabs('resources',[['links','Links'],['faqs','FAQs'],['guides','Guides']]) + (tab==='links'?links:tab==='faqs'?faqs:guides), 'resources');
 }
+
 <
 /
 l
