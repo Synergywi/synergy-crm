@@ -6,6 +6,17 @@ console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
+// Fallback to ensure statusChip is always defined (avoids ReferenceError in templates)
+if (typeof statusChip === 'undefined') {
+  function statusChip(status){
+    var key = (status||"").toLowerCase().replace(/\s+/g,'-');
+    var map = {"planning":"status-planning","investigation":"status-investigation","evidence-review":"status-evidence","reporting":"status-reporting","closed":"status-closed"};
+    var cls = map[key] || "status-planning";
+    return `<span class="chip ${cls}"><i></i>${status||''}</span>`;
+  }
+  try { (typeof window!=='undefined'?window:self).statusChip = statusChip; } catch(_){}
+}
+
 
 /* seed */
 function mkCase(y,seq,p){
@@ -78,6 +89,7 @@ function statusChip(status){
   }[key]||"status-planning";
   return `<span class="chip ${cls}"><i></i>${status||''}</span>`;
 }
+try{ (typeof window!=='undefined'?window:self).statusChip = statusChip; }catch(_){}
   const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':"");
   const unread=(App.state.notificationsUnread||0);
   const bell=(me.role==="Admin" && unread>0 ? `<button class="btn light" data-act="gotoNotifications">🔔 <span class="notif-badge">${unread}</span></button>` : "");
