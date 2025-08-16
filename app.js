@@ -3,6 +3,25 @@ const BUILD="baseline-1.0.0"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* utils */
+
+// ---- Safe UI helpers (global fallbacks) ----
+if (typeof Sidebar === 'undefined') {
+  function Sidebar(active){
+    const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["companies","Companies"],["contacts","Contacts"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
+    return `<aside class="sidebar"><h3>Investigations</h3><ul>${items.map(([k,v])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
+  }
+  try { (typeof window!=='undefined'?window:self).Sidebar = Sidebar; } catch(_) {}
+}
+if (typeof Tabs === 'undefined') {
+  function Tabs(scope, items){
+    const cur=(App.state&&App.state.tabs&&App.state.tabs[scope]) || items[0][0];
+    return `<div class="tabs">${items.map(([k,v])=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-arg="${scope}:${k}">${v}</div>`).join("")}</div>`;
+  }
+  try { (typeof window!=='undefined'?window:self).Tabs = Tabs; } catch(_) {}
+}
+// --------------------------------------------
+
+
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
