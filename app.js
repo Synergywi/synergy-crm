@@ -62,7 +62,7 @@ function Sidebar(active){
   const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
   return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">${items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
 }
-function Shell(content,active){ return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`; }
+function Shell(content,active){ return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div>${Modal()}<div id="boot">Ready (${BUILD})</div>`; }<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`; }
 function statusChip(status){
   const key=(status||"").toLowerCase().replace(/\s+/g,'-');
   const cls={"planning":"status-planning","investigation":"status-investigation","evidence-review":"status-evidence-review","reporting":"status-reporting","closed":"status-closed"}[key]||"status-planning";
@@ -158,7 +158,7 @@ function CasePage(id){
   </div>`;
 
   const caseEvents = (DATA.calendar||[]).filter(e=>e.caseId===cs.id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
-  const ceRows = caseEvents.map(e=>{ const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&& (DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td>${e.title}</td><td>${e.ownerName||e.ownerEmail||''}</td><td class='right'>${canEdit?`<button class='btn light' data-act='editEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">No events for this case.</td></tr>';
+  const ceRows = caseEvents.map(e=>{ const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&& (DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td>${e.title}</td><td>${e.ownerName||e.ownerEmail||''}</td><td class='right'>${canEdit?`<button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">No events for this case.</td></tr>';
     const isAdminOwnerCase = (DATA.me && DATA.me.role==='Admin') ? `<div><label>Owner</label><select class='input' id='ev-owner'>${DATA.users.map(u=>`<option value='${u.email}' ${u.email===(cs.investigatorEmail||DATA.me.email)?'selected':''}>${u.name} (${u.role})</option>`).join('')}</select></div>` : '';
   const caseCalAdd = `<div class='card'><h3 class='section-title'>Add case event</h3><div class='grid cols-3'>
     <div><label>Title</label><input class='input' id='ev-title'></div>
@@ -390,6 +390,47 @@ function loadData(){
   }catch(e){ console.warn("loadData failed", e); }
 }
 
+
+function Modal(){
+  const id = (App.state && App.state.modalEventId) || null;
+  if(!id) return "";
+  const ev = (DATA.calendar||[]).find(e=>e.id===id);
+  if(!ev) return "";
+  const me = DATA.me || {email:"", role:""};
+  const isAdmin = me.role==="Admin";
+  const canEdit = isAdmin || me.email===ev.ownerEmail;
+  const date = (ev.startISO||"").slice(0,10);
+  const start = (ev.startISO||"").slice(11,16);
+  const end   = (ev.endISO||"").slice(11,16);
+  const ownerSelect = isAdmin ? `<div><label>Owner</label><select class="input" id="md-ev-owner">${DATA.users.map(u=>`<option value="${u.email}" ${u.email===ev.ownerEmail?'selected':''}>${u.name} (${u.role})</option>`).join("")}</select></div>` : "";
+  const caseSelect  = `<div><label>Case (optional)</label><select class="input" id="md-ev-case"><option value="">— None —</option>${DATA.cases.map(cs=>`<option value="${cs.id}" ${cs.id===(ev.caseId||'')?'selected':''}>${cs.fileNumber} — ${cs.title}</option>`).join("")}</select></div>`;
+  return `<div class="modal-backdrop" data-act="modalClose">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div class="modal-title">Edit Event</div>
+        <button class="modal-x" data-act="modalClose">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid cols-3">
+          <div><label>Title</label><input class="input" id="md-ev-title" value="${ev.title||''}"></div>
+          <div><label>Date</label><input class="input" id="md-ev-date" type="date" value="${date}"></div>
+          <div><label>Type</label><select class="input" id="md-ev-type"><option ${ev.type==='Appointment'?'selected':''}>Appointment</option><option ${ev.type==='Note'?'selected':''}>Note</option></select></div>
+          <div><label>Start</label><input class="input" id="md-ev-start" type="time" value="${start}"></div>
+          <div><label>End</label><input class="input" id="md-ev-end" type="time" value="${end}"></div>
+          <div><label>Location</label><input class="input" id="md-ev-loc" value="${ev.location||''}"></div>
+          ${caseSelect}
+          ${ownerSelect}
+        </div>
+      </div>
+      <div class="modal-foot right">
+        ${canEdit?'<button class="btn danger" data-act="modalDeleteEvent" data-arg="'+ev.id+'">Delete</button>':''}
+        <button class="btn light" data-act="modalClose">Cancel</button>
+        ${canEdit?'<button class="btn" data-act="modalSaveEvent" data-arg="'+ev.id+'">Save</button>':''}
+      </div>
+    </div>
+  </div>`;
+}
+
 /* render */
 function render(){
   const r=App.state.route, el=document.getElementById('app');
@@ -410,7 +451,11 @@ function render(){
 }
 
 /* events */
-document.addEventListener('click', e=>{
+document.addEventListener('click', e=>{  if(act==='openEvent'){ const ev=(DATA.calendar||[]).find(x=>x.id===arg); if(!ev) return; App.state.modalEventId=ev.id; App.set({}); return; }
+  if(act==='modalClose'){ App.state.modalEventId=null; App.set({}); return; }
+  if(act==='modalSaveEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return; const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||me.email===ev.ownerEmail)){ alert('No permission to edit'); return; } const title=(document.getElementById('md-ev-title')||{}).value||ev.title; const date=(document.getElementById('md-ev-date')||{}).value||ev.startISO.slice(0,10); const start=(document.getElementById('md-ev-start')||{}).value||ev.startISO.slice(11,16); const end=(document.getElementById('md-ev-end')||{}).value||ev.endISO.slice(11,16); const loc=(document.getElementById('md-ev-loc')||{}).value||ev.location||''; const type=(document.getElementById('md-ev-type')||{}).value||ev.type||'Appointment'; const owner=(DATA.me.role==='Admin'?(document.getElementById('md-ev-owner')||{}).value||ev.ownerEmail:ev.ownerEmail); const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner; const caseId=(document.getElementById('md-ev-case')||{}).value||ev.caseId||''; ev.title=title; ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00'; ev.location=loc; ev.type=type; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId; try{ pushCalNotification('updated', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
+  if(act==='modalDeleteEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||(ev&&me.email===ev.ownerEmail))){ alert('No permission to delete'); return; } DATA.calendar=(DATA.calendar||[]).filter(e=>e.id!==id); try{ if(ev) pushCalNotification('deleted', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
+
   let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
 
@@ -580,7 +625,7 @@ function Calendar(){
       const evs = eventsForDay(d);
       const chips = evs.map(e=>`<div class="cal-ev" title="${e.title} (${new Date(e.startISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})">
         <span class="cal-ev-dot"></span>
-        <span class="cal-ev-title" data-act="editEvent" data-arg="${e.id}">${e.title}</span>
+        <span class="cal-ev-title" data-act="openEvent" data-arg="${e.id}">${e.title}</span>
         <button class="cal-ev-del" data-act="deleteEvent" data-arg="${e.id}" title="Delete">×</button>
       </div>`).join("");
       return `<div class="cal-day ${inMonth?'':'cal-other'} ${today?'cal-today':''}" data-act="pickDay" data-arg="${d.toISOString().slice(0,10)}">
@@ -623,7 +668,7 @@ function Calendar(){
       return `<tr>
         <td>${d.toLocaleDateString()}</td>
         <td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-        <td><button class="btn light" data-act="editEvent" data-arg="${e.id}">Edit</button> ${e.title}</td>
+        <td><button class="btn light" data-act="openEvent" data-arg="${e.id}">Edit</button> ${e.title}</td>
         <td>${e.location||''}</td>
         <td>${e.ownerName||e.ownerEmail||''}</td>
         <td class="right">
