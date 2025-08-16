@@ -114,7 +114,7 @@ function statusChip(s){
   function Dashboard(){
     const rows = DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
     return Shell(`<div class="card"><h3>Welcome</h3><div class="mono">${STAMP}</div></div>
-      <div class="section"><header><h3 class="section-title">Active Cases</h3></header>'+statusPriorityLegend()+'
+      <div class="section"><header><h3 class="section-title">Active Cases</h3></header>
       <table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`, "dashboard");
   }
 
@@ -133,7 +133,7 @@ function statusChip(s){
     });
     const rows=list.map(cc=>`<tr><td>${cc.fileNumber}</td><td>${cc.title}</td><td>${cc.organisation}</td><td>${cc.investigatorName}</td><td>'+statusChip(cc.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${cc.id}">Open</button></td></tr>`).join("");
     const tools=`<div class="grid cols-3" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="${f.q||''}"><select class="input" id="flt-status"><option value="">All statuses</option>${["Planning","Investigation","Evidence Review","Reporting","Closed"].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join("")}</select><select class="input" id="flt-priority"><option value="">All priorities</option>${["Low","Medium","High","Critical"].map(s=>`<option ${f.priority===s?'selected':''}>${s}</option>`).join("")}</select></div><div id="priority-chip-preview"></div></div><div id="status-chip-preview"></div></div><div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>`;
-    return Shell(`<div class="section"><header><h3 class="section-title">Cases</h3></header>'+statusPriorityLegend()+'${tools}
+    return Shell(`<div class="section"><header><h3 class="section-title">Cases</h3></header>${tools}
       <table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,"cases");
   }
 
@@ -331,7 +331,7 @@ function statusChip(s){
     // Summary
     const recent=DATA.cases.filter(c=>c.companyId===co.id).slice(0,6);
     const summary = `<div class="tabpanel ${tab==='summary'?'active':''}">
-      <div class="card"><h3 class="section-title">Recent Cases</h3>'+statusPriorityLegend()+'
+      <div class="card"><h3 class="section-title">Recent Cases</h3>
         ${recent.length?`<table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>${recent.map(c=>`<tr><td>${c.fileNumber}</td><td>${c.title}</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("")}</tbody></table>`:`<div class="muted">No cases for this company.</div>`}
       </div>
     </div>`;
@@ -381,7 +381,10 @@ function statusChip(s){
   const Resources=()=> Shell(`<div class="card">Resources (coming soon)</div>`,"resources");
 
   // ---------- Render ----------
-  function render(){
+  
+function __postRenderEnhance(){ try{ __injectLegends(); __enhanceStatusCells(); if(typeof __refreshCaseChips==='function') __refreshCaseChips(); }catch(e){} }
+
+function render(){
     const r=App.state.route;
     const el=$("#app");
     $("#boot").textContent="Rendering "+r+"…";
