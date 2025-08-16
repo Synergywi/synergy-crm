@@ -41,3 +41,10 @@
 .modal-x{border:none;background:transparent;font-size:22px;cursor:pointer;line-height:1}
 .modal-body{padding:14px;overflow:auto}
 .modal-foot{padding:12px 16px;border-top:1px solid var(--border)}
+
+/* Sidebar icons */
+.sidebar ul li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.sidebar ul li:hover{background:rgba(15,23,42,.05)}
+.sidebar ul li.active{background:rgba(59,130,246,.1);font-weight:700}
+.nav-icon{width:18px;height:18px;stroke:var(--ico);fill:none;stroke-width:2}
+.nav-icon-wrap{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(2,6,23,.04);}

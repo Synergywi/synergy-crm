@@ -6,12 +6,28 @@ console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 // ---- Safe UI helpers (global fallbacks) ----
 if (typeof Sidebar === 'undefined') {
-  function Sidebar(active){
-    const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["companies","Companies"],["contacts","Contacts"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
-    return `<aside class="sidebar"><h3>Investigations</h3><ul>${items.map(([k,v])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
-  }
-  try { (typeof window!=='undefined'?window:self).Sidebar = Sidebar; } catch(_) {}
+  
+function Sidebar(active){
+  const items=[
+    ["dashboard","Dashboard","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 10l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z' /></svg>", "#3b82f6"],
+    ["calendar","Calendar","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 2v3M17 2v3M3 8h18M4 10h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/></svg>", "#f97316"],
+    ["cases","Cases","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/></svg>", "#8b5cf6"],
+    ["companies","Companies","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 21V7l9-4 9 4v14M9 21V9m6 12V9M3 10h18'/></svg>", "#06b6d4"],
+    ["contacts","Contacts","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM2 20a7 7 0 0 1 14 0'/></svg>", "#10b981"],
+    ["documents","Documents","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5'/></svg>", "#64748b"],
+    ["resources","Resources","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4h16v13H6.5A2.5 2.5 0 0 0 4 19.5z'/></svg>", "#eab308"],
+    ["admin","Admin","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M11 2v2M11 20v2M4.22 4.22l1.42 1.42M17.36 17.36l1.42 1.42M2 11h2M20 11h2M4.22 17.78l1.42-1.42M17.36 6.64l1.42-1.42M8 11a4 4 0 1 0 8 0a4 4 0 1 0-8 0z'/></svg>", "#0ea5e9"]
+  ];
+  return `<aside class="sidebar"><h3>Investigations</h3>
+    <ul>
+      ${items.map(([k,v,icon,color])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">
+        <span class="nav-icon-wrap" style="--ico:${color}">${icon}</span><span>${v}</span>
+      </li>`).join("")}
+    </ul>
+  </aside>`;
 }
+
+
 if (typeof Tabs === 'undefined') {
   function Tabs(scope, items){
     const cur=(App.state&&App.state.tabs&&App.state.tabs[scope]) || items[0][0];
@@ -91,10 +107,28 @@ const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,cur
 function Topbar(){
   const me=(DATA.me||{});
 
+
 function Sidebar(active){
-  const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["companies","Companies"],["contacts","Contacts"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
-  return `<aside class="sidebar"><h3>Investigations</h3><ul>${items.map(([k,v])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
+  const items=[
+    ["dashboard","Dashboard","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 10l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z' /></svg>", "#3b82f6"],
+    ["calendar","Calendar","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 2v3M17 2v3M3 8h18M4 10h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/></svg>", "#f97316"],
+    ["cases","Cases","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/></svg>", "#8b5cf6"],
+    ["companies","Companies","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 21V7l9-4 9 4v14M9 21V9m6 12V9M3 10h18'/></svg>", "#06b6d4"],
+    ["contacts","Contacts","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM2 20a7 7 0 0 1 14 0'/></svg>", "#10b981"],
+    ["documents","Documents","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5'/></svg>", "#64748b"],
+    ["resources","Resources","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4h16v13H6.5A2.5 2.5 0 0 0 4 19.5z'/></svg>", "#eab308"],
+    ["admin","Admin","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M11 2v2M11 20v2M4.22 4.22l1.42 1.42M17.36 17.36l1.42 1.42M2 11h2M20 11h2M4.22 17.78l1.42-1.42M17.36 6.64l1.42-1.42M8 11a4 4 0 1 0 8 0a4 4 0 1 0-8 0z'/></svg>", "#0ea5e9"]
+  ];
+  return `<aside class="sidebar"><h3>Investigations</h3>
+    <ul>
+      ${items.map(([k,v,icon,color])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">
+        <span class="nav-icon-wrap" style="--ico:${color}">${icon}</span><span>${v}</span>
+      </li>`).join("")}
+    </ul>
+  </aside>`;
 }
+
+
 
 
 function statusChip(status){
@@ -508,7 +542,9 @@ function render(){
 }
 
 /* events */
-document.addEventListener('click', e=>{  if(act==='openEvent'){ const ev=(DATA.calendar||[]).find(x=>x.id===arg); if(!ev) return; App.state.modalEventId=ev.id; App.set({}); return; }
+document.addEventListener('click', e=>{  if(act==='route'){ App.set({route:arg}); return; }
+  if(act==='tab'){ const parts=(arg||'').split(':'); const scope=parts[0]||'dashboard'; const key=parts[1]||'overview'; App.state.tabs[scope]=key; App.set({}); return; }
+  if(act==='openEvent'){ const ev=(DATA.calendar||[]).find(x=>x.id===arg); if(!ev) return; App.state.modalEventId=ev.id; App.set({}); return; }
   if(act==='modalClose'){ App.state.modalEventId=null; App.set({}); return; }
   if(act==='modalSaveEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return; const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||me.email===ev.ownerEmail)){ alert('No permission to edit'); return; } const title=(document.getElementById('md-ev-title')||{}).value||ev.title; const date=(document.getElementById('md-ev-date')||{}).value||ev.startISO.slice(0,10); const start=(document.getElementById('md-ev-start')||{}).value||ev.startISO.slice(11,16); const end=(document.getElementById('md-ev-end')||{}).value||ev.endISO.slice(11,16); const loc=(document.getElementById('md-ev-loc')||{}).value||ev.location||''; const type=(document.getElementById('md-ev-type')||{}).value||ev.type||'Appointment'; const owner=(DATA.me.role==='Admin'?(document.getElementById('md-ev-owner')||{}).value||ev.ownerEmail:ev.ownerEmail); const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner; const caseId=(document.getElementById('md-ev-case')||{}).value||ev.caseId||''; ev.title=title; ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00'; ev.location=loc; ev.type=type; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId; try{ pushCalNotification('updated', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
   if(act==='modalDeleteEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||(ev&&me.email===ev.ownerEmail))){ alert('No permission to delete'); return; } DATA.calendar=(DATA.calendar||[]).filter(e=>e.id!==id); try{ if(ev) pushCalNotification('deleted', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
