@@ -57,22 +57,48 @@ const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,cur
   settings:{emailAlerts:true, darkMode:false}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 /* ui helpers */
-function Topbar(){ const me=(DATA.me||{}); const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':""); const unread=(App.state.notificationsUnread||0); const bell=(me.role==="Admin"&&unread>0?`<button class="btn light" data-act="gotoNotifications">🔔 <span class="notif-badge">${unread}</span></button>`:""); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>${bell}<div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`; }
+
+function Topbar(){
+  const me=(DATA.me||{});
+
 function Sidebar(active){
-  const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
-  return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">${items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
+  const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["companies","Companies"],["contacts","Contacts"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
+  return `<aside class="sidebar"><h3>Investigations</h3><ul>${items.map(([k,v])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
 }
-function Shell(content,active){ return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div>${Modal()}<div id="boot">Ready (${BUILD})</div>`; }<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`; }
+
+
 function statusChip(status){
   const key=(status||"").toLowerCase().replace(/\s+/g,'-');
-  const cls={"planning":"status-planning","investigation":"status-investigation","evidence-review":"status-evidence-review","reporting":"status-reporting","closed":"status-closed"}[key]||"status-planning";
+  const cls={
+    "planning":"status-planning",
+    "investigation":"status-investigation",
+    "evidence-review":"status-evidence",
+    "reporting":"status-reporting",
+    "closed":"status-closed"
+  }[key]||"status-planning";
   return `<span class="chip ${cls}"><i></i>${status||''}</span>`;
 }
+  const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':"");
+  const unread=(App.state.notificationsUnread||0);
+  const bell=(me.role==="Admin" && unread>0 ? `<button class="btn light" data-act="gotoNotifications">🔔 <span class="notif-badge">${unread}</span></button>` : "");
+  return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>${bell}<div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`;
+}
+
+
+
+function Shell(content,active){
+  return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div>${Modal()}<div id="boot">Ready (${BUILD})</div>`;
+}
+
+
+
 function Tabs(scope, items){
   const cur=App.state.tabs[scope]||items[0][0];
-  const btn=(k,l)=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-scope="${scope}" data-arg="${k}">${l}</div>`;
-  return `<div class="tabs">${items.map(i=>btn(i[0],i[1])).join("")}</div>`;
+  const nav = `<div class="tabs">${items.map(([k,v])=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-arg="${scope}:${k}">${v}</div>`).join("")}</div>`;
+  return nav;
 }
+
+
 
 /* pages */
 
