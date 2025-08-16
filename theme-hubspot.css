@@ -1,0 +1,127 @@
+/* HubSpot-like bright professional theme overrides */
+:root{
+  --hs-orange: #ff7a59;
+  --hs-orange-600:#ff633a;
+  --ink:#0f1b2d;
+  --muted:#5b6b7a;
+  --bg:#f9fbfd;
+  --card:#ffffff;
+  --border:#e6edf5;
+  --row-odd:#fbfdff;
+  --row-hover:#f3f7fb;
+}
+html,body{background:var(--bg);color:var(--ink)}
+/* Topbar: white, subtle border, brand navy text */
+.topbar{
+  background:#ffffff !important;
+  color:#2e475d !important;
+  border-bottom:1px solid var(--border) !important;
+  box-shadow:0 2px 6px rgba(2,6,23,.04) !important;
+}
+.topbar .brand{color:#2e475d !important; font-weight:800; letter-spacing:.2px}
+.topbar .badge{background:#e8f7f1 !important; color:#096; border:1px solid #bfe8d6;}
+
+/* Sidebar: light with orange active accent */
+aside.sidebar{
+  background:#ffffff !important;
+  color:#334e68 !important;
+  border-right:1px solid var(--border);
+}
+aside.sidebar h3{color:#7b93a7 !important}
+.nav li{
+  color:#334e68 !important;
+  border-left:3px solid transparent !important;
+  border-radius:8px;
+}
+.nav li:hover{background:#f2f6fa !important}
+.nav li.active{
+  background:#fff !important;
+  border-left-color: var(--hs-orange) !important;
+  color:#0f1b2d !important;
+  box-shadow:inset 0 0 0 1px rgba(2,6,23,.03);
+}
+
+/* Main padding a touch more spacious */
+main.main{padding:22px !important}
+
+/* Cards */
+.card{
+  background:var(--card) !important;
+  border:1px solid var(--border) !important;
+  border-radius:14px !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04) !important;
+}
+.card:hover{box-shadow:0 6px 16px rgba(2,6,23,.06) !important}
+
+/* Sections */
+.section-title{font-size:16px !important; font-weight:700 !important}
+
+/* Inputs */
+.input, select.input, textarea.input{
+  border:1px solid #cfd8e3 !important;
+  border-radius:10px !important;
+  padding:10px 12px !important;
+  background:#fff !important;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus, select.input:focus, textarea.input:focus{
+  outline:none !important;
+  border-color: var(--hs-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255,122,89,.18) !important;
+}
+
+/* Buttons */
+.btn{
+  background: var(--hs-orange) !important;
+  border:none !important;
+  color:#fff !important;
+  border-radius:10px !important;
+  font-weight:700 !important;
+  padding:9px 14px !important;
+  box-shadow:0 6px 14px rgba(255,122,89,.18);
+  transition: transform .08s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover{background: var(--hs-orange-600) !important; transform: translateY(-1px);}
+.btn.light{background:#eef2f7 !important; color:#0f1b2d !important; box-shadow:none !important}
+.btn.light:hover{background:#e7edf5 !important}
+.btn.danger{background:#ef4444 !important}
+
+/* Tabs: underline style like HubSpot */
+.tabs{border-bottom:1px solid var(--border) !important; margin-bottom:10px !important}
+.tab{
+  background:transparent !important;
+  border:none !important;
+  border-bottom:2px solid transparent !important;
+  border-radius:0 !important;
+  color:#334e68 !important;
+  font-weight:600 !important;
+  padding:10px 12px !important;
+}
+.tab:hover{background:#f8fafc !important}
+.tab.active{
+  color: var(--hs-orange) !important;
+  border-bottom-color: var(--hs-orange) !important;
+  background:transparent !important;
+}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+
+/* Tables */
+table{background:#fff !important; border-radius:12px; overflow:hidden}
+thead th{background:#f7fafc !important; color:#6b7a89 !important}
+th,td{padding:12px !important; border-bottom:1px solid var(--border) !important}
+tbody tr:nth-child(odd){background:var(--row-odd) !important}
+tbody tr:hover{background:var(--row-hover) !important}
+
+/* Chips & misc */
+.icon-mail{background:var(--hs-orange) !important}
+.muted{color:#8a99a8 !important}
+.avatar{background:#fff5f2 !important; color:#7a2e1c !important; border:1px solid #ffe3db;}
+
+/* Boot footer */
+#boot{
+  background:rgba(255,255,255,.95);
+  border:1px solid var(--border);
+  padding:4px 8px; border-radius:8px;
+  box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
