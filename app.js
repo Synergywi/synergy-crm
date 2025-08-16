@@ -1,5 +1,5 @@
 (function(){ "use strict";
-const BUILD="v2.15.0"; const STAMP=(new Date()).toISOString();
+const BUILD="baseline-1.0.0"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* utils */
@@ -284,7 +284,59 @@ function Resources(){
   const tab=App.state.tabs.resources;
   const links=`<div class="card"><h3 class="section-title">Links</h3><div class="grid cols-2">${DATA.resources.links.map(l=>`<div><a href="${l.url}">${l.title}</a></div>`).join("")}</div></div>`;
   const faqs=`<div class="card"><h3 class="section-title">FAQs</h3>${DATA.resources.faqs.map(f=>`<div style="margin:6px 0"><strong>${esc(f.q)}</strong><div class="muted">${esc(f.a)}</div></div>`).join("")}</div>`;
-  const guides=`<div class="card"><h3 class="section-title">Guides</h3><ul>${DATA.resources.guides.map(g=>`<li>${g}</li>`).join("")}</ul></div>`;
+  const guides=`<div class="card"><h3 class="section-title">Guides</h3><ul>${DATA.resources.g
+u
+i
+d
+e
+s
+.
+m
+a
+p
+(
+g
+=
+>
+`
+<
+l
+i
+>
+$
+{
+g
+}
+<
+/
+l
+i
+>
+`
+)
+.
+j
+o
+i
+n
+(
+"
+"
+)
+}
+<
+/
+u
+l
+>
+<
+/
+d
+i
+v
+>
+`
+;
   return Shell(Tabs('resources',[['links','Links'],['faqs','FAQs'],['guides','Guides']]) + (tab==='links'?links:tab==='faqs'?faqs:guides), 'resources');
 }
 
@@ -391,5 +443,14 @@ document.addEventListener('click', e=>{
 document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
-document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Baseline Integrity Guard
+  try{
+    const reqVars=["--bg","--ink","--brand","--primary","--accent"];
+    const root=getComputedStyle(document.documentElement);
+    const miss=reqVars.filter(v=>!root.getPropertyValue(v));
+    if(miss.length) console.warn("Theme variables missing:", miss);
+  }catch(e){}
+  App.set({route:'dashboard'});
+});
 })();
