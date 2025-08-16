@@ -48,7 +48,7 @@ const findCompany=id=>DATA.companies.find(c=>c.id===id)||null;
 const findContact=id=>DATA.contacts.find(c=>c.id===id)||null;
 
 /* ---------- app shell ---------- */
-const App={state:{route:"dashboard",currentCaseId:null,currentContactId:null,asUser:null,casesFilter:{q:""}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,currentContactId:null,companyTab:"summary",asUser:null,casesFilter:{q:""}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 function Topbar(){
   let s='<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>';
@@ -169,6 +169,69 @@ function CasePage(id){
   return Shell(header + leftDetails + blocks + docs, 'cases');
 }
 
+
+function Companies(){
+  const d=App.get();
+  const countContacts = id => d.contacts.filter(c=>c.companyId===id).length;
+  const countCases = id => d.cases.filter(c=>c.companyId===id).length;
+  let rows='';
+  for(const co of d.companies){
+    rows+='<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+countContacts(co.id)+'</td><td>'+countCases(co.id)+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>';
+  }
+  const html = '<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New Company</button></header>'
+    + '<table><thead><tr><th>ID</th><th>Name</th><th>Contacts</th><th>Cases</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    + '</div>';
+  return Shell(html,'companies');
+}
+
+function CompanyPage(id){
+  const d=App.get(), co=findCompany(id);
+  if(!co){ alert('Company not found'); App.set({route:'companies'}); return Shell('<div class="card">Company not found.</div>','companies'); }
+  const tab = App.state.companyTab || 'summary';
+  const btn = (k,l)=>'<div class="tab '+(tab===k?'active':'')+'" data-act="companyTab" data-arg="'+k+'">'+l+'</div>';
+
+  const header = '<div class="card"><div style="display:flex;align-items:center;gap:10px">'
+    + '<div class="avatar" style="width:48px;height:48px;border-radius:999px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0c4a6e">'+(co.name||'')[0]+'</div>'
+    + '<div style="font-size:18px;font-weight:700">'+(co.name||'')+'</div><div class="sp"></div>'
+    + '<button class="btn light" data-act="route" data-arg="companies">Back</button></div></div>';
+
+  // Summary tab: About company + Recent cases
+  const about = '<div class="card"><h3 class="section-title">About this company</h3>'
+    + '<div class="grid cols-2" style="margin-top:8px">'
+    + '<div class="profile"><div class="kvs">'
+    + '<div class="k">ID</div><div>'+co.id+'</div>'
+    + '<div class="k">Industry</div><div>'+ (co.industry||'—') +'</div>'
+    + '<div class="k">City</div><div>'+ (co.city||'—') +'</div>'
+    + '<div class="k">Website</div><div>'+ (co.website||'—') +'</div>'
+    + '</div></div>'
+    + '</div></div>';
+
+  let rcRows='';
+  const rcases = d.cases.filter(c=>c.companyId===co.id).slice(0,5);
+  for(const c of rcases){
+    rcRows += '<tr><td>'+c.fileNumber+'</td><td>'+c.title+'</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>';
+  }
+  const recent = '<div class="card"><h3 class="section-title">Recent Cases</h3><table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+ (rcRows||'<tr><td colspan="4" class="muted">No cases.</td></tr>') +'</tbody></table></div>';
+
+  // Contacts tab
+  let ccRows='';
+  const ccs = d.contacts.filter(x=>x.companyId===co.id);
+  for(const p of ccs){
+    ccRows += '<tr><td>'+p.name+'</td><td>'+p.email+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+p.id+'">Open</button></td></tr>';
+  }
+  const coContacts = '<div class="card"><h3 class="section-title">Company Contacts</h3><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+ (ccRows||'<tr><td colspan="3" class="muted">No contacts.</td></tr>') +'</tbody></table></div>';
+
+  // Documents tab (placeholder)
+  const coDocs = '<div class="card"><h3 class="section-title">Company Documents</h3><div class="muted">Documents area coming soon.</div></div>';
+
+  const tabs = '<div class="tabs">'+btn('summary','Summary')+btn('contacts','Company Contacts')+btn('documents','Company Documents')+'</div>';
+  const body = '<div class="tabpanel '+(tab==='summary'?'active':'')+'">'+about+recent+'</div>'
+             + '<div class="tabpanel '+(tab==='contacts'?'active':'')+'">'+coContacts+'</div>'
+             + '<div class="tabpanel '+(tab==='documents'?'active':'')+'">'+coDocs+'</div>';
+  return Shell(header + '<div class="section">'+tabs+body+'</div>', 'companies');
+}
+
+
 function Contacts(){const d=App.get(); const coName=id=>{const co=findCompany(id); return co?co.name:"";}; let rows=''; for(const c of d.contacts){rows+='<tr><td>'+c.name+'</td><td>'+c.email+'</td><td>'+coName(c.companyId)+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New Contact</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');}
 
 /* ---------- render ---------- */
@@ -179,7 +242,8 @@ function render(){
   else if(r==='cases') el.innerHTML=Cases();
   else if(r==='case') el.innerHTML=CasePage(App.state.currentCaseId);
   else if(r==='contacts') el.innerHTML=Contacts();
-  else if(r==='companies') el.innerHTML='<div class="section"><header><h3 class="section-title">Companies</h3></header><div class="card muted">Company list/page intentionally trimmed for this demo build.</div>';
+  else if(r==='companies') el.innerHTML=Companies();
+  else if(r==='company') el.innerHTML=CompanyPage(App.state.currentCompanyId);
   else if(r==='documents') el.innerHTML='<div class="card">Documents</div>';
   else if(r==='resources') el.innerHTML='<div class="card">Resources</div>';
   else if(r==='admin') el.innerHTML='<div class="card">Admin not available</div>';
@@ -193,6 +257,8 @@ document.addEventListener('click',e=>{
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg'), d=App.get();
   if(act==='route'){App.set({route:arg});return;}
   if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
+  if(act==='openCompany'){App.set({currentCompanyId:arg,companyTab:'summary',route:'company'});return;}
+  if(act==='companyTab'){App.set({companyTab:arg});return;}
 
   if(act==='newCase'){
     const seq=('00'+(d.cases.length+1)).slice(-3);

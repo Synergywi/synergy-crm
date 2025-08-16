@@ -80,3 +80,11 @@ tbody tr:hover{background:var(--row-hover) !important}
 
 /* Chips from our fixed build keep working */
 .chip{border:1px solid var(--border) !important}
+
+/* Tabs (HubSpot-style underline) */
+.tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);margin:2px 0 12px}
+.tab{padding:10px 12px;border-radius:0;border-bottom:2px solid transparent;cursor:pointer;background:transparent;color:#334e68;font-weight:600}
+.tab:hover{background:#f8fafc}
+.tab.active{color:var(--hs-orange);border-bottom-color:var(--hs-orange);background:transparent}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
