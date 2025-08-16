@@ -1,4 +1,4 @@
-/* HubSpot-like bright professional theme overrides */
+/* HubSpot-like bright professional theme overrides (complete) */
 :root{
   --hs-orange: #ff7a59;
   --hs-orange-600:#ff633a;
@@ -9,23 +9,31 @@
   --border:#e6edf5;
   --row-odd:#fbfdff;
   --row-hover:#f3f7fb;
+  --success:#12b76a;
+  --danger:#ef4444;
+  --warn:#f59e0b;
+  --info:#3b82f6;
 }
+
+/* Base surface */
 html,body{background:var(--bg);color:var(--ink)}
-/* Topbar: white, subtle border, brand navy text */
+
+/* Topbar */
 .topbar{
   background:#ffffff !important;
   color:#2e475d !important;
   border-bottom:1px solid var(--border) !important;
   box-shadow:0 2px 6px rgba(2,6,23,.04) !important;
 }
-.topbar .brand{color:#2e475d !important; font-weight:800; letter-spacing:.2px}
-.topbar .badge{background:#e8f7f1 !important; color:#096; border:1px solid #bfe8d6;}
+.brand{color:#2e475d !important; font-weight:800}
+.badge{background:#e8f7f1 !important; color:#0a7a3e !important; border:1px solid #bfe8d6}
 
-/* Sidebar: light with orange active accent */
+/* Sidebar */
 aside.sidebar{
   background:#ffffff !important;
   color:#334e68 !important;
   border-right:1px solid var(--border);
+  transition: width .18s ease;
 }
 aside.sidebar h3{color:#7b93a7 !important}
 .nav li{
@@ -41,7 +49,16 @@ aside.sidebar h3{color:#7b93a7 !important}
   box-shadow:inset 0 0 0 1px rgba(2,6,23,.03);
 }
 
-/* Main padding a touch more spacious */
+/* Collapsible sidebar */
+body.sidebar-collapsed aside.sidebar{width:60px !important; padding-left:8px; padding-right:8px}
+body.sidebar-collapsed aside.sidebar h3{opacity:0; height:0; overflow:hidden; margin:0}
+body.sidebar-collapsed .nav li{padding:10px 8px}
+body.sidebar-collapsed .nav li::after{content:"•"; float:right; opacity:.25}
+body.sidebar-collapsed .nav li.active::after{opacity:.8}
+/* Hide text but keep click target */
+body.sidebar-collapsed .nav li{white-space:nowrap; overflow:hidden}
+body.sidebar-collapsed .nav li{}
+/* Main spacing */
 main.main{padding:22px !important}
 
 /* Cards */
@@ -86,7 +103,7 @@ main.main{padding:22px !important}
 .btn.light:hover{background:#e7edf5 !important}
 .btn.danger{background:#ef4444 !important}
 
-/* Tabs: underline style like HubSpot */
+/* Tabs: underline style */
 .tabs{border-bottom:1px solid var(--border) !important; margin-bottom:10px !important}
 .tab{
   background:transparent !important;
@@ -113,11 +130,31 @@ th,td{padding:12px !important; border-bottom:1px solid var(--border) !important}
 tbody tr:nth-child(odd){background:var(--row-odd) !important}
 tbody tr:hover{background:var(--row-hover) !important}
 
-/* Chips & misc */
-.icon-mail{background:var(--hs-orange) !important}
-.muted{color:#8a99a8 !important}
-.avatar{background:#fff5f2 !important; color:#7a2e1c !important; border:1px solid #ffe3db;}
+/* Chips */
+.chip{
+  display:inline-block;
+  padding:2px 10px;
+  font-size:12px;
+  border-radius:999px;
+  font-weight:700;
+  line-height:1.6;
+  border:1px solid transparent;
+}
+/* Status */
+.chip.ok{background:#eafaf1;color:#0a7a3e;border-color:#c7f0d7}
+.chip.warn{background:#fff3e8;color:#92400e;border-color:#ffe0c7}
+.chip.danger{background:#feeced;color:#9b1c1c;border-color:#ffd1d6}
+.chip.muted{background:#f1f5f9;color:#475569;border-color:#e2e8f0}
+.chip.info{background:#eef6ff;color:#1e40af;border-color:#cfe2ff}
+/* Priority */
+.chip.p-low{background:#eafaf1;color:#0a7a3e;border-color:#c7f0d7}
+.chip.p-medium{background:#eef6ff;color:#1e40af;border-color:#cfe2ff}
+.chip.p-high{background:#fff3e8;color:#92400e;border-color:#ffe0c7}
+.chip.p-critical{background:#feeced;color:#9b1c1c;border-color:#ffd1d6}
 
+/* Legend layout */
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
+.legend .label{font-size:12px;color:#6b7a89}
 /* Boot footer */
 #boot{
   background:rgba(255,255,255,.95);

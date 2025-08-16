@@ -71,7 +71,7 @@
   };
 
   // ---------- Layout ----------
-  const Topbar=()=> `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><span class="badge">Soft Stable ${BUILD}</span></div>`;
+  const Topbar=()=> `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><button class="btn light" data-act="toggleSidebar">Toggle sidebar</button> <span class="badge">Soft Stable ${BUILD}</span></div>`;
   const Sidebar=(active)=>{
     const items=[["dashboard","Dashboard"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["resources","Resources"],["admin","Admin"]];
     return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">`+
@@ -81,6 +81,18 @@
   const Shell=(content,active)=> Topbar()+`<div class="shell">`+Sidebar(active)+`<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`;
 
   // ---------- Helpers ----------
+
+// --- UI helpers ---
+function statusChip(s){
+  var t = (s||'').toLowerCase();
+  var cls = 'chip info';
+  if(t==='planning') cls='chip info';
+  else if(t==='investigation') cls='chip warn';
+  else if(t==='evidence review') cls='chip info';
+  else if(t==='reporting') cls='chip ok';
+  else if(t==='closed') cls='chip muted';
+  return '<span class="'+cls+'">'+(s||'')+'</span>';
+}
   const coName = id => (DATA.companies.find(c=>c.id===id)||{}).name || "";
   const findCase = id => DATA.cases.find(c=>c.id===id)||null;
   const findContact = id => DATA.contacts.find(c=>c.id===id)||null;
@@ -88,9 +100,9 @@
 
   // ---------- Dashboard (simple) ----------
   function Dashboard(){
-    const rows = DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${c.status}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
+    const rows = DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
     return Shell(`<div class="card"><h3>Welcome</h3><div class="mono">${STAMP}</div></div>
-      <div class="section"><header><h3 class="section-title">Active Cases</h3></header>
+      <div class="section"><header><h3 class="section-title">Active Cases</h3></header>'+statusPriorityLegend()+'
       <table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`, "dashboard");
   }
 
@@ -102,10 +114,10 @@
       const q=f.q.toLowerCase();
       return (c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);
     });
-    const rows=list.map(cc=>`<tr><td>${cc.fileNumber}</td><td>${cc.title}</td><td>${cc.organisation}</td><td>${cc.investigatorName}</td><td>${cc.status}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${cc.id}">Open</button></td></tr>`).join("");
+    const rows=list.map(cc=>`<tr><td>${cc.fileNumber}</td><td>${cc.title}</td><td>${cc.organisation}</td><td>${cc.investigatorName}</td><td>'+statusChip(cc.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${cc.id}">Open</button></td></tr>`).join("");
     const tools=`<div class="grid cols-3" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="${f.q||''}"></div>
       <div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>`;
-    return Shell(`<div class="section"><header><h3 class="section-title">Cases</h3></header>${tools}
+    return Shell(`<div class="section"><header><h3 class="section-title">Cases</h3></header>'+statusPriorityLegend()+'${tools}
       <table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,"cases");
   }
 
@@ -303,8 +315,8 @@
     // Summary
     const recent=DATA.cases.filter(c=>c.companyId===co.id).slice(0,6);
     const summary = `<div class="tabpanel ${tab==='summary'?'active':''}">
-      <div class="card"><h3 class="section-title">Recent Cases</h3>
-        ${recent.length?`<table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>${recent.map(c=>`<tr><td>${c.fileNumber}</td><td>${c.title}</td><td>${c.status}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("")}</tbody></table>`:`<div class="muted">No cases for this company.</div>`}
+      <div class="card"><h3 class="section-title">Recent Cases</h3>'+statusPriorityLegend()+'
+        ${recent.length?`<table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>${recent.map(c=>`<tr><td>${c.fileNumber}</td><td>${c.title}</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("")}</tbody></table>`:`<div class="muted">No cases for this company.</div>`}
       </div>
     </div>`;
 
@@ -379,6 +391,7 @@
     const arg=t.getAttribute("data-arg");
 
     // routing
+    if(act==="toggleSidebar"){ try{ const k="synergy_sidebar_collapsed"; const cur=document.body.classList.toggle("sidebar-collapsed"); localStorage.setItem(k, cur?"1":"0"); }catch(_){} return; }
     if(act==="route"){ App.set({route:arg}); return; }
     if(act==="openCase"){ App.set({currentCaseId:arg,caseTab:"details",route:"case"}); return; }
     if(act==="openContact"){ App.set({currentContactId:arg,contactTab:"details",route:"contact"}); return; }
