@@ -26,3 +26,6 @@
 .cal-ev-del:hover{color:#7a2e0e}
 /* Agenda table tweaks */
 .cal-wrap + .card table td, .cal-wrap + .card table th { font-size: 13px }
+
+/* Notifications */
+.notif-badge{display:inline-block;min-width:18px;padding:0 6px;height:18px;line-height:18px;border-radius:999px;background:#ef4444;color:#fff;font-weight:800;font-size:12px;vertical-align:middle}

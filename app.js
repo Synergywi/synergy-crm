@@ -57,7 +57,7 @@ const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,cur
   settings:{emailAlerts:true, darkMode:false}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 /* ui helpers */
-function Topbar(){ const me=(DATA.me||{}); const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':""); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`; }
+function Topbar(){ const me=(DATA.me||{}); const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':""); const unread=(App.state.notificationsUnread||0); const bell=(me.role==="Admin"&&unread>0?`<button class="btn light" data-act="gotoNotifications">🔔 <span class="notif-badge">${unread}</span></button>`:""); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>${bell}<div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`; }
 function Sidebar(active){
   const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
   return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">${items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
@@ -311,6 +311,34 @@ function Admin(){
   return Shell(Tabs('admin',[['users','Users'],['settings','Settings'],['audit','Audit']]) + (tab==='users'?users:tab==='settings'?settings:audit), 'admin');
 }
 
+
+/* ===== Notifications helper ===== */
+function pushCalNotification(action, ev){
+  try{
+    const item = {
+      id: uid(),
+      kind: "calendar",
+      action, // "created" | "deleted" | "updated"
+      title: ev.title || "Untitled",
+      owner: ev.ownerName || ev.ownerEmail || "",
+      ownerEmail: ev.ownerEmail || "",
+      when: new Date().toISOString(),
+      startISO: ev.startISO || "",
+      endISO: ev.endISO || ""
+    };
+    if(!Array.isArray(App.state.notifications)) App.state.notifications = [];
+    App.state.notifications.unshift(item);
+    // cap list
+    App.state.notifications = App.state.notifications.slice(0,100);
+    // unread counter (Admin-focused)
+    App.state.notificationsUnread = (App.state.notificationsUnread||0) + 1;
+    try{
+      localStorage.setItem("synergy_notifs", JSON.stringify(App.state.notifications));
+      localStorage.setItem("synergy_notifs_unread", String(App.state.notificationsUnread));
+    }catch(_){}
+  }catch(e){ console.warn("pushCalNotification failed", e); }
+}
+
 /* render */
 function render(){
   const r=App.state.route, el=document.getElementById('app');
@@ -397,6 +425,8 @@ document.addEventListener('click', e=>{
   if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; App.set({}); return; }
   if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; App.set({}); return; }
   if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); App.set({}); return; }
+  if(act==='markNotifsRead'){ App.state.notificationsUnread=0; try{ localStorage.setItem('synergy_notifs_unread','0'); }catch(_){ } App.set({}); return; }
+  if(act==='gotoNotifications'){ App.state.tabs.dashboard='overview'; App.set({route:'dashboard'}); return; }
   if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); App.set({}); return; }
 });
 
@@ -404,6 +434,7 @@ document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
+  try{ const ns=JSON.parse(localStorage.getItem('synergy_notifs')||'[]'); const nu=parseInt(localStorage.getItem('synergy_notifs_unread')||'0',10); App.state.notifications = ns; App.state.notificationsUnread = isNaN(nu)?0:nu; }catch(_){ App.state.notifications=[]; App.state.notificationsUnread=0; }
   
   // Baseline Integrity Guard
   try{
@@ -610,12 +641,16 @@ document.addEventListener('click', e=>{
     const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
     const sISO = date+"T"+start+":00";
     const eISO = date+"T"+end+":00";
-    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
+    const ev={id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type};
+    DATA.calendar.push(ev);
+    pushCalNotification('created', ev);
     alert('Event added');
     App.set({}); return;
   }
   if(act==='deleteEvent'){
-    DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
+    const ev=(DATA.calendar||[]).find(e=>e.id===arg);
+    DATA.calendar = (DATA.calendar||[]).filter(e=>e.id!==arg);
+    if(ev) pushCalNotification('deleted', ev);
     App.set({}); return;
   }
   if(act==='openEvent'){
