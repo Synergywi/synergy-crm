@@ -3,55 +3,9 @@ const BUILD="baseline-1.0.0"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* utils */
-
-// ---- Safe UI helpers (global fallbacks) ----
-if (typeof Sidebar === 'undefined') {
-  
-function Sidebar(active){
-  const items=[
-    ["dashboard","Dashboard","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 10l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z' /></svg>", "#3b82f6"],
-    ["calendar","Calendar","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 2v3M17 2v3M3 8h18M4 10h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/></svg>", "#f97316"],
-    ["cases","Cases","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/></svg>", "#8b5cf6"],
-    ["companies","Companies","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 21V7l9-4 9 4v14M9 21V9m6 12V9M3 10h18'/></svg>", "#06b6d4"],
-    ["contacts","Contacts","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM2 20a7 7 0 0 1 14 0'/></svg>", "#10b981"],
-    ["documents","Documents","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5'/></svg>", "#64748b"],
-    ["resources","Resources","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4h16v13H6.5A2.5 2.5 0 0 0 4 19.5z'/></svg>", "#eab308"],
-    ["admin","Admin","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M11 2v2M11 20v2M4.22 4.22l1.42 1.42M17.36 17.36l1.42 1.42M2 11h2M20 11h2M4.22 17.78l1.42-1.42M17.36 6.64l1.42-1.42M8 11a4 4 0 1 0 8 0a4 4 0 1 0-8 0z'/></svg>", "#0ea5e9"]
-  ];
-  return `<aside class="sidebar"><h3>Investigations</h3>
-    <ul>
-      ${items.map(([k,v,icon,color])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">
-        <span class="nav-icon-wrap" style="--ico:${color}">${icon}</span><span>${v}</span>
-      </li>`).join("")}
-    </ul>
-  </aside>`;
-}
-
-
-if (typeof Tabs === 'undefined') {
-  function Tabs(scope, items){
-    const cur=(App.state&&App.state.tabs&&App.state.tabs[scope]) || items[0][0];
-    return `<div class="tabs">${items.map(([k,v])=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-arg="${scope}:${k}">${v}</div>`).join("")}</div>`;
-  }
-  try { (typeof window!=='undefined'?window:self).Tabs = Tabs; } catch(_) {}
-}
-// --------------------------------------------
-
-
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
-// Fallback to ensure statusChip is always defined (avoids ReferenceError in templates)
-if (typeof statusChip === 'undefined') {
-  function statusChip(status){
-    var key = (status||"").toLowerCase().replace(/\s+/g,'-');
-    var map = {"planning":"status-planning","investigation":"status-investigation","evidence-review":"status-evidence","reporting":"status-reporting","closed":"status-closed"};
-    var cls = map[key] || "status-planning";
-    return `<span class="chip ${cls}"><i></i>${status||''}</span>`;
-  }
-  try { (typeof window!=='undefined'?window:self).statusChip = statusChip; } catch(_){}
-}
-
 
 /* seed */
 function mkCase(y,seq,p){
@@ -103,92 +57,31 @@ const App={state:{route:"dashboard",currentCaseId:null,currentCompanyId:null,cur
   settings:{emailAlerts:true, darkMode:false}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 /* ui helpers */
-
-function Topbar(){
-  const me=(DATA.me||{});
-
-
+function Topbar(){ const me=(DATA.me||{}); const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':""); return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`; }
 function Sidebar(active){
-  const items=[
-    ["dashboard","Dashboard","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 10l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z' /></svg>", "#3b82f6"],
-    ["calendar","Calendar","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 2v3M17 2v3M3 8h18M4 10h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/></svg>", "#f97316"],
-    ["cases","Cases","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 7h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/></svg>", "#8b5cf6"],
-    ["companies","Companies","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M3 21V7l9-4 9 4v14M9 21V9m6 12V9M3 10h18'/></svg>", "#06b6d4"],
-    ["contacts","Contacts","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM2 20a7 7 0 0 1 14 0'/></svg>", "#10b981"],
-    ["documents","Documents","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5'/></svg>", "#64748b"],
-    ["resources","Resources","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4h16v13H6.5A2.5 2.5 0 0 0 4 19.5z'/></svg>", "#eab308"],
-    ["admin","Admin","<svg class='nav-icon' viewBox='0 0 24 24'><path d='M11 2v2M11 20v2M4.22 4.22l1.42 1.42M17.36 17.36l1.42 1.42M2 11h2M20 11h2M4.22 17.78l1.42-1.42M17.36 6.64l1.42-1.42M8 11a4 4 0 1 0 8 0a4 4 0 1 0-8 0z'/></svg>", "#0ea5e9"]
-  ];
-  return `<aside class="sidebar"><h3>Investigations</h3>
-    <ul>
-      ${items.map(([k,v,icon,color])=>`<li class="${active===k?'active':''}" data-act="route" data-arg="${k}">
-        <span class="nav-icon-wrap" style="--ico:${color}">${icon}</span><span>${v}</span>
-      </li>`).join("")}
-    </ul>
-  </aside>`;
+  const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
+  return `<aside class="sidebar"><h3>Investigations</h3><ul class="nav">${items.map(([k,v])=>`<li ${active===k?'class="active"':''} data-act="route" data-arg="${k}">${v}</li>`).join("")}</ul></aside>`;
 }
-
-
-
-
+function Shell(content,active){ return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div><div id="boot">Ready (${BUILD})</div>`; }
 function statusChip(status){
   const key=(status||"").toLowerCase().replace(/\s+/g,'-');
-  const cls={
-    "planning":"status-planning",
-    "investigation":"status-investigation",
-    "evidence-review":"status-evidence",
-    "reporting":"status-reporting",
-    "closed":"status-closed"
-  }[key]||"status-planning";
+  const cls={"planning":"status-planning","investigation":"status-investigation","evidence-review":"status-evidence-review","reporting":"status-reporting","closed":"status-closed"}[key]||"status-planning";
   return `<span class="chip ${cls}"><i></i>${status||''}</span>`;
 }
-try{ (typeof window!=='undefined'?window:self).statusChip = statusChip; }catch(_){}
-  const back=(me.role!=="Admin"?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':"");
-  const unread=(App.state.notificationsUnread||0);
-  const bell=(me.role==="Admin" && unread>0 ? `<button class="btn light" data-act="gotoNotifications">🔔 <span class="notif-badge">${unread}</span></button>` : "");
-  return `<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>${bell}<div class="muted" style="margin-right:10px">You: ${me.name||"Unknown"} (${me.role||"User"})</div>${back}<span class="badge">Soft Stable ${BUILD}</span></div>`;
-}
-
-
-
-function Shell(content,active){
-  return Topbar()+`<div class="shell">${Sidebar(active)}<main class="main">${content}</main></div>${Modal()}<div id="boot">Ready (${BUILD})</div>`;
-}
-
-
-
 function Tabs(scope, items){
   const cur=App.state.tabs[scope]||items[0][0];
-  const nav = `<div class="tabs">${items.map(([k,v])=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-arg="${scope}:${k}">${v}</div>`).join("")}</div>`;
-  return nav;
+  const btn=(k,l)=>`<div class="tab ${cur===k?'active':''}" data-act="tab" data-scope="${scope}" data-arg="${k}">${l}</div>`;
+  return `<div class="tabs">${items.map(i=>btn(i[0],i[1])).join("")}</div>`;
 }
 
-
-
 /* pages */
-
 function Dashboard(){
   const tab=App.state.tabs.dashboard;
   const rows=DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${statusChip(c.status)}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
-  const isAdmin = (DATA.me && DATA.me.role === 'Admin');
-  const unread = App.state.notificationsUnread || 0;
-  const showAll = !!App.state.notificationsShowAll;
-  const visible = (App.state.notifications||[]).filter(n => showAll ? true : !n.read).slice(0,10);
-  const notifRows = visible.map(n=>{
-    const ts = new Date(n.when).toLocaleString();
-    const who = n.owner ? ` — ${n.owner}` : '';
-    const day = n.startISO ? ' ('+new Date(n.startISO).toLocaleDateString()+')' : '';
-    const actions = `<button class="btn light" data-act="openNotif" data-arg="${n.id}">Open</button> <button class="btn light" data-act="readNotif" data-arg="${n.id}">Dismiss</button>`;
-    return `<tr><td>${ts}</td><td>${n.title}${day}${who}</td><td>${n.action}</td><td class="right">${actions}</td></tr>`;
-  }).join('') || '<tr><td colspan="4" class="muted">No calendar activity yet.</td></tr>';
-  const toggler = showAll ? '<button class="btn light" data-act="notifShowUnread">Show unread</button>' : '<button class="btn light" data-act="notifShowAll">Show all</button>';
-  const notifCard = !isAdmin ? '' : `<div class="section"><header style="display:flex;align-items:center;gap:8px;justify-content:space-between"><h3 class="section-title">Calendar updates ${unread?`<span class="notif-badge">${unread}</span>`:''}</h3><div>${toggler} <button class="btn light" data-act="markNotifsRead">Mark all read</button></div></header><table><thead><tr><th>Time</th><th>Event</th><th>Action</th><th></th></tr></thead><tbody>${notifRows}</tbody></table></div>`;
-  const overview=`<div class="card"><h3>Welcome</h3><div class="muted">${STAMP}</div></div>${notifCard}<div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const overview=`<div class="card"><h3>Welcome</h3><div class="muted">${STAMP}</div></div><div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   const week=`<div class="card"><h3>This Week</h3><div class="muted">New cases: ${DATA.cases.filter(c=>c.created.startsWith(String(YEAR)+"-")).length}</div></div>`;
   return Shell(Tabs('dashboard',[['overview','Overview'],['week','This Week']]) + (tab==='overview'?overview:week), 'dashboard');
 }
-
-
 
 function Cases(){
   const tab=App.state.tabs.cases, f=App.state.casesFilter||{q:""};
@@ -248,21 +141,6 @@ function CasePage(id){
       <table><thead><tr><th>ID</th><th>Title</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>${taskRows}</tbody></table>
   </div>`;
 
-  const caseEvents = (DATA.calendar||[]).filter(e=>e.caseId===cs.id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
-  const ceRows = caseEvents.map(e=>{ const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&& (DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td>${e.title}</td><td>${e.ownerName||e.ownerEmail||''}</td><td class='right'>${canEdit?`<button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">No events for this case.</td></tr>';
-    const isAdminOwnerCase = (DATA.me && DATA.me.role==='Admin') ? `<div><label>Owner</label><select class='input' id='ev-owner'>${DATA.users.map(u=>`<option value='${u.email}' ${u.email===(cs.investigatorEmail||DATA.me.email)?'selected':''}>${u.name} (${u.role})</option>`).join('')}</select></div>` : '';
-  const caseCalAdd = `<div class='card'><h3 class='section-title'>Add case event</h3><div class='grid cols-3'>
-    <div><label>Title</label><input class='input' id='ev-title'></div>
-    <div><label>Date</label><input class='input' id='ev-date' type='date' value='${(new Date()).toISOString().slice(0,10)}'></div>
-    <div><label>Type</label><select class='input' id='ev-type'><option>Appointment</option><option>Note</option></select></div>
-    <div><label>Start</label><input class='input' id='ev-start' type='time' value='09:00'></div>
-    <div><label>End</label><input class='input' id='ev-end' type='time' value='10:00'></div>
-    <div><label>Location</label><input class='input' id='ev-loc' placeholder='Room/Zoom/etc.'></div>
-    ${isAdminOwnerCase}
-    <input type='hidden' id='ev-case' value='${cs.id}'>
-  </div><div class='right' style='margin-top:8px'><button class='btn' data-act='createEvent'>Add Event</button></div></div>`;
-  const caseCalendar = `<div class='card'><h3 class='section-title'>Case Calendar</h3><table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Owner</th><th></th></tr></thead><tbody>${ceRows}</tbody></table></div>` + caseCalAdd;
-
   const people = (()=>{
     const allCoContacts=DATA.contacts.filter(x=>x.companyId===cs.companyId);
     const opts=allCoContacts.map(p=>`<option value="${p.id}">${p.name} — ${p.email}</option>`).join("");
@@ -283,13 +161,12 @@ function CasePage(id){
   }
   const documents = '<div class="card"><h3 class="section-title">Documents</h3><div class="right" style="margin-bottom:6px"><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div><input type="file" id="file-input" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div>';
 
-  const tabs = Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People'],['calendar','Calendar']]);
+  const tabs = Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People']]);
   const body = `<div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
                 <div class="tabpanel ${tab==='notes'?'active':''}">${notes}</div>
                 <div class="tabpanel ${tab==='tasks'?'active':''}">${tasks}</div>
                 <div class="tabpanel ${tab==='documents'?'active':''}">${documents}</div>
-                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>
-                <div class="tabpanel ${tab==='calendar'?'active':''}">${caseCalendar}</div>`;
+                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>`;
   return Shell(`<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ${cs.fileNumber}</h2><div class="sp"></div><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div></div>` + tabs + body, 'cases');
 }
 
@@ -434,94 +311,6 @@ function Admin(){
   return Shell(Tabs('admin',[['users','Users'],['settings','Settings'],['audit','Audit']]) + (tab==='users'?users:tab==='settings'?settings:audit), 'admin');
 }
 
-
-/* ===== Notifications helper ===== */
-function pushCalNotification(action, ev){
-  try{
-    const item = {
-      id: uid(),
-      kind: "calendar",
-      action, // "created" | "deleted" | "updated"
-      title: ev.title || "Untitled",
-      owner: ev.ownerName || ev.ownerEmail || "",
-      ownerEmail: ev.ownerEmail || "",
-      when: new Date().toISOString(),
-      startISO: ev.startISO || "",
-      endISO: ev.endISO || ""
-    };
-    if(!Array.isArray(App.state.notifications)) App.state.notifications = [];
-    App.state.notifications.unshift(item);
-    // cap list
-    App.state.notifications = App.state.notifications.slice(0,100);
-    // unread counter (Admin-focused)
-    App.state.notificationsUnread = (App.state.notificationsUnread||0) + 1;
-    try{
-      localStorage.setItem("synergy_notifs", JSON.stringify(App.state.notifications));
-      localStorage.setItem("synergy_notifs_unread", String(App.state.notificationsUnread));
-    }catch(_){}
-  }catch(e){ console.warn("pushCalNotification failed", e); }
-}
-
-
-/* ===== Persistence (localStorage) ===== */
-function saveData(){
-  try{
-    const payload={companies:DATA.companies, contacts:DATA.contacts, cases:DATA.cases, calendar:DATA.calendar};
-    localStorage.setItem("synergy_data_v1", JSON.stringify(payload));
-  }catch(e){ console.warn("saveData failed", e); }
-}
-function loadData(){
-  try{
-    const raw=localStorage.getItem("synergy_data_v1"); if(!raw) return;
-    const obj=JSON.parse(raw)||{};
-    if(Array.isArray(obj.companies)) DATA.companies=obj.companies;
-    if(Array.isArray(obj.contacts)) DATA.contacts=obj.contacts;
-    if(Array.isArray(obj.cases)) DATA.cases=obj.cases;
-    if(Array.isArray(obj.calendar)) DATA.calendar=obj.calendar;
-  }catch(e){ console.warn("loadData failed", e); }
-}
-
-
-function Modal(){
-  const id = (App.state && App.state.modalEventId) || null;
-  if(!id) return "";
-  const ev = (DATA.calendar||[]).find(e=>e.id===id);
-  if(!ev) return "";
-  const me = DATA.me || {email:"", role:""};
-  const isAdmin = me.role==="Admin";
-  const canEdit = isAdmin || me.email===ev.ownerEmail;
-  const date = (ev.startISO||"").slice(0,10);
-  const start = (ev.startISO||"").slice(11,16);
-  const end   = (ev.endISO||"").slice(11,16);
-  const ownerSelect = isAdmin ? `<div><label>Owner</label><select class="input" id="md-ev-owner">${DATA.users.map(u=>`<option value="${u.email}" ${u.email===ev.ownerEmail?'selected':''}>${u.name} (${u.role})</option>`).join("")}</select></div>` : "";
-  const caseSelect  = `<div><label>Case (optional)</label><select class="input" id="md-ev-case"><option value="">— None —</option>${DATA.cases.map(cs=>`<option value="${cs.id}" ${cs.id===(ev.caseId||'')?'selected':''}>${cs.fileNumber} — ${cs.title}</option>`).join("")}</select></div>`;
-  return `<div class="modal-backdrop" data-act="modalClose">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-head">
-        <div class="modal-title">Edit Event</div>
-        <button class="modal-x" data-act="modalClose">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="grid cols-3">
-          <div><label>Title</label><input class="input" id="md-ev-title" value="${ev.title||''}"></div>
-          <div><label>Date</label><input class="input" id="md-ev-date" type="date" value="${date}"></div>
-          <div><label>Type</label><select class="input" id="md-ev-type"><option ${ev.type==='Appointment'?'selected':''}>Appointment</option><option ${ev.type==='Note'?'selected':''}>Note</option></select></div>
-          <div><label>Start</label><input class="input" id="md-ev-start" type="time" value="${start}"></div>
-          <div><label>End</label><input class="input" id="md-ev-end" type="time" value="${end}"></div>
-          <div><label>Location</label><input class="input" id="md-ev-loc" value="${ev.location||''}"></div>
-          ${caseSelect}
-          ${ownerSelect}
-        </div>
-      </div>
-      <div class="modal-foot right">
-        ${canEdit?'<button class="btn danger" data-act="modalDeleteEvent" data-arg="'+ev.id+'">Delete</button>':''}
-        <button class="btn light" data-act="modalClose">Cancel</button>
-        ${canEdit?'<button class="btn" data-act="modalSaveEvent" data-arg="'+ev.id+'">Save</button>':''}
-      </div>
-    </div>
-  </div>`;
-}
-
 /* render */
 function render(){
   const r=App.state.route, el=document.getElementById('app');
@@ -542,13 +331,7 @@ function render(){
 }
 
 /* events */
-document.addEventListener('click', e=>{  if(act==='route'){ App.set({route:arg}); return; }
-  if(act==='tab'){ const parts=(arg||'').split(':'); const scope=parts[0]||'dashboard'; const key=parts[1]||'overview'; App.state.tabs[scope]=key; App.set({}); return; }
-  if(act==='openEvent'){ const ev=(DATA.calendar||[]).find(x=>x.id===arg); if(!ev) return; App.state.modalEventId=ev.id; App.set({}); return; }
-  if(act==='modalClose'){ App.state.modalEventId=null; App.set({}); return; }
-  if(act==='modalSaveEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return; const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||me.email===ev.ownerEmail)){ alert('No permission to edit'); return; } const title=(document.getElementById('md-ev-title')||{}).value||ev.title; const date=(document.getElementById('md-ev-date')||{}).value||ev.startISO.slice(0,10); const start=(document.getElementById('md-ev-start')||{}).value||ev.startISO.slice(11,16); const end=(document.getElementById('md-ev-end')||{}).value||ev.endISO.slice(11,16); const loc=(document.getElementById('md-ev-loc')||{}).value||ev.location||''; const type=(document.getElementById('md-ev-type')||{}).value||ev.type||'Appointment'; const owner=(DATA.me.role==='Admin'?(document.getElementById('md-ev-owner')||{}).value||ev.ownerEmail:ev.ownerEmail); const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner; const caseId=(document.getElementById('md-ev-case')||{}).value||ev.caseId||''; ev.title=title; ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00'; ev.location=loc; ev.type=type; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId; try{ pushCalNotification('updated', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
-  if(act==='modalDeleteEvent'){ const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); const me=DATA.me||{email:'',role:''}; if(!(me.role==='Admin'||(ev&&me.email===ev.ownerEmail))){ alert('No permission to delete'); return; } DATA.calendar=(DATA.calendar||[]).filter(e=>e.id!==id); try{ if(ev) pushCalNotification('deleted', ev);}catch(_){} App.state.modalEventId=null; saveData(); App.set({}); return; }
-
+document.addEventListener('click', e=>{
   let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
 
@@ -556,7 +339,7 @@ document.addEventListener('click', e=>{  if(act==='route'){ App.set({route:arg})
   if(act==='tab'){ const scope=t.getAttribute('data-scope'); const tabs=Object.assign({},App.state.tabs); tabs[scope]=arg; App.set({tabs}); return; }
 
   if(act==='openCase'){ App.set({currentCaseId:arg,route:'case'}); return; }
-  if(act==='newCase'){ App.state.tabs.cases='new'; saveData(); App.set({}); return; }
+  if(act==='newCase'){ App.state.tabs.cases='new'; App.set({}); return; }
   if(act==='createCase'){
     const title=document.getElementById('nc-title').value||'New case';
     const org=document.getElementById('nc-org').value||'';
@@ -564,7 +347,7 @@ document.addEventListener('click', e=>{  if(act==='route'){ App.set({route:arg})
     const company=document.getElementById('nc-company').value||'C-001';
     const seq=('00'+(DATA.cases.length+1)).slice(-3);
     const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title,organisation:org,companyId:company,investigatorEmail:invEmail,investigatorName:inv.name,status:'Planning',priority:'Medium',created:(new Date()).toISOString().slice(0,7),relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); saveData(); App.set({currentCaseId:cs.id,route:'case'}); return;
+    DATA.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;
   }
   if(act==='saveCase'){
     const cs=findCase(arg); if(!cs) return;
@@ -575,58 +358,52 @@ document.addEventListener('click', e=>{  if(act==='route'){ App.set({route:arg})
     const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; }
     setIf('status',getV('c-status')); setIf('priority',getV('c-priority'));
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    alert('Case saved'); saveData(); return;
+    alert('Case saved'); return;
   }
-  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); saveData(); App.set({route:'cases'});} return; }
-  if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); saveData(); App.set({}); return; }
-  if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); saveData(); App.set({}); return; }
-  if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); saveData(); App.set({}); return; }
+  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); App.set({route:'cases'});} return; }
+  if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
+  if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return; }
+  if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); App.set({}); return; }
 
-  if(act==='linkContact'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('rel-contact'); const id=sel?sel.value:null; if(!id) return; cs.relatedContactIds=Array.from(new Set([...(cs.relatedContactIds||[]), id])); saveData(); App.set({}); return; }
-  if(act==='unlinkContact'){ const [cid,pid]=arg.split('::'); const cs=findCase(cid); if(!cs) return; cs.relatedContactIds=(cs.relatedContactIds||[]).filter(x=>x!==pid); saveData(); App.set({}); return; }
-  if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; saveData(); App.set({}); return; }
+  if(act==='linkContact'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('rel-contact'); const id=sel?sel.value:null; if(!id) return; cs.relatedContactIds=Array.from(new Set([...(cs.relatedContactIds||[]), id])); App.set({}); return; }
+  if(act==='unlinkContact'){ const [cid,pid]=arg.split('::'); const cs=findCase(cid); if(!cs) return; cs.relatedContactIds=(cs.relatedContactIds||[]).filter(x=>x!==pid); App.set({}); return; }
+  if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; App.set({}); return; }
 
   if(act==='openContact'){ App.set({currentContactId:arg,route:'contact'}); return; }
-  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); saveData(); App.set({route:'contacts'}); return; }
-  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); saveData(); App.set({route:'contacts'}); return; }
+  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); App.set({route:'contacts'}); return; }
+  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); App.set({route:'contacts'}); return; }
 
   if(act==='openCompany'){ App.set({currentCompanyId:arg,route:'company'}); return; }
-  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); saveData(); App.set({route:'companies'}); return; }
-  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); saveData(); App.set({}); return; }
+  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); App.set({route:'companies'}); return; }
+  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); App.set({}); return; }
 
-  if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; saveData(); App.set({}); return; }
+  if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; App.set({}); return; }
   if(act==='deleteCompanyFolder'){ const [id,folder]=arg.split('::'); const co=findCompany(id); if(!co) return; if(confirm('Delete folder '+folder+' ?')){ delete co.folders[folder]; App.set({}); } return; }
   if(act==='selectCompanyFiles'){ const [id,folder]=arg.split('::'); const inp=document.getElementById('company-file-input'); if(!inp) return;
     inp.onchange=function(ev){ const files=Array.from(ev.target.files||[]); const co=findCompany(id); if(!co) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[folder]) co.folders[folder]=[]; files.forEach(f=>{ const reader=new FileReader(); reader.onload=e=>{ co.folders[folder].push({name:f.name,size:(f.size||0)+' bytes',dataUrl:e.target.result}); App.set({}); }; reader.readAsDataURL(f); }); inp.value=''; };
     inp.click(); return; }
   if(act==='viewCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; const f=(co.folders[folder]||[]).find(x=>x.name===name); if(!f||!f.dataUrl){ alert('No file data.'); return; } const w=window.open(); w.document.write('<iframe src="'+f.dataUrl+'" style="border:0;width:100%;height:100%"></iframe>'); return; }
-  if(act==='removeCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; co.folders[folder]=(co.folders[folder]||[]).filter(x=>x.name!==name); saveData(); App.set({}); return; }
+  if(act==='removeCompanyDoc'){ const [id,folder,name]=arg.split('::'); const co=findCompany(id); if(!co) return; co.folders[folder]=(co.folders[folder]||[]).filter(x=>x.name!==name); App.set({}); return; }
 
-  if(act==='addFolderPrompt'){ const [id]=arg.split('::'); const nm=prompt('New folder name'); if(!nm) return; const cs=findCase(id); if(!cs) return; if(!cs.folders[nm]) cs.folders[nm]=[]; saveData(); App.set({}); return; }
+  if(act==='addFolderPrompt'){ const [id]=arg.split('::'); const nm=prompt('New folder name'); if(!nm) return; const cs=findCase(id); if(!cs) return; if(!cs.folders[nm]) cs.folders[nm]=[]; App.set({}); return; }
   if(act==='deleteFolder'){ const [id,folder]=arg.split('::'); const cs=findCase(id); if(!cs) return; if(confirm('Delete folder '+folder+' ?')){ delete cs.folders[folder]; App.set({}); } return; }
   if(act==='selectFiles'){ const [id,folder]=arg.split('::'); const inp=document.getElementById('file-input'); if(!inp) return;
     inp.onchange=function(ev){ const files=Array.from(ev.target.files||[]); const cs=findCase(id); if(!cs) return; if(!cs.folders[folder]) cs.folders[folder]=[]; files.forEach(f=>{ const reader=new FileReader(); reader.onload=e=>{ cs.folders[folder].push({name:f.name,size:(f.size||0)+' bytes',dataUrl:e.target.result}); App.set({}); }; reader.readAsDataURL(f); }); inp.value=''; };
     inp.click(); return; }
   if(act==='viewDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; const f=(cs.folders[folder]||[]).find(x=>x.name===name); if(!f||!f.dataUrl){ alert('No file data.'); return; } const w=window.open(); w.document.write('<iframe src="'+f.dataUrl+'" style="border:0;width:100%;height:100%"></iframe>'); return; }
-  if(act==='removeDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; cs.folders[folder]=(cs.folders[folder]||[]).filter(x=>x.name!==name); saveData(); App.set({}); return; }
+  if(act==='removeDoc'){ const [id,folder,name]=arg.split('::'); const cs=findCase(id); if(!cs) return; cs.folders[folder]=(cs.folders[folder]||[]).filter(x=>x.name!==name); App.set({}); return; }
 
   if(act==='downloadTemplate'){ alert('Downloading '+arg+' ... (demo)'); return; }
-  if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; saveData(); App.set({}); return; }
-  if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; saveData(); App.set({}); return; }
-  if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); saveData(); App.set({}); return; }
-  if(act==='readNotif'){ const id=arg; const list=App.state.notifications||[]; const it=list.find(n=>n.id===id); if(it && !it.read){ it.read=true; App.state.notificationsUnread=Math.max(0,(App.state.notificationsUnread||0)-1); try{ localStorage.setItem('synergy_notifs', JSON.stringify(list)); localStorage.setItem('synergy_notifs_unread', String(App.state.notificationsUnread)); }catch(_){ } App.set({}); } return; }
-if(act==='openNotif'){ const id=arg; const list=App.state.notifications||[]; const it=list.find(n=>n.id===id); if(it){ if(!it.read){ it.read=true; App.state.notificationsUnread=Math.max(0,(App.state.notificationsUnread||0)-1); } try{ localStorage.setItem('synergy_notifs', JSON.stringify(list)); localStorage.setItem('synergy_notifs_unread', String(App.state.notificationsUnread)); }catch(_){ } if(it.startISO){ const d=new Date(it.startISO); const ym = d.toISOString().slice(0,7); App.state.calendar=Object.assign({},App.state.calendar,{ym,selectedDate:d.toISOString().slice(0,10),view:'agenda'}); } App.set({route:'calendar'}); } return; }
-if(act==='markNotifsRead'){ App.state.notificationsUnread=0; try{ localStorage.setItem('synergy_notifs_unread','0'); }catch(_){ } saveData(); App.set({}); return; }
-  if(act==='gotoNotifications'){ App.state.tabs.dashboard='overview'; App.set({route:'dashboard'}); return; }
-  if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); saveData(); App.set({}); return; }
+  if(act==='addUser'){ DATA.users.push({name:'New User',email:'user'+(DATA.users.length+1)+'@synergy.com',role:'Investigator'}); App.state.audit=[...(App.state.audit||[]), 'User added '+(new Date()).toLocaleString()]; App.set({}); return; }
+  if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; App.set({}); return; }
+  if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); App.set({}); return; }
+  if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); App.set({}); return; }
 });
 
 document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
-  try{ const ns=JSON.parse(localStorage.getItem('synergy_notifs')||'[]'); const nu=parseInt(localStorage.getItem('synergy_notifs_unread')||'0',10); App.state.notifications = ns; App.state.notificationsUnread = isNaN(nu)?0:nu; }catch(_){ App.state.notifications=[]; App.state.notificationsUnread=0; }
-  loadData();
   
   // Baseline Integrity Guard
   try{
@@ -678,7 +455,7 @@ if(!DATA.calendar){ DATA.calendar=[]; }
     ev(21,13,14, u[2], "Draft report sync", "Zoom", "Appointment"),
     ev(26, 9,10, u[0], "Admin all-hands", "Boardroom", "Appointment")
   );
-
+})();
 
 // App state for calendar
 if(!App.state.calendar){ App.state.calendar={ view:"month", ym:(new Date()).toISOString().slice(0,7), selectedDate:(new Date()).toISOString().slice(0,10), filterUsers:"ALL" }; }
@@ -761,7 +538,7 @@ function Calendar(){
       return `<tr>
         <td>${d.toLocaleDateString()}</td>
         <td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-        <td><button class="btn light" data-act="openEvent" data-arg="${e.id}">Edit</button> ${e.title}</td>
+        <td>${e.title}</td>
         <td>${e.location||''}</td>
         <td>${e.ownerName||e.ownerEmail||''}</td>
         <td class="right">
@@ -774,14 +551,9 @@ function Calendar(){
       <tbody>${rows}</tbody></table></div>`;
   })();
 
-    const editId = (App.state.calendar||{}).editId;
-  const editing = editId ? (DATA.calendar||[]).find(e=>e.id===editId) : null;
-  const editBanner = editing ? `<div class="card"><strong>Editing:</strong> ${editing.title} — ${new Date(editing.startISO).toLocaleString()} <div class="right"><button class="btn" data-act="saveEventEdit">Save changes</button> <button class="btn light" data-act="cancelEventEdit">Cancel</button></div></div>` : '';
-
-const form = (()=>{
+  const form = (()=>{
     const selDate = calState.selectedDate || new Date().toISOString().slice(0,10);
     const isAdminOwner = isAdmin ? `<div><label>Owner</label><select class="input" id="ev-owner">${DATA.users.map(u=>`<option value="${u.email}" ${u.email===me.email?'selected':''}>${u.name}</option>`).join("")}</select></div>` : "";
-    const caseSelect = `<div><label>Case (optional)</label><select class="input" id="ev-case"><option value="">— None —</option>${DATA.cases.map(cs=>`<option value="${cs.id}">${cs.fileNumber} — ${cs.title}</option>`).join("")}</select></div>`;
     return `<div class="card"><h3 class="section-title">Add ${isAdmin?"Event (any user)":"My Event"}</h3>
       <div class="grid cols-3">
         <div><label>Title</label><input class="input" id="ev-title" placeholder="Appointment or note"></div>
@@ -790,7 +562,6 @@ const form = (()=>{
         <div><label>Start</label><input class="input" id="ev-start" type="time" value="09:00"></div>
         <div><label>End</label><input class="input" id="ev-end" type="time" value="10:00"></div>
         <div><label>Location</label><input class="input" id="ev-loc" placeholder="Room/Zoom/etc."></div>
-        ${caseSelect}
         ${isAdminOwner}
       </div>
       <div class="right" style="margin-top:8px">
@@ -798,7 +569,6 @@ const form = (()=>{
       </div>
     </div>`;
   })();
-
 
   const monthGrid = `<div class="card"><div class="cal-wrap">${toolbar}
       <div class="cal-head">
@@ -840,40 +610,13 @@ document.addEventListener('click', e=>{
     const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
     const sISO = date+"T"+start+":00";
     const eISO = date+"T"+end+":00";
-    const caseId = (document.getElementById('ev-case')||{}).value || '';
-    const ev={id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId};
-    DATA.calendar.push(ev); saveData();
-    pushCalNotification('created', ev);
+    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
     alert('Event added');
-    saveData(); App.set({}); return;
+    App.set({}); return;
   }
-  if(act==='editEvent'){
-  const id=arg; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return;
-  const me=DATA.me||{email:'',role:''}; const canEdit=(me.role==='Admin'||me.email===ev.ownerEmail);
-  if(!canEdit){ alert('You do not have permission to edit this event.'); return; }
-  App.state.calendar = Object.assign({}, App.state.calendar, { editId:id, view:'month' }); saveData(); App.set({}); return;
-}
-if(act==='saveEventEdit'){
-  const id=(App.state.calendar||{}).editId; if(!id) return; const ev=(DATA.calendar||[]).find(e=>e.id===id); if(!ev) return;
-  const title=(document.getElementById('ev-title')||{}).value||ev.title;
-  const date=(document.getElementById('ev-date')||{}).value||ev.startISO.slice(0,10);
-  const start=(document.getElementById('ev-start')||{}).value||ev.startISO.slice(11,16);
-  const end=(document.getElementById('ev-end')||{}).value||ev.endISO.slice(11,16);
-  const loc=(document.getElementById('ev-loc')||{}).value||ev.location||'';
-  const type=(document.getElementById('ev-type')||{}).value||ev.type||'Appointment';
-  const owner=(DATA.me.role==='Admin'?(document.getElementById('ev-owner')||{}).value||ev.ownerEmail:ev.ownerEmail);
-  const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner;
-  const caseId=(document.getElementById('ev-case')||{}).value||ev.caseId||'';
-  ev.title=title; ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00'; ev.location=loc; ev.type=type; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId;
-  try{ pushCalNotification('updated', ev); }catch(_){ }
-  App.state.calendar.editId=null; alert('Event updated'); saveData(); App.set({}); return;
-}
-if(act==='cancelEventEdit'){ App.state.calendar.editId=null; saveData(); App.set({}); return; }
-if(act==='deleteEvent'){
-    const ev=(DATA.calendar||[]).find(e=>e.id===arg);
-    DATA.calendar = (DATA.calendar||[]).filter(e=>e.id!==arg); saveData();
-    if(ev) pushCalNotification('deleted', ev);
-    saveData(); App.set({}); return;
+  if(act==='deleteEvent'){
+    DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
+    App.set({}); return;
   }
   if(act==='openEvent'){
     const ev=(DATA.calendar||[]).find(x=>x.id===arg);
@@ -890,3 +633,4 @@ document.addEventListener('change', e=>{
 });
 /* ===== End Calendar Feature ===== */
 
+})();
