@@ -1,1 +1,1 @@
-// settings extension hook
+// org settings hook

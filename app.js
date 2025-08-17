@@ -1,6 +1,7 @@
-// Synergy CRM SPA — solid baseline
+// Solid SPA logic with HubSpot visuals preserved
 const App = { state:{ route:'dashboard', view:'month', notifications:[], notificationsUnread:0, showUnread:false, filterOwner:'All', tab:null, modal:false, openEventId:null, params:{} } };
 const DATA = JSON.parse(localStorage.getItem('SYNERGY_DATA')||'null') || seedData();
+
 function seedData(){
   return {
     me:{ id:'u-admin', name:'Admin', role:'Admin', email:'admin@synergy.com'},
@@ -28,16 +29,24 @@ function seedData(){
 function persist(){ localStorage.setItem('SYNERGY_DATA', JSON.stringify(DATA)); }
 function userById(id){ return DATA.users.find(u=>u.id===id) || {name:'Unknown'}; }
 function today(){ return new Date().toISOString().slice(0,10); }
-
 function statusChip(s){
   const map={Planning:'plan', Investigation:'invest', 'Evidence Review':'review', Reporting:'report', Closed:'closed'};
   const cls=map[s]||'plan';
   return `<span class="status ${cls}">${s}</span>`;
 }
-
 function Shell(content,active){
   const me=DATA.me;
   const unread=(me.role==='Admin')?App.state.notificationsUnread:0;
+  const nav=[
+    ['dashboard','🏠','Dashboard'],
+    ['calendar','🗓️','Calendar'],
+    ['cases','🧾','Cases'],
+    ['companies','🏢','Companies'],
+    ['contacts','👤','Contacts'],
+    ['documents','📄','Documents'],
+    ['resources','🔗','Resources'],
+    ['admin','⚙️','Admin']
+  ];
   return `<div class="topbar">
     <div class="brand">Synergy CRM</div>
     <div class="sp"></div>
@@ -50,15 +59,14 @@ function Shell(content,active){
     <aside class="sidebar">
       <h3>Navigation</h3>
       <ul class="nav">
-        ${['dashboard','calendar','cases','companies','contacts','documents','resources','admin'].map(r=>`
-          <li class="${active===r?'active':''}" data-route="${r}">${r[0].toUpperCase()+r.slice(1)}</li>`).join('')}
+        ${nav.map(([r,ic,label])=>`<li class="${active===r?'active':''}" data-route="${r}"><span class="icon">${ic}</span><span>${label}</span></li>`).join('')}
       </ul>
     </aside>
     <main class="main">${content}</main>
   </div>`;
 }
 
-// Dashboard with Calendar Updates card for Admin
+// Dashboard & Notifications
 function Dashboard(){
   const me=DATA.me;
   const notifCard = me.role==='Admin' ? CardCalendarUpdates() : '';
@@ -86,7 +94,7 @@ function CardCalendarUpdates(){
   </div>`;
 }
 
-// Calendar views
+// Calendar
 function Calendar(){
   const me=DATA.me;
   const view=App.state.view||'month';
@@ -113,7 +121,7 @@ function MonthGrid(){
   const dt=new Date();
   const year=dt.getFullYear(), month=dt.getMonth();
   const first=new Date(year,month,1);
-  const start=new Date(first); start.setDate(1 - ((first.getDay()+6)%7)); // start Monday
+  const start=new Date(first); start.setDate(1 - ((first.getDay()+6)%7)); // Monday
   const cells=[];
   for(let i=0;i<42;i++){
     const d=new Date(start); d.setDate(start.getDate()+i);
@@ -287,14 +295,14 @@ function ContactPage(id){
 function Documents(){ return Shell(`<div class="card"><h3>Documents</h3><div class="muted">Upload/remove/preview (demo placeholder)</div></div>`,'documents'); }
 function Resources(){ return Shell(`<div class="card"><h3>Resources</h3><div class="muted">Links & Docs (demo placeholder)</div></div>`,'resources'); }
 
-// Admin users & impersonation
+// Admin
 function Admin(){
   const rows = DATA.users.map(u=>`<tr><td>${u.name}</td><td>${u.role}</td>
     <td>${u.id===DATA.me.id?'<span class="status plan">You</span>':`<button class="btn" data-act="impersonate" data-id="${u.id}">Impersonate</button>`}</td></tr>`).join('');
   return Shell(`<div class="card"><h3>Users</h3><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,'admin');
 }
 
-// Render & wire
+// Render & Wire
 function render(){
   const r=App.state.route;
   let html='';
@@ -402,8 +410,7 @@ function renderModal(){
     </div>
   </div>`;
 }
-function mount(){ document.getElementById('app').innerHTML = (renderModal()||'') + (App._lastHTML||''); }
-function rerender(){ App._lastHTML = (function(){ const r=App.state.route;
+function render(){ const html=(function(){ const r=App.state.route;
   if(r==='dashboard') return Dashboard();
   if(r==='calendar') return Calendar();
   if(r==='cases') return Cases();
@@ -416,8 +423,6 @@ function rerender(){ App._lastHTML = (function(){ const r=App.state.route;
   if(r==='company') return CompanyPage(App.state.params.id);
   if(r==='contact') return ContactPage(App.state.params.id);
   return '<div class="card">Not found</div>';
-})(); mount(); wire(); }
-function render(){ rerender(); }
+})(); document.getElementById('app').innerHTML = renderModal()+html; wire(); }
 
-// Boot
 window.addEventListener('DOMContentLoaded', ()=>{ App.state.route='dashboard'; render(); });
