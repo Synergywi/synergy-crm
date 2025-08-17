@@ -1,1 +1,1 @@
-window.Toolbar={};
+window.Toolbar = {};

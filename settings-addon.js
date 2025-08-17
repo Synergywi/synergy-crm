@@ -1,1 +1,1 @@
-// reserved for org-specific overrides
+// settings extension hook
