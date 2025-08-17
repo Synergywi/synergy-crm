@@ -1,1 +1,1 @@
-// settings hook (kept for compatibility)
+// settings addon placeholder

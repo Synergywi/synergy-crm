@@ -1,1 +1,1 @@
-window.Toolbar = {};
+// toolbar placeholder

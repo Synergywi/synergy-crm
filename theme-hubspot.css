@@ -1,19 +1,17 @@
-/* HubSpot orange/teal theme override (drop-in) */
-:root{
-  --bg:#f7f9fc; --ink:#0f1b2d; --muted:#64748b;
-  --brand:#0b2b3d; --brand2:#103245; --brandGrad2:#14506a;
-  --primary:#ff7a59; --primary-ink:#fff;
-  --border:#e2e8f0; --card:#ffffff;
-  --chip-plan:#7c3aed; --chip-invest:#06b6d4; --chip-review:#f59e0b; --chip-report:#10b981; --chip-closed:#9ca3af;
-}
-.topbar{background:linear-gradient(90deg,var(--brand),var(--brandGrad2)) !important;}
-aside.sidebar{background:var(--brand2) !important; color:#cfe9f4 !important;}
-.nav li.active{background:#10435d !important; border-left-color:#31a6ff !important;}
-.btn.primary{background:var(--primary) !important; border-color:var(--primary) !important; color:var(--primary-ink) !important;}
-.card{background:#ffffff !important; box-shadow:0 1px 2px rgba(16,24,40,.06) !important;}
-.modal-under{background:rgba(0,0,0,.35) !important;}
-.status.plan{background:#7c3aed !important;}
-.status.invest{background:#06b6d4 !important;}
-.status.review{background:#f59e0b !important;}
-.status.report{background:#10b981 !important;}
-.status.closed{background:#9ca3af !important;}
+
+:root{ --hs-orange:#ff7a59; --hs-orange-600:#ff633a; --border:#e6edf5; }
+.topbar{ background:#fff !important; color:#2e475d !important; border-bottom:1px solid var(--border) !important; box-shadow:0 2px 6px rgba(2,6,23,.05) !important; }
+.topbar .brand{ color:#2e475d !important }
+aside.sidebar{ background:#fff !important; color:#334e68 !important; border-right:1px solid var(--border) !important; }
+aside.sidebar h3{ color:#7b93a7 !important }
+.nav li{ color:#334e68 !important; border-left:3px solid transparent !important; border-radius:8px }
+.nav li:hover{ background:#f2f6fa !important }
+.nav li.active{ background:#fff !important; color:#0f1b2d !important; border-left-color:var(--hs-orange) !important; box-shadow:inset 0 0 0 1px rgba(2,6,23,.04) }
+.card{ background:#fff !important; border:1px solid var(--border) !important; border-radius:14px !important; box-shadow:0 1px 2px rgba(16,24,40,.04) !important; }
+.input{ border:1px solid #cfd8e3 !important; border-radius:10px !important; padding:10px 12px !important; }
+.input:focus{ outline:none !important; border-color:var(--hs-orange) !important; box-shadow:0 0 0 3px rgba(255,122,89,.18) !important; }
+.btn{ background:var(--hs-orange) !important; border-radius:10px !important; font-weight:700 !important; padding:9px 14px !important; }
+.btn:hover{ background:var(--hs-orange-600) !important; }
+.btn.light{ background:#eef2f7 !important; color:#0f1b2d !important }
+thead th{ background:#f7fafc !important; color:#6b7a89 !important }
+th,td{ padding:12px !important; border-bottom:1px solid var(--border) !important }

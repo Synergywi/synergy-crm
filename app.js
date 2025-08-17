@@ -1,417 +1,239 @@
-// HubSpot-styled SPA with full calendar features, no freeze, opaque cards
-const App = { state:{ route:'dashboard', view:'month', notifications:[], notificationsUnread:0, showUnread:false, filterOwner:'All', tab:null, modal:false, openEventId:null, params:{} } };
-const DATA = JSON.parse(localStorage.getItem('SYNERGY_DATA')||'null') || seedData();
-
-function seedData(){
-  return {
-    me:{ id:'u-admin', name:'Admin', role:'Admin', email:'admin@synergy.com'},
-    users:[
-      {id:'u-admin', name:'Admin', role:'Admin', email:'admin@synergy.com'},
-      {id:'u-1', name:'Investigator', role:'Investigator', email:'inv1@synergy.com'},
-      {id:'u-2', name:'Analyst', role:'Investigator', email:'inv2@synergy.com'}
-    ],
-    cases:[
-      {id:'C-1001', title:'Procurement Irregularities', companyId:'CO-1', investigator:'u-1', status:'Investigation', priority:'High', fileNo:'F-2025-01', organisation:'Synergy Gov'},
-      {id:'C-1002', title:'Travel Expenses Review', companyId:'CO-2', investigator:'u-2', status:'Planning', priority:'Medium', fileNo:'F-2025-02', organisation:'Synergy Gov'}
-    ],
-    companies:[
-      {id:'CO-1', name:'Acme Pty Ltd', industry:'Manufacturing', city:'Brisbane'},
-      {id:'CO-2', name:'Globex Ltd', industry:'Finance', city:'Sydney'}
-    ],
-    contacts:[
-      {id:'P-1', name:'Jessie Shaw', email:'jessie@acme.test', phone:'0412 000 111', companyId:'CO-1'},
-      {id:'P-2', name:'Riley Tran', email:'riley@globex.test', phone:'0413 000 222', companyId:'CO-2'}
-    ],
-    notes:{}, tasks:{}, documents:{}, people:{},
-    events:[]
-  };
+(function(){ "use strict";
+const BUILD="v2.10.9"; const STAMP=(new Date()).toISOString();
+console.log("Synergy CRM "+BUILD+" • "+STAMP);
+// ---- Session helpers (normalize & persist) ----
+const SESS_STORE_KEY = 'synergy_userSessions_v1';
+function normEmail(e){ return (e||'').trim().toLowerCase(); }
+function sessionKeyForEmail(e){ const s=normEmail(e); return s||null; }
+function sessionKeyForContact(c){
+  const e = sessionKeyForEmail(c && c.email);
+  return e ? ('mail:'+e) : (c && c.id ? ('contact:'+c.id) : null);
 }
-function persist(){ localStorage.setItem('SYNERGY_DATA', JSON.stringify(DATA)); }
-function userById(id){ return DATA.users.find(u=>u.id===id) || {name:'Unknown'}; }
-function today(){ return new Date().toISOString().slice(0,10); }
-function statusChip(s){
-  const map={Planning:'plan', Investigation:'invest', 'Evidence Review':'review', Reporting:'report', Closed:'closed'};
-  const cls=map[s]||'plan';
-  return `<span class="status ${cls}">${s}</span>`;
+function loadUserSessions(){
+  try{
+    const raw = localStorage.getItem(SESS_STORE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    DATA.userSessions = DATA.userSessions || {};
+    Object.keys(obj||{}).forEach(k=>{ DATA.userSessions[k]=obj[k]; });
+    Object.keys(DATA.userSessions||{}).forEach(k=>{
+      if(k.indexOf('mail:')===0 || k.indexOf('contact:')===0) return;
+      const nk = 'mail:'+normEmail(k);
+      if(!DATA.userSessions[nk]) DATA.userSessions[nk]=DATA.userSessions[k];
+      if(nk!==k) delete DATA.userSessions[k];
+    });
+  }catch(e){ DATA.userSessions = DATA.userSessions || {}; }
 }
-function Shell(content,active){
-  const me=DATA.me;
-  const unread=(me.role==='Admin')?App.state.notificationsUnread:0;
-  const nav=[
-    ['dashboard','🏠','Dashboard'],
-    ['calendar','🗓️','Calendar'],
-    ['cases','🧾','Cases'],
-    ['companies','🏢','Companies'],
-    ['contacts','👤','Contacts'],
-    ['documents','📄','Documents'],
-    ['resources','🔗','Resources'],
-    ['admin','⚙️','Admin']
-  ];
-  return `<div class="topbar">
-    <div class="brand">Synergy CRM</div>
-    <div class="sp"></div>
-    ${me.role==='Admin' && unread>0? `<span class="notif">${unread}</span>`:''}
-    <div class="muted">You: ${me.name} (${me.role})</div>
-    ${me.role!=='Admin'?'<button class="btn light" data-act="clearImpersonation">Switch to Admin</button>':''}
-    <span class="badge">Soft Stable ${window.BUILD||''}</span>
-  </div>
-  <div class="shell">
-    <aside class="sidebar">
-      <h3>Navigation</h3>
-      <ul class="nav">
-        ${nav.map(([r,ic,label])=>`<li class="${active===r?'active':''}" data-route="${r}"><span class="icon">${ic}</span><span>${label}</span></li>`).join('')}
-      </ul>
-    </aside>
-    <main class="main">${content}</main>
-  </div>`;
+function saveUserSessions(){
+  try{ localStorage.setItem(SESS_STORE_KEY, JSON.stringify(DATA.userSessions||{})); }catch(e){}
 }
 
-// Dashboard & Notifications
-function Dashboard(){
-  const me=DATA.me;
-  const notifCard = me.role==='Admin' ? CardCalendarUpdates() : '';
-  const summary = `<div class="card"><h3>Welcome</h3><div class="muted">Landed on Dashboard.</div></div>`;
-  return Shell(`<div class="grid">${notifCard}${summary}</div>`,'dashboard');
-}
-function CardCalendarUpdates(){
-  const unread=App.state.notificationsUnread;
-  const showUnread=App.state.showUnread;
-  const list=(showUnread? App.state.notifications.filter(n=>!n.read) : App.state.notifications);
-  const rows = list.length ? list.map(n=>{
-    const e=n.payload||{};
-    const who=userById(e.owner||'').name||'-';
-    const when=new Date(n.ts).toLocaleString();
-    return `<tr><td class="small">${when}</td><td>${e.title||''}</td><td>${who}</td>
-      <td><button class="btn" data-act="openNotif" data-id="${n.id}">Open</button>
-          <button class="btn light" data-act="dismissNotif" data-id="${n.id}">Dismiss</button></td></tr>`;
-  }).join('') : `<tr><td colspan="4" class="muted">No calendar activity</td></tr>`;
-  return `<div class="card">
-    <div class="section"><header><h3 class="section-title">Calendar updates ${unread>0?`<span class="notif">${unread}</span>`:''}</h3>
-      <div class="toolbar">
-        <button class="btn light" data-act="toggleShowUnread">${showUnread?'Show all':'Show unread'}</button>
-        <button class="btn" data-act="markAllRead">Mark all read</button>
-      </div></header></div>
-    <table><thead><tr><th>When</th><th>Title</th><th>Owner</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
-}
+function uid(){return "id-"+Math.random().toString(36).slice(2,9);}
+const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
 
-// Calendar
-function Calendar(){
-  const me=DATA.me;
-  const view=App.state.view||'month';
-  const ownerFilterUI = (me.role==='Admin') ? `<label class="small">Owner</label>
-      <select id="ownerFilter">
-        <option>All</option>${DATA.users.map(u=>`<option ${App.state.filterOwner===u.id?'selected':''} value="${u.id}">${u.name}</option>`).join('')}
-      </select>` : '';
-  const header = `<div class="card">
-    <div class="toolbar">
-      <button class="btn" data-act="gotoMonth">Month</button>
-      <button class="btn" data-act="gotoAgenda">Agenda</button>
-      <div class="sp"></div>
-      ${ownerFilterUI}
-    </div>
-    ${view==='month'? MonthGrid() : AgendaTable()}
-  </div>
-  <div class="card">
-    <h3>Add Event</h3>
-    ${AddEventForm()}
-  </div>`;
-  return Shell(header,'calendar');
-}
-function MonthGrid(){
-  const dt=new Date();
-  const year=dt.getFullYear(), month=dt.getMonth();
-  const first=new Date(year,month,1);
-  const start=new Date(first); start.setDate(1 - ((first.getDay()+6)%7)); // Monday
-  const cells=[];
-  for(let i=0;i<42;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i);
-    const dstr=d.toISOString().slice(0,10);
-    const inMonth=(d.getMonth()===month);
-    const events = visibleEvents().filter(e=>e.date===dstr);
-    cells.push(`<div class="calendar-cell ${inMonth?'':'muted'}">
-      <div class="small">${d.getDate()}</div>
-      ${events.map(e=>`<a class="event-chip" data-act="openEvent" data-id="${e.id}">${e.title}</a>`).join('')}
-    </div>`);
-  }
-  return `<div class="calendar-grid">${cells.join('')}</div>`;
-}
-function AgendaTable(){
-  const list = visibleEvents().sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
-  return `<table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Owner</th><th></th></tr></thead><tbody>${
-    list.map(e=>`<tr>
-      <td>${e.date}</td><td>${e.start||''}–${e.end||''}</td><td>${e.title}</td><td>${userById(e.owner).name}</td>
-      <td><button class="btn" data-act="editEvent" data-id="${e.id}">Edit</button>
-          <button class="btn" data-act="deleteEvent" data-id="${e.id}">Delete</button></td>
-    </tr>`).join('')
-  }</tbody></table>`;
-}
-function visibleEvents(){
-  const me=DATA.me, isAdmin=me.role==='Admin';
-  let list=DATA.events.slice();
-  if(!isAdmin) list=list.filter(e=>e.owner===me.id);
-  if(isAdmin && App.state.filterOwner && App.state.filterOwner!=='All'){
-    list=list.filter(e=>e.owner===App.state.filterOwner);
-  }
-  return list;
-}
-function AddEventForm(){
-  const me=DATA.me;
-  return `<div class="grid cols-3">
-    <div><label>Title</label><input class="input" id="evTitle" placeholder="Title"></div>
-    <div><label>Date</label><input class="input" id="evDate" type="date" value="${today()}"></div>
-    <div><label>Type</label><select class="select" id="evType"><option>Meeting</option><option>Call</option><option>Site Visit</option></select></div>
-    <div><label>Start</label><input class="input" id="evStart" type="time" value="09:00"></div>
-    <div><label>End</label><input class="input" id="evEnd" type="time" value="10:00"></div>
-    <div><label>Location</label><input class="input" id="evLoc" placeholder="Location"></div>
-    <div><label>Case (optional)</label><select class="select" id="evCase"><option value="">—</option>${
-      DATA.cases.map(c=>`<option value="${c.id}">${c.id} — ${c.title}</option>`).join('')
-    }</select></div>
-    <div><label>Owner</label><select class="select" id="evOwner">${
-      DATA.users.map(u=>`<option value="${u.id}" ${u.id===me.id?'selected':''}>${u.name}</option>`).join('')
-    }</select></div>
-    <div style="align-self:end"><button class="btn primary" data-act="addEvent">Add Event</button></div>
-  </div>`;
-}
+// Seed
+function mkCase(y,seq,p){let b={id:uid(),fileNumber:"INV-"+y+"-"+("00"+seq).slice(-3),title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+("0"+((seq%12)||1)).slice(-2),notes:[],tasks:[],folders:{General:[]}}; Object.assign(b,p||{}); return b;}
+const DATA={
+  users:[
+    {name:"Admin",email:"admin@synergy.com",role:"Admin"},
+    {name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},
+    {name:"Priya Menon",email:"priya@synergy.com",role:"Investigator"},
+    {name:"Chris Rice",email:"chris@synergy.com",role:"Reviewer"}
+  ],
+  companies:[
+    {id:"C-001",name:"Sunrise Mining Pty Ltd",folders:{General:[]}},
+    {id:"C-002",name:"City of Melbourne",folders:{General:[]}},
+    {id:"C-003",name:"Queensland Health (Metro North)",folders:{General:[]}}
+  ],
+  contacts:[
+    {id:uid(),name:"Alex Ng",email:"alex@synergy.com",companyId:"C-001",notes:""},
+    {id:uid(),name:"Priya Menon",email:"priya@synergy.com",companyId:"C-003",notes:""},
+    {id:uid(),name:"Chris Rice",email:"chris@synergy.com",companyId:"C-002",notes:""}
+  ],
+  cases:[
+    mkCase(LAST,101,{title:"Safety complaint – workshop",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Closed",priority:"Medium",created:LAST+"-01"}),
+    mkCase(LAST,102,{title:"Bullying allegation – IT",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Closed",priority:"High",created:LAST+"-07"}),
+    mkCase(YEAR,1,{title:"Bullying complaint in Finance",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Investigation",priority:"High",created:YEAR+"-01"}),
+    mkCase(YEAR,2,{title:"Sexual harassment allegation at Brisbane site",organisation:"Queensland Health (Metro North)",companyId:"C-003",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Planning",priority:"Critical",created:YEAR+"-06"}),
+    mkCase(YEAR,3,{title:"Misconduct – data exfiltration",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"chris@synergy.com",investigatorName:"Chris Rice",status:"Evidence Review",priority:"Medium",created:YEAR+"-07"})
+  ],
+  resources:{templates:[],procedures:[]},
+  timesheets:[],
+  me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
+};
+
+// Ensure one contact has email & a little session history for demo
+(function(){
+  try {
+    var hasEmail = (DATA.contacts||[]).some(function(c){ return !!c.email; });
+    if(!hasEmail){
+      var demo = { id: 'ct-demo', name: 'Demo Person', email: 'demo@example.com', phone: '0400 000 000', companyId: 'C-001', role: 'Stakeholder' };
+      DATA.contacts = DATA.contacts || [];
+      DATA.contacts.push(demo);
+    }
+  } catch(e){}
+})();
+
+const findCase=id=>DATA.cases.find(c=>c.id===id)||null;
+const findCompany=id=>DATA.companies.find(c=>c.id===id)||null;
+const findContact=id=>DATA.contacts.find(c=>c.id===id)||null;
+const findUserByEmail=e=>DATA.users.find(u=>(u.email||"").toLowerCase()===(e||"").toLowerCase())||null;
+const investigatorCases=email=>DATA.cases.filter(cs=>(cs.investigatorEmail||"").toLowerCase()===(email||"").toLowerCase());
+
+const App={state:{route:"dashboard",currentCaseId:null,currentContactId:null,currentCompanyId:null,currentUploadTarget:null,currentCompanyUploadTarget:null,asUser:null,casesFilter:{q:""}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+
+function Topbar(){let s='<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>'; if(App.state.asUser){s+='<span class="chip">Viewing as '+(App.state.asUser.name||App.state.asUser.email)+' ('+App.state.asUser.role+')</span> <button class="btn light" data-act="exitPortal">Exit</button> ';} s+='<span class="badge">Soft Stable '+BUILD+'</span></div>'; return s;}
+function Sidebar(active){const base=[["dashboard","Dashboard"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]]; let out=['<aside class="sidebar"><h3>Investigations</h3><ul class="nav">']; for(const it of base){out.push('<li '+(active===it[0]?'class="active"':'')+' data-act="route" data-arg="'+it[0]+'">'+it[1]+'</li>');} out.push('</ul></aside>'); return out.join('');}
+function Shell(content,active){return Topbar()+'<div class="shell">'+Sidebar(active)+'<main class="main">'+content+'</main></div><div id="boot">Ready ('+BUILD+')</div>'; }
+
+// Dashboard
+function Dashboard(){const d=App.get(); let rows=''; for(const c of d.cases.slice(0,6)) rows+='<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>'; const tbl='<table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'; const html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div></div><div class="mono">Build: '+STAMP+'</div></div><div class="section"><header><h3 class="section-title">Active Cases</h3></header>'+tbl+'</div>'; return Shell(html,'dashboard');}
 
 // Cases
-function Cases(){
-  const rows = DATA.cases.map(c=>`<tr>
-    <td>${c.id}</td><td>${c.title}</td>
-    <td>${(DATA.companies.find(co=>co.id===c.companyId)||{}).name||''}</td>
-    <td>${userById(c.investigator).name}</td>
-    <td>${statusChip(c.status)}</td>
-    <td><button class="btn" data-act="openCase" data-id="${c.id}">Open</button></td>
-  </tr>`).join('');
-  return Shell(`<div class="card">
-    <h3>Cases</h3>
-    <table><thead><tr><th>ID</th><th>Title</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`,'cases');
-}
+function Cases(){const d=App.get(), f=App.state.casesFilter||{q:""}; const list=d.cases.filter(c=>{if(!f.q) return true; const q=f.q.toLowerCase(); return (c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);}); let rows=''; for(const cc of list){rows+='<tr><td>'+cc.fileNumber+'</td><td>'+cc.title+'</td><td>'+cc.organisation+'</td><td>'+cc.investigatorName+'</td><td>'+cc.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cc.id+'">Open</button></td></tr>';} const tools='<div class="grid cols-4" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="'+(f.q||'')+'"></div><div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>'; return Shell('<div class="section"><header><h3 class="section-title">Cases</h3></header>'+tools+'<table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases');}
+
 function CasePage(id){
-  const c = DATA.cases.find(x=>x.id===id);
-  const tabs=['Details','Notes','Tasks','Documents','People','Calendar'];
-  const active=App.state.tab||'Details';
-  function tabBtn(t){ return `<div class="tab ${active===t?'active':''}" data-act="tab" data-tab="${t}">${t}</div>`; }
-  let inner='';
-  if(active==='Details'){
-    inner = `<div class="kv">
-      <div class="k">File no.</div><div>${c.fileNo||''}</div>
-      <div class="k">Title</div><div>${c.title}</div>
-      <div class="k">Organisation</div><div>${c.organisation||''}</div>
-      <div class="k">Company</div><div>${(DATA.companies.find(co=>co.id===c.companyId)||{}).name||''}</div>
-      <div class="k">Investigator</div><div>${userById(c.investigator).name}</div>
-      <div class="k">Status</div><div>${statusChip(c.status)}</div>
-      <div class="k">Priority</div><div>${c.priority||''}</div>
-    </div>
-    <div class="toolbar"><button class="btn primary">Save</button><button class="btn">Delete</button><button class="btn" data-route="cases">Back</button></div>`;
-  } else if(active==='Notes'){
-    const list=(DATA.notes[id]||[]);
-    inner = `<div class="toolbar"><input class="input" id="noteTxt" placeholder="Add a note" style="flex:1"><button class="btn" data-act="addNote" data-id="${id}">Add</button></div>
-      <table><tbody>${list.map(n=>`<tr><td class="small">${new Date(n.ts).toLocaleString()}</td><td>${n.text}</td></tr>`).join('')}</tbody></table>`;
-  } else if(active==='Tasks'){
-    const list=(DATA.tasks[id]||[]);
-    inner = `<div class="toolbar"><input class="input" id="taskTxt" placeholder="Add a task" style="flex:1"><button class="btn" data-act="addTask" data-id="${id}">Add</button>
-      <button class="btn" data-act="addStdTasks" data-id="${id}">Add standard tasks</button></div>
-      <table><tbody>${list.map(t=>`<tr><td>${t.text}</td><td>${t.done?'✓':''}</td></tr>`).join('')}</tbody></table>`;
-  } else if(active==='Documents'){
-    inner = `<div class="muted">General folder present. (Demo upload/remove placeholder)</div>`;
-  } else if(active==='People'){
-    const linked=(DATA.people[id]||[]);
-    const avail=DATA.contacts.filter(p=>!linked.includes(p.id));
-    inner = `<div class="toolbar"><select class="select" id="linkPerson">${avail.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select>
-      <button class="btn" data-act="linkPerson" data-id="${id}">Link</button></div>
-      <table><thead><tr><th>Name</th><th></th></tr></thead><tbody>${
-        linked.map(pid=>{
-          const p=DATA.contacts.find(x=>x.id===pid)||{};
-          return `<tr><td>${p.name}</td><td><button class="btn" data-act="openContact" data-id="${pid}">Open contact</button>
-          <button class="btn" data-act="unlinkPerson" data-id="${id}" data-p="${pid}">Unlink</button></td></tr>`;
-        }).join('')
-      }</tbody></table>
-      <div class="toolbar"><button class="btn">View Portal</button></div>`;
-  } else if(active==='Calendar'){
-    const list = DATA.events.filter(e=>e.caseId===id);
-    inner = `<div class="muted">${list.length? 'Case events listed below.' : 'No case events yet.'}</div>
-      <table><thead><tr><th>Date</th><th>Title</th><th></th></tr></thead><tbody>${
-        list.map(e=>`<tr><td>${e.date}</td><td>${e.title}</td>
-        <td><button class="btn" data-act="openEvent" data-id="${e.id}">Edit/Delete</button></td></tr>`).join('')
-      }</tbody></table>`;
+  const d=App.get(), cs=findCase(id); 
+  if(!cs){ alert('Case not found'); App.set({route:'cases'}); return Shell('<div class="card">Case not found.</div>','cases'); }
+  const invOpts=()=>d.users.filter(u=>["Investigator","Reviewer","Admin"].includes(u.role)).map(u=>'<option '+(u.email===cs.investigatorEmail?'selected':'')+' value="'+u.email+'">'+u.name+' ('+u.role+')</option>').join('');
+  const coOpts=()=>d.companies.map(co=>'<option '+(co.id===cs.companyId?'selected':'')+' value="'+co.id+'">'+co.name+' ('+co.id+')</option>').join('');
+  if(!cs.folders) cs.folders={General:[]};
+
+  const header = '<div class="card">'
+   + '<div style="display:flex;align-items:center;gap:8px">'
+   +   '<h2>Case '+cs.fileNumber+'</h2>'
+   +   '<div class="sp"></div>'
+   +   '<button class="btn" data-act="saveCase" data-arg="'+id+'">Save Case</button> '
+   +   '<button class="btn danger" data-act="deleteCase" data-arg="'+id+'">Delete Case</button> '
+   +   '<button class="btn light" data-act="route" data-arg="cases">Back to Cases</button>'
+   + '</div>'
+   + '</div>';
+
+  const leftDetails = '<div class="card">'
+   + '<div class="grid cols-2" style="margin-top:4px">'
+   +   '<div><label>Case ID</label><input class="input" id="c-id" value="'+(cs.fileNumber||'')+'"></div>'
+   +   '<div><label>Organisation (display)</label><input class="input" id="c-org" value="'+(cs.organisation||'')+'"></div>'
+   +   '<div><label>Title</label><input class="input" id="c-title" value="'+(cs.title||'')+'"></div>'
+   +   '<div><label>Company</label><select class="input" id="c-company">'+coOpts()+'</select></div>'
+   +   '<div><label>Investigator</label><select class="input" id="c-inv">'+invOpts()+'</select></div>'
+   +   '<div><label>Status</label><select class="input" id="c-status">'
+   +     '<option'+(cs.status==='Planning'?' selected':'')+'>Planning</option>'
+   +     '<option'+(cs.status==='Investigation'?' selected':'')+'>Investigation</option>'
+   +     '<option'+(cs.status==='Evidence Review'?' selected':'')+'>Evidence Review</option>'
+   +     '<option'+(cs.status==='Reporting'?' selected':'')+'>Reporting</option>'
+   +     '<option'+(cs.status==='Closed'?' selected':'')+'>Closed</option>'
+   +   '</select></div>'
+   +   '<div><label>Priority</label><select class="input" id="c-priority">'
+   +     '<option'+(cs.priority==='Low'?' selected':'')+'>Low</option>'
+   +     '<option'+(cs.priority==='Medium'?' selected':'')+'>Medium</option>'
+   +     '<option'+(cs.priority==='High'?' selected':'')+'>High</option>'
+   +     '<option'+(cs.priority==='Critical'?' selected':'')+'>Critical</option>'
+   +   '</select></div>'
+   + '</div>'
+   + '</div>';
+
+  let notesRows=(cs.notes&&cs.notes.length)?'':'<tr><td colspan="3" class="muted">No notes yet.</td></tr>';
+  for(const nn of (cs.notes||[])){notesRows+='<tr><td>'+ (nn.time||'') +'</td><td>'+ (nn.by||'') +'</td><td>'+ (nn.text||'') +'</td></tr>';}
+  let taskRows=(cs.tasks&&cs.tasks.length)?'':'<tr><td colspan="5" class="muted">No tasks yet.</td></tr>';
+  for(const tt of (cs.tasks||[])){taskRows+='<tr><td>'+tt.id+'</td><td>'+tt.title+'</td><td>'+tt.assignee+'</td><td>'+tt.due+'</td><td>'+tt.status+'</td></tr>';}
+
+  const blocks='<div class="grid cols-2">'
+    + '<div class="section"><header><h3 class="section-title">Case Notes</h3><button class="btn light" data-act="addNote" data-arg="'+id+'">Add Note</button></header>'
+    + '<textarea class="input" id="note-text" placeholder="Type your note here"></textarea>'
+    + '<table><thead><tr><th>Time</th><th>By</th><th>Note</th></tr></thead><tbody id="notes-body">'+notesRows+'</tbody></table></div>'
+    + '<div class="section"><header><h3 class="section-title">Tasks</h3><button class="btn light" data-act="addStdTasks" data-arg="'+id+'">Add standard tasks</button></header>'
+    + '<div class="grid cols-3"><input class="input" id="task-title" placeholder="Task title"><input class="input" id="task-due" type="date"><select class="input" id="task-assignee">'+invOpts()+'</select></div>'
+    + '<div style="text-align:right;margin-top:6px"><button class="btn light" data-act="addTask" data-arg="'+id+'">Add</button></div>'
+    + '<table><thead><tr><th>ID</th><th>Title</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>'+taskRows+'</tbody></table></div>'
+    + '</div>';
+
+  let docRows='';
+  for(const fname in cs.folders){ if(!Object.prototype.hasOwnProperty.call(cs.folders,fname)) continue; const files=cs.folders[fname];
+    docRows+='<tr><th colspan="3">'+fname+'</th></tr>';
+    docRows+='<tr><td colspan="3" class="right"><button class="btn light" data-act="selectFiles" data-arg="'+id+'::'+fname+'">Upload to '+fname+'</button> '+(fname==='General'?'':'<button class="btn light" data-act="deleteFolder" data-arg="'+id+'::'+fname+'">Delete folder</button>')+'</td></tr>';
+    if(!files.length){docRows+='<tr><td colspan="3" class="muted">No files</td></tr>';}
+    for(const ff of files){const a=id+'::'+fname+'::'+ff.name; docRows+='<tr><td>'+ff.name+'</td><td>'+ff.size+'</td><td class="right">'+(ff.dataUrl?('<button class="btn light" data-act="viewDoc" data-arg="'+a+'">View</button> '):'')+'<button class="btn light" data-act="removeDoc" data-arg="'+a+'">Remove</button></td></tr>'; }
   }
-  const tabsHtml = `<div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
-  return Shell(`<div class="card"><h3>Case ${c.id}</h3>${tabsHtml}${inner}</div>`,'cases');
+  const docs = '<div class="section"><header><h3 class="section-title">Case Documents</h3><div><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div></header><input type="file" id="file-input" multiple style="display:none"><div style="margin-top:8px"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div></div>';
+
+  return Shell(header + leftDetails + blocks + docs, 'cases');
 }
 
-// Companies & Contacts
-function Companies(){
-  const rows = DATA.companies.map(c=>`<tr><td>${c.id}</td><td>${c.name}</td><td>${c.industry}</td><td>${c.city}</td>
-    <td><button class="btn" data-act="openCompany" data-id="${c.id}">Open</button></td></tr>`).join('');
-  return Shell(`<div class="card"><h3>Companies</h3>
-    <table><thead><tr><th>ID</th><th>Name</th><th>Industry</th><th>City</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,'companies');
-}
-function CompanyPage(id){
-  const co = DATA.companies.find(c=>c.id===id);
-  const tabs=['Summary','Company Contacts','Company Documents'];
-  const active=App.state.tab||'Summary';
-  function tabBtn(t){ return `<div class="tab ${active===t?'active':''}" data-act="tab" data-tab="${t}">${t}</div>`; }
-  let inner='';
-  if(active==='Summary'){
-    const recent = DATA.cases.filter(c=>c.companyId===id).slice(0,5);
-    inner = `<div class="kv">
-      <div class="k">Name</div><div>${co.name}</div>
-      <div class="k">Industry</div><div>${co.industry}</div>
-      <div class="k">City</div><div>${co.city}</div>
-    </div>
-    <h4>Recent cases</h4>
-    <table><tbody>${
-      recent.map(c=>`<tr><td>${c.id}</td><td>${c.title}</td><td>${statusChip(c.status)}</td>
-      <td><button class="btn" data-act="openCase" data-id="${c.id}">Open</button></td></tr>`).join('')
-    }</tbody></table>`;
-  } else if(active==='Company Contacts'){
-    const list=DATA.contacts.filter(p=>p.companyId===id);
-    inner = `<table><tbody>${list.map(p=>`<tr><td>${p.name}</td><td><button class="btn" data-act="openContact" data-id="${p.id}">Open</button></td></tr>`).join('')}</tbody></table>`;
-  } else if(active==='Company Documents'){
-    inner = `<div class="muted">Folder/upload parity with Case Documents (demo placeholder)</div>`;
-  }
-  const tabsHtml = `<div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
-  return Shell(`<div class="card"><h3>Company ${co.name}</h3>${tabsHtml}${inner}</div>`,'companies');
-}
-function Contacts(){
-  const rows = DATA.contacts.map(p=>`<tr><td>${p.name}</td><td>${p.email}</td><td>${p.phone}</td>
-    <td><button class="btn" data-act="openContact" data-id="${p.id}">Open</button></td></tr>`).join('');
-  return Shell(`<div class="card"><h3>Contacts</h3>
-    <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,'contacts');
-}
-function ContactPage(id){
-  const p = DATA.contacts.find(x=>x.id===id);
-  return Shell(`<div class="card">
-    <h3>${p.name}</h3>
-    <div class="kv">
-      <div class="k">Email</</div><div>${p.email}</div>
-      <div class="k">Phone</div><div>${p.phone}</div>
-      <div class="k">Company</div><div>${(DATA.companies.find(c=>c.id===p.companyId)||{}).name||''}</div>
-    </div>
-    <div class="toolbar"><button class="btn">View Portal</button></div>
-  </div>`,'contacts');
-}
-function Documents(){ return Shell(`<div class="card"><h3>Documents</h3><div class="muted">Upload/remove/preview (demo placeholder)</div></div>`,'documents'); }
-function Resources(){ return Shell(`<div class="card"><h3>Resources</h3><div class="muted">Links & Docs (demo placeholder)</div></div>`,'resources'); }
+function Contacts(){const d=App.get(); const coName=id=>{const co=findCompany(id); return co?co.name:"";}; let rows=''; for(const c of d.contacts){rows+='<tr><td>'+c.name+'</td><td>'+c.email+'</td><td>'+coName(c.companyId)+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New Contact</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');}
 
-// Admin
-function Admin(){
-  const rows = DATA.users.map(u=>`<tr><td>${u.name}</td><td>${u.role}</td>
-    <td>${u.id===DATA.me.id?'<span class="status plan">You</span>':`<button class="btn" data-act="impersonate" data-id="${u.id}">Impersonate</button>`}</td></tr>`).join('');
-  return Shell(`<div class="card"><h3>Users</h3><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,'admin');
+function ContactPage(id){const d=App.get(), c=findContact(id); if(!c) return Shell('<div class="card">Contact not found.</div>','contacts'); const coOpts=()=>['<option value="">(No linked company)</option>'].concat(d.companies.map(co=>'<option '+(co.id===c.companyId?'selected':'')+' value="'+co.id+'">'+co.name+' ('+co.id+')</option>')).join(''); let existing=d.users.find(u=>(u.email||'').toLowerCase()===(c.email||'').toLowerCase())||null; let headerBtns='', portalBody='';
+if(c.email){
+  if(existing){
+    headerBtns='<button class="btn light" data-act="viewPortalAs" data-arg="'+id+'">View portal</button> <button class="btn light" data-act="updatePortal" data-arg="'+id+'">Update Role</button> <button class="btn light" data-act="revokePortal" data-arg="'+id+'">Revoke</button>';
+    portalBody='<div class="grid cols-3"><div><label>Status</label><div class="chip">Enabled</div></div><div><label>Role</label><select class="input" id="cp-role"><option '+(existing.role==='Admin'?'selected':'')+'>Admin</option><option '+(existing.role==='Investigator'?'selected':'')+'>Investigator</option><option '+(existing.role==='Reviewer'?'selected':'')+'>Reviewer</option><option '+(existing.role==='Client'?'selected':'')+'>Client</option></select></div><div></div></div>';
+  } else {
+    headerBtns='<button class="btn" data-act="grantPortal" data-arg="'+id+'">Grant Access</button> <button class="btn light" data-act="grantAndView" data-arg="'+id+'">Grant & view</button>';
+    portalBody='<div class="grid cols-3"><div><label>Role</label><select class="input" id="cp-role"><option>Client</option><option>Investigator</option><option>Reviewer</option><option>Admin</option></select></div><div><label>Email</label><input class="input" id="cp-email" value="'+(c.email||'')+'"></div><div></div></div><div class="muted">Granting access creates a user with this email in-memory.</div>';
+  }
+} else {
+  portalBody='<div class="muted">Add an email to enable portal access.</div>';
 }
+let html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Contact</h2><div class="sp"></div><button class="btn" data-act="saveContact" data-arg="'+id+'">Save</button><button class="btn danger" data-act="deleteContact" data-arg="'+id+'">Delete</button><button class="btn light" data-act="route" data-arg="contacts">Back to Contacts</button></div><div class="grid cols-4" style="margin-top:12px"><div><label>Contact Name</label><input class="input" id="ct-name" value="'+(c.name||'')+'"></div><div><label>Email</label><input class="input" id="ct-email" value="'+(c.email||'')+'"></div><div><label>Phone</label><input class="input" id="ct-phone" value="'+(c.phone||'')+'"></div><div><label>Position/Org</label><input class="input" id="ct-org" value="'+(c.org||'')+'"></div><div style="grid-column:span 2"><label>Link to Company</label><select class="input" id="ct-company">'+coOpts()+'</select></div><div style="grid-column:span 4"><label>Notes</label><textarea class="input" id="ct-notes">'+(c.notes||'')+'</textarea></div></div></div>' + '<div class="section"><header><h3 class="section-title">Portal Access</h3><div>'+headerBtns+'</div></header>'+ portalBody +'</div>';
+return Shell(html,'contacts');}
 
-// Render & Wire (single delegated listeners to prevent freeze)
-function render(){
-  const r=App.state.route;
-  let html='';
-  if(r==='dashboard') html=Dashboard();
-  else if(r==='calendar') html=Calendar();
-  else if(r==='cases') html=Cases();
-  else if(r==='companies') html=Companies();
-  else if(r==='contacts') html=Contacts();
-  else if(r==='documents') html=Documents();
-  else if(r==='resources') html=Resources();
-  else if(r==='admin') html=Admin();
-  else if(r==='case') html=CasePage(App.state.params.id);
-  else if(r==='company') html=CompanyPage(App.state.params.id);
-  else if(r==='contact') html=ContactPage(App.state.params.id);
-  document.getElementById('app').innerHTML = (App.state.modal?renderModal():'') + html;
-}
-document.addEventListener('click', (ev)=>{
-  const a=ev.target.closest('[data-route],[data-act]'); if(!a) return;
-  const routeTo=a.getAttribute('data-route');
-  if(routeTo){ route(routeTo); return; }
-  const act=a.getAttribute('data-act');
-  const id=a.getAttribute('data-id');
-  if(act==='toggleShowUnread'){ App.state.showUnread=!App.state.showUnread; render(); }
-  else if(act==='markAllRead'){ App.state.notifications.forEach(n=>n.read=true); App.state.notificationsUnread=0; render(); }
-  else if(act==='dismissNotif'){ const nid=a.getAttribute('data-id'); const it=App.state.notifications.find(x=>x.id===nid); if(it){ it.read=true; App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length; render(); } }
-  else if(act==='openNotif'){ const it=App.state.notifications.find(x=>x.id===id); if(it){ it.read=true; App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length; App.state.view='month'; App.state.modal=true; App.state.openEventId = it.payload.id; route('calendar'); } }
-  else if(act==='gotoMonth'){ App.state.view='month'; render(); }
-  else if(act==='gotoAgenda'){ App.state.view='agenda'; render(); }
-  else if(act==='addEvent'){
-    const title=(document.getElementById('evTitle')||{}).value||'';
-    const date=(document.getElementById('evDate')||{}).value||today();
-    if(!title) return;
-    const e={ id:'E'+Date.now(), title, date, start:(document.getElementById('evStart')||{}).value||'09:00', end:(document.getElementById('evEnd')||{}).value||'10:00',
-      type:(document.getElementById('evType')||{}).value||'Meeting', location:(document.getElementById('evLoc')||{}).value||'',
-      caseId:(document.getElementById('evCase')||{}).value||null, owner:(document.getElementById('evOwner')||{}).value||DATA.me.id };
-    DATA.events.push(e); persist();
-    if(DATA.me.role==='Admin' && e.owner!==DATA.me.id){ pushNotification('created', e); }
-    render();
-  }
-  else if(act==='openEvent' || act==='editEvent'){ App.state.modal=true; App.state.openEventId=id; render(); }
-  else if(act==='deleteEvent'){
-    const ix=DATA.events.findIndex(x=>x.id===id);
-    if(ix>-1){ const e=DATA.events[ix]; DATA.events.splice(ix,1); persist(); pushNotification('deleted', e); render(); }
-  }
-  else if(act==='modalClose'){ App.state.modal=false; App.state.openEventId=null; render(); }
-  else if(act==='modalSave'){
-    const e=DATA.events.find(x=>x.id===App.state.openEventId); if(!e) return;
-    const G=id=>{const el=document.getElementById(id); return el?el.value:null;};
-    e.title=G('mTitle')||e.title; e.date=G('mDate')||e.date; e.start=G('mStart')||e.start; e.end=G('mEnd')||e.end; e.location=G('mLoc')||e.location;
-    persist(); pushNotification('updated', e); App.state.modal=false; App.state.openEventId=null; render();
-  }
-  else if(act==='openCase'){ route('case',{id:id}); }
-  else if(act==='openCompany'){ route('company',{id:id}); }
-  else if(act==='openContact'){ route('contact',{id:id}); }
-  else if(act==='tab'){ App.state.tab = a.getAttribute('data-tab'); render(); }
-  else if(act==='addNote'){
-    const caseId=a.getAttribute('data-id'); const txt=(document.getElementById('noteTxt')||{}).value||''; if(!txt) return;
-    DATA.notes[caseId]=DATA.notes[caseId]||[]; DATA.notes[caseId].push({text:txt, ts:Date.now()}); persist(); render();
-  }
-  else if(act==='addTask'){
-    const caseId=a.getAttribute('data-id'); const txt=(document.getElementById('taskTxt')||{}).value||''; if(!txt) return;
-    DATA.tasks[caseId]=DATA.tasks[caseId]||[]; DATA.tasks[caseId].push({text:txt, done:false}); persist(); render();
-  }
-  else if(act==='addStdTasks'){
-    const caseId=a.getAttribute('data-id'); DATA.tasks[caseId]=DATA.tasks[caseId]||[];
-    ['Initial interview','Collect documents','Draft report'].forEach(t=>DATA.tasks[caseId].push({text:t,done:false}));
-    persist(); render();
-  }
-  else if(act==='linkPerson'){
-    const caseId=a.getAttribute('data-id'); const pid=(document.getElementById('linkPerson')||{}).value;
-    DATA.people[caseId]=DATA.people[caseId]||[]; if(pid && !DATA.people[caseId].includes(pid)) DATA.people[caseId].push(pid); persist(); render();
-  }
-  else if(act==='unlinkPerson'){
-    const caseId=a.getAttribute('data-id'); const pid=a.getAttribute('data-p');
-    DATA.people[caseId]=(DATA.people[caseId]||[]).filter(x=>x!==pid); persist(); render();
-  }
-  else if(act==='impersonate'){ const who = a.getAttribute('data-id'); const u = DATA.users.find(x=>x.id===who); if(u){ DATA.me=u; persist(); render(); } }
-  else if(act==='clearImpersonation'){ DATA.me = DATA.users.find(x=>x.id==='u-admin'); persist(); render(); }
+function Companies(){const d=App.get(); const countContacts=cid=>d.contacts.filter(c=>c.companyId===cid).length; const countCases=cid=>d.cases.filter(c=>c.companyId===cid).length; let rows=''; for(const co of d.companies){rows+='<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+countContacts(co.id)+'</td><td>'+countCases(co.id)+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>';} return Shell('<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New Company</button></header><table><thead><tr><th>ID</th><th>Name</th><th>Contacts</th><th>Cases</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies');}
+
+function Documents(){const d=App.get(); let rows=''; for(const c of d.cases){let count=0; for(const k in c.folders){if(Object.prototype.hasOwnProperty.call(c.folders,k)) count+=c.folders[k].length;} rows+='<tr><td>'+c.fileNumber+'</td><td>'+count+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>'; } return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case ID</th><th>Files</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents');}
+
+function Resources(){const d=App.get(); if(!d.resources) d.resources={templates:[],procedures:[]}; const rows=kind=>{const list=(kind==='templates')?d.resources.templates:d.resources.procedures; if(!list.length) return '<tr><td colspan="3" class="muted">No items yet.</td></tr>'; return list.map(it=>{const arg=kind+'::'+it.name; return '<tr><td>'+it.name+'</td><td>'+it.size+'</td><td class="right">'+(it.dataUrl?('<button class="btn light" data-act="viewResource" data-arg="'+arg+'">View</button> '):'')+'<button class="btn light" data-act="removeResource" data-arg="'+arg+'">Remove</button></td></tr>';}).join(''); }; const html='<div class="section"><header><h3 class="section-title">Investigation Templates</h3><div><button class="btn light" data-act="selectResTemplates">Select files</button></div></header><input type="file" id="rs-file-templates" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('templates')+'</tbody></table></div><div class="section"><header><h3 class="section-title">Procedures</h3><div><button class="btn light" data-act="selectResProcedures">Select files</button></div></header><input type="file" id="rs-file-procedures" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+rows('procedures')+'</tbody></table></div>'; return Shell(html,'resources');}
+
+// Render
+function render(){const r=App.state.route, el=document.getElementById('app'); document.getElementById('boot').textContent='Rendering '+r+'…'; if(r==='dashboard') el.innerHTML=Dashboard(); else if(r==='cases') el.innerHTML=Cases(); else if(r==='case') el.innerHTML=CasePage(App.state.currentCaseId); else if(r==='contacts') el.innerHTML=Contacts(); else if(r==='contact') el.innerHTML=ContactPage(App.state.currentContactId); else if(r==='companies') el.innerHTML=Companies(); else if(r==='company') el.innerHTML=CompanyPage(App.state.currentCompanyId); else if(r==='documents') el.innerHTML=Documents(); else if(r==='resources') el.innerHTML=Resources(); else if(r==='admin') el.innerHTML=Admin ? Admin() : '<div class="card">Admin not available</div>'; else el.innerHTML=Dashboard(); document.getElementById('boot').textContent='Ready ('+BUILD+')';}
+
+// Actions
+document.addEventListener('click',e=>{let t=e.target; while(t&&t!==document&&!t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return; const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg'), d=App.get();
+// nav
+if(act==='route'){App.set({route:arg});return;}
+if(act==='openCase'){App.set({currentCaseId:arg,route:'case'});return;}
+
+// cases
+if(act==='addQuickNote'){ const cs=findCase(arg); if(!cs) return; const text=prompt('Add a note'); if(!text) { return; } const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes = cs.notes||[]; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
+
+if(act==='newCase'){const seq=('00'+(d.cases.length+1)).slice(-3); const inv=d.users[0]||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; d.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'});return;}
+if(act==='saveCase'){const cs=findCase(arg); if(!cs) return; const getV=id=>{const el=document.getElementById(id); return el?el.value:null;}; const setIf=(key,val)=>{ if(val!=null){ cs[key]=val; } }; setIf('title', getV('c-title')); setIf('organisation', getV('c-org')); const coVal=getV('c-company'); if(coVal!=null) cs.companyId=coVal; const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; } setIf('status', getV('c-status')); setIf('priority', getV('c-priority')); const idEl=document.getElementById('c-id'); if(idEl && idEl.value){ cs.fileNumber=idEl.value.trim(); } alert('Case saved'); return;}
+if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){ alert('Case not found'); return; } if(confirm('Delete this case ('+(cs.fileNumber||cs.title||cs.id)+') ?')){ DATA.cases = DATA.cases.filter(c=>c.id!==cs.id); App.set({route:'cases', currentCaseId:null}); } return; }
+if(act==='addNote'){const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return;}
+if(act==='addStdTasks'){const cs=findCase(arg); if(!cs) return; const base=cs.tasks, add=['Gather documents','Interview complainant','Interview respondent','Write report']; add.forEach(a=>base.push({id:'T-'+(base.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return;}
+if(act==='addTask'){const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel.options[sel.selectedIndex].text; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,assignee:who,due:document.getElementById('task-due').value,status:'Open'}); App.set({}); return;}
+
+// case docs
+if(act==='addFolderPrompt'){const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; App.set({}); return;}
+if(act==='selectFiles'){App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return;}
+if(act==='viewDoc'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return;}
+if(act==='removeDoc'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); App.set({}); return;}
+if(act==='deleteFolder'){const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){delete cs.folders[folder]; App.set({});} return;}
+
+// contacts
+if(act==='openContact'){App.set({currentContactId:arg,route:'contact'});return;}
+if(act==='newContact'){const c={id:uid(),name:'New Contact',email:'',phone:'',org:'',companyId:'',notes:''}; DATA.contacts.unshift(c); App.set({currentContactId:c.id,route:'contact'}); return;}
+if(act==='saveContact'){const c=findContact(arg); if(!c) return; c.name=document.getElementById('ct-name').value; c.email=document.getElementById('ct-email').value; c.phone=document.getElementById('ct-phone').value; c.org=document.getElementById('ct-org').value; c.companyId=document.getElementById('ct-company').value; c.notes=document.getElementById('ct-notes').value; alert('Contact saved'); return;}
+if(act==='deleteContact'){ const c=findContact(arg); if(!c){ alert('Contact not found'); return; } if(confirm('Delete this contact ('+(c.name||c.email||c.id)+') ?')){ DATA.contacts = DATA.contacts.filter(x=>x.id!==c.id); App.set({route:'contacts', currentContactId:null}); } return; }
+
+// portal access
+if(act==='grantPortal'){const c=findContact(arg); if(!c) return; const email=(document.getElementById('cp-email')?document.getElementById('cp-email').value:'')||c.email; if(!email){alert('Email required');return;} const role=document.getElementById('cp-role').value||'Client'; let exists=d.users.find(u=>(u.email||'').toLowerCase()===email.toLowerCase()); if(!exists) d.users.push({name:c.name||email,email,role}); else exists.role=role; alert('Access granted'); App.set({}); return;}
+if(act==='grantAndView'){const c=findContact(arg); if(!c) return; const email=(document.getElementById('cp-email')?document.getElementById('cp-email').value:'')||c.email; if(!email){alert('Email required');return;} const role=document.getElementById('cp-role').value||'Client'; let user=d.users.find(u=>(u.email||'').toLowerCase()===email.toLowerCase()); if(!user){user={name:c.name||email,email,role}; d.users.push(user);} App.set({asUser:user,route:'portal'}); return;}
+if(act==='updatePortal'){const c=findContact(arg); if(!c) return; const email=(c.email||'').toLowerCase(); if(!email){alert('Add an email first');return;} const role=document.getElementById('cp-role').value||'Client'; d.users.forEach(u=>{if((u.email||'').toLowerCase()===email) u.role=role;}); alert('Role updated'); App.set({}); return;}
+if(act==='revokePortal'){const c=findContact(arg); if(!c) return; const email=(c.email||'').toLowerCase(); d.users=d.users.filter(u=>(u.email||'').toLowerCase()!==email); alert('Access revoked'); App.set({}); return;}
+if(act==='viewPortalAs'){const c=findContact(arg); if(!c) return; const user=d.users.find(u=>(u.email||'').toLowerCase()===(c.email||'').toLowerCase()); if(!user){alert('No portal user for this contact');return;} App.set({asUser:user,route:'portal'}); return;}
+if(act==='exitPortal'){App.set({asUser:null,route:'contacts'}); return;}
+
+// resources actions
+if(act==='selectResTemplates'){const fi=document.getElementById('rs-file-templates'); if(fi) fi.click(); return;}
+if(act==='selectResProcedures'){const fi=document.getElementById('rs-file-procedures'); if(fi) fi.click(); return;}
+if(act==='viewResource'){const p=arg.split('::'); const kind=p[0]; const name=p[1]; const list=(kind==='templates')?DATA.resources.templates:DATA.resources.procedures; const f=list.find(x=>x.name===name && x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return;}
+if(act==='removeResource'){const p=arg.split('::'); const kind=p[0]; const name=p[1]; if(kind==='templates'){DATA.resources.templates=DATA.resources.templates.filter(x=>x.name!==name);} else {DATA.resources.procedures=DATA.resources.procedures.filter(x=>x.name!==name);} App.set({}); return;}
+
+// filters
+if(act==='resetCaseFilters'){App.state.casesFilter={q:""}; try{localStorage.removeItem('synergy_filters_cases_v2104');}catch(_){ } App.set({}); return;}
 });
-function route(r,p){ App.state.route=r; App.state.params=p||{}; render(); }
-function pushNotification(type, payload){
-  const id='N'+Date.now()+Math.random().toString(36).slice(2,6);
-  const n={id, type, payload, read:false, ts:Date.now()};
-  App.state.notifications.unshift(n);
-  App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length;
-}
-function renderModal(){
-  const e = DATA.events.find(x=>x.id===App.state.openEventId);
-  if(!App.state.modal || !e) return '';
-  return `<div class="modal-under">
-    <div class="card modal">
-      <h3>Edit Event</h3>
-      <div class="grid cols-3">
-        <div><label>Title</label><input class="input" id="mTitle" value="${e.title}"></div>
-        <div><label>Date</label><input class="input" id="mDate" type="date" value="${e.date}"></div>
-        <div><label>Start</label><input class="input" id="mStart" type="time" value="${e.start||''}"></div>
-        <div><label>End</label><input class="input" id="mEnd" type="time" value="${e.end||''}"></div>
-        <div><label>Location</label><input class="input" id="mLoc" value="${e.location||''}"></div>
-      </div>
-      <div class="toolbar" style="margin-top:10px">
-        <button class="btn primary" data-act="modalSave">Save</button>
-        <div class="sp"></div>
-        <button class="btn" data-act="modalClose">Close</button>
-        <button class="btn" data-act="deleteEvent" data-id="${e.id}" title="Delete this event">Delete</button>
-      </div>
-    </div>
-  </div>`;
-}
 
-// Boot
-window.addEventListener('DOMContentLoaded', ()=>{ App.state.route='dashboard'; render(); });
+document.addEventListener('change',e=>{
+  if(e.target && e.target.id==='flt-q'){const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({});}
+});
+
+document.addEventListener('DOMContentLoaded',()=>{ try{ loadUserSessions(); }catch(_){ } try{const f=localStorage.getItem('synergy_filters_cases_v2104'); if(f) App.state.casesFilter=JSON.parse(f)||App.state.casesFilter;}catch(_){ } App.set({route:'dashboard'});});
+})();
