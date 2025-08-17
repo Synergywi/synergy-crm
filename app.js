@@ -232,7 +232,7 @@ function CasePage(id){
     const list = DATA.events.filter(e=>e.caseId===id);
     inner = `<div class="muted">${list.length? 'Case events listed below.' : 'No case events yet.'}</div>
       <table><thead><tr><th>Date</th><th>Title</th><th></th></tr></thead><tbody>${
-        list.map(e=>`<tr><td>${e.date}</}</td><td>${e.title}</td>
+        list.map(e=>`<tr><td>${e.date}</</td><td>${e.title}</td>
         <td><button class="btn" data-act="openEvent" data-id="${e.id}">Edit/Delete</button></td></tr>`).join('')
       }</tbody></table>`;
   }
