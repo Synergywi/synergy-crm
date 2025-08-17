@@ -1,2 +1,2 @@
-# Synergy CRM Stable 4 (Light)
-Light theme; case calendar tab fixed; click-to-edit everywhere.
+# Synergy CRM Stable 7
+Fully working baseline per requirements.
