@@ -1,2 +1,2 @@
-# Synergy CRM Stable 3
-This is a clean, tested baseline with case calendar tab + click-to-edit events.
+# Synergy CRM Stable 4 (Light)
+Light theme; case calendar tab fixed; click-to-edit everywhere.

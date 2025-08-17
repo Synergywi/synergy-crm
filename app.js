@@ -1,6 +1,6 @@
 
 /* utils */
-const BUILD="baseline-1.1.2"; const STAMP=new Date().toISOString(); const YEAR=new Date().getFullYear();
+const BUILD="baseline-1.1.3"; const STAMP=new Date().toISOString(); const YEAR=new Date().getFullYear();
 const $=sel=>document.querySelector(sel); const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 
@@ -61,12 +61,19 @@ function CasePage(id){
   const tabs=Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People'],['calendar','Calendar']]);
   const details=`<div class="grid cols-2"><div class="card"><h3 class="section-title">About this case</h3><div><strong>Case ID:</strong> ${cs.fileNumber}</div><div><strong>Organisation:</strong> ${esc(cs.organisation)}</div><div><strong>Investigator:</strong> ${esc(cs.investigatorName)}</div><div><strong>Status:</strong> ${statusChip(cs.status)}</div></div>`;
   const people=`<div class="card"><h3 class="section-title">People</h3><div class="muted">Coming soon.</div></div>`;
+  // Case calendar content
   const caseEvents=(DATA.calendar||[]).filter(e=>e.caseId===cs.id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
-  const ceRows=caseEvents.map(e=>{const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&&(DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td data-act='openEvent' data-arg='${e.id}'><button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> ${esc(e.title)}</td><td>${esc(e.ownerName||e.ownerEmail||'')}</td><td class='right'>${canEdit?`<button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="muted">No events for this case.</td></tr>';
+  const ceRows=caseEvents.map(e=>{const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&&(DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td data-act='openEvent' data-arg='${e.id}'><button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> ${esc(e.title)}</td><td>${esc(e.ownerName||e.ownerEmail||'')}</td><td class='right'>${canEdit?`<button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="muted">No events for this case yet.</td></tr>';
   const ownerSel = (DATA.me && DATA.me.role==='Admin') ? `<div><label>Owner</label><select class='input' id='ev-owner'>${DATA.users.map(u=>`<option value='${u.email}' ${u.email===(cs.investigatorEmail||DATA.me.email)?'selected':''}>${u.name} (${u.role})</option>`).join('')}</select></div>` : '';
   const addForm=`<div class='card'><h3 class='section-title'>Add case event</h3><div class='grid cols-3'><div><label>Title</label><input class='input' id='ev-title'></div><div><label>Date</label><input class='input' id='ev-date' type='date' value='${new Date().toISOString().slice(0,10)}'></div><div><label>Type</label><select class='input' id='ev-type'><option>Appointment</option><option>Note</option></select></div><div><label>Start</label><input class='input' id='ev-start' type='time' value='09:00'></div><div><label>End</label><input class='input' id='ev-end' type='time' value='10:00'></div><div><label>Location</label><input class='input' id='ev-loc' placeholder='Room/Zoom/etc.'></div>${ownerSel}<input type='hidden' id='ev-case' value='${cs.id}'></div><div class='right' style='margin-top:8px'><button class='btn' data-act='createEvent'>Add Event</button></div></div>`;
   const caseCalendar = `<div class='card'><h3 class='section-title'>Case Calendar</h3><table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Owner</th><th></th></tr></thead><tbody>${ceRows}</tbody></table></div>` + addForm;
-  const body = `${tabs}<div class="tabpanel ${tab==='details'?'active':''}">${details}</div><div class="tabpanel ${tab==='notes'?'active':''}"><div class="card">Notes (TBD)</div></div><div class="tabpanel ${tab==='tasks'?'active':''}"><div class="card">Tasks (TBD)</div></div><div class="tabpanel ${tab==='documents'?'active':''}"><div class="card">Documents (TBD)</div></div><div class="tabpanel ${tab==='people'?'active':''}">${people}</div><div class="tabpanel ${tab==='calendar'?'active':''}">${caseCalendar}</div>`;
+  const body = `${tabs}
+    <div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
+    <div class="tabpanel ${tab==='notes'?'active':''}"><div class="card">Notes (TBD)</div></div>
+    <div class="tabpanel ${tab==='tasks'?'active':''}"><div class="card">Tasks (TBD)</div></div>
+    <div class="tabpanel ${tab==='documents'?'active':''}"><div class="card">Documents (TBD)</div></div>
+    <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>
+    <div class="tabpanel ${tab==='calendar'?'active':''}">${caseCalendar}</div>`;
   return Shell(body,'cases');
 }
 
