@@ -88,19 +88,11 @@
 
   // ---------- Dashboard (simple) ----------
   function Dashboard(){
-  const tab=App.state.tabs.dashboard;
-  const rows=DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${statusChip(c.status)}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
-  const isAdmin=(DATA.me&&DATA.me.role==='Admin');
-  const unread=App.state.notificationsUnread||0;
-  const showAll=!!App.state.notificationsShowAll;
-  const visible=(App.state.notifications||[]).filter(n=>showAll?true:!n.read).slice(0,10);
-  const notifRows=visible.map(n=>{const ts=new Date(n.when).toLocaleString(); const who=n.owner?` — ${n.owner}`:""; const day=n.startISO?` (${new Date(n.startISO).toLocaleDateString()})`:""; return `<tr><td>${ts}</td><td>${esc(n.title)}${day}${who}</td><td>${esc(n.action)}</td><td class="right"><button class="btn light" data-act="openNotif" data-arg="${n.id}">Open</button> <button class="btn light" data-act="readNotif" data-arg="${n.id}">Dismiss</button></td></tr>`;}).join("")||'<tr><td colspan="4" class="muted">No calendar activity yet.</td></tr>';
-  const toggler=showAll?'<button class="btn light" data-act="notifShowUnread">Show unread</button>':'<button class="btn light" data-act="notifShowAll">Show all</button>';
-  const notifCard = !isAdmin ? '' : `<div class="section"><header style="display:flex;align-items:center;gap:8px;justify-content:space-between"><h3 class="section-title">Calendar updates ${unread?`<span class="notif-badge">${unread}</span>`:''}</h3><div>${toggler} <button class="btn light" data-act="markNotifsRead">Mark all read</button></div></header><table><thead><tr><th>Time</th><th>Event</th><th>Action</th><th></th></tr></thead><tbody>${notifRows}</tbody></table></div>`;
-  const overview=`<div class="card"><h3>Welcome</h3><div class="muted">${(new Date()).toISOString()}</div></div>${notifCard}<div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  const week=`<div class="card"><h3>This Week</h3><div class="muted">New cases: ${DATA.cases.filter(c=>c.created&&c.created.startsWith(String(new Date().getFullYear())+'-')).length}</div></div>`;
-  return Shell(Tabs('dashboard',[['overview','Overview'],['week','This Week']]) + (tab==='overview'?overview:week), 'dashboard');
-}
+    const rows = DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${c.status}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
+    return Shell(`<div class="card"><h3>Welcome</h3><div class="mono">${STAMP}</div></div>
+      <div class="section"><header><h3 class="section-title">Active Cases</h3></header>
+      <table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`, "dashboard");
+  }
 
   // ---------- Cases List ----------
   function Cases(){
@@ -212,15 +204,8 @@
       </div>
     </div>`;
 
-    const tabs = `<div class="tabs">${btn("details","Details")}${btn("notes","Notes")}${btn("tasks","Tasks")}${btn("docs","Documents")}${btn("calendar","Calendar")}</div>`;
-    
-    // Calendar tab (case-linked)
-    const caseEvents=(DATA.calendar||[]).filter(e=>e.caseId===cs.id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
-    const ceRows=caseEvents.map(e=>{const d=new Date(e.startISO), end=new Date(e.endISO); const canEdit=(DATA.me&&(DATA.me.role==='Admin'||DATA.me.email===e.ownerEmail)); return `<tr><td>${d.toLocaleDateString()}</td><td>${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td><td data-act='openEvent' data-arg='${e.id}'><button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> ${e.title}</td><td>${e.ownerName||e.ownerEmail||''}</td><td class='right'>${canEdit?`<button class='btn light' data-act='openEvent' data-arg='${e.id}'>Edit</button> <button class='btn light' data-act='deleteEvent' data-arg='${e.id}'>Delete</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="muted">No events for this case yet.</td></tr>';
-    const ownerSel = (DATA.me && DATA.me.role==='Admin') ? `<div><label>Owner</label><select class='input' id='ev-owner'>${DATA.users.map(u=>`<option value='${u.email}' ${u.email===(cs.investigatorEmail||DATA.me.email)?'selected':''}>${u.name} (${u.role})</option>`).join('')}</select></div>` : '';
-    const addForm=`<div class='card'><h3 class='section-title'>Add case event</h3><div class='grid cols-3'><div><label>Title</label><input class='input' id='ev-title'></div><div><label>Date</label><input class='input' id='ev-date' type='date' value='${new Date().toISOString().slice(0,10)}'></div><div><label>Type</label><select class='input' id='ev-type'><option>Appointment</option><option>Note</option></select></div><div><label>Start</label><input class='input' id='ev-start' type='time' value='09:00'></div><div><label>End</label><input class='input' id='ev-end' type='time' value='10:00'></div><div><label>Location</label><input class='input' id='ev-loc' placeholder='Room/Zoom/etc.'></div><input type='hidden' id='ev-case' value='${cs.id}'>${ownerSel}</div><div class='right' style='margin-top:8px'><button class='btn' data-act='createEvent'>Add Event</button></div></div>`;
-    const calTab = `<div class="tabpanel ${tab==='calendar'?'active':''}"><div class='card'><h3 class='section-title'>Case Calendar</h3><table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Owner</th><th></th></tr></thead><tbody>${ceRows}</tbody></table></div>${addForm}</div>`;
-return Shell(header+`<div class="card">${tabs+details+notes+tasks+docs}</div>`,"cases");
+    const tabs = `<div class="tabs">${btn("details","Details")}${btn("notes","Notes")}${btn("tasks","Tasks")}${btn("docs","Documents")}</div>`;
+    return Shell(header+`<div class="card">${tabs+details+notes+tasks+docs}</div>`,"cases");
   }
 
   // ---------- Contacts ----------
@@ -513,11 +498,3 @@ return Shell(header+`<div class="card">${tabs+details+notes+tasks+docs}</div>`,"
     App.set({route:"companies"});
   });
 })();  
-// --- Notifications helper ---
-function pushCalNotification(action, ev){
-  const item={id:uid(),kind:"calendar",action:action,title:ev.title||"Untitled",owner:ev.ownerName||ev.ownerEmail||"",ownerEmail:ev.ownerEmail||"",when:new Date().toISOString(),startISO:ev.startISO||"",endISO:ev.endISO||"",read:false};
-  App.state.notifications.unshift(item);
-  App.state.notifications=App.state.notifications.slice(0,100);
-  App.state.notificationsUnread=(App.state.notifications.filter(n=>!n.read)).length;
-}
-
