@@ -1,4 +1,4 @@
-// Solid SPA logic with HubSpot visuals preserved
+// HubSpot-styled SPA with full calendar features, no freeze, opaque cards
 const App = { state:{ route:'dashboard', view:'month', notifications:[], notificationsUnread:0, showUnread:false, filterOwner:'All', tab:null, modal:false, openEventId:null, params:{} } };
 const DATA = JSON.parse(localStorage.getItem('SYNERGY_DATA')||'null') || seedData();
 
@@ -82,7 +82,8 @@ function CardCalendarUpdates(){
     const who=userById(e.owner||'').name||'-';
     const when=new Date(n.ts).toLocaleString();
     return `<tr><td class="small">${when}</td><td>${e.title||''}</td><td>${who}</td>
-      <td><button class="btn" data-act="openNotif" data-id="${n.id}">Open</button></td></tr>`;
+      <td><button class="btn" data-act="openNotif" data-id="${n.id}">Open</button>
+          <button class="btn light" data-act="dismissNotif" data-id="${n.id}">Dismiss</button></td></tr>`;
   }).join('') : `<tr><td colspan="4" class="muted">No calendar activity</td></tr>`;
   return `<div class="card">
     <div class="section"><header><h3 class="section-title">Calendar updates ${unread>0?`<span class="notif">${unread}</span>`:''}</h3>
@@ -232,7 +233,7 @@ function CasePage(id){
     const list = DATA.events.filter(e=>e.caseId===id);
     inner = `<div class="muted">${list.length? 'Case events listed below.' : 'No case events yet.'}</div>
       <table><thead><tr><th>Date</th><th>Title</th><th></th></tr></thead><tbody>${
-        list.map(e=>`<tr><td>${e.date}</</td><td>${e.title}</td>
+        list.map(e=>`<tr><td>${e.date}</td><td>${e.title}</td>
         <td><button class="btn" data-act="openEvent" data-id="${e.id}">Edit/Delete</button></td></tr>`).join('')
       }</tbody></table>`;
   }
@@ -285,7 +286,7 @@ function ContactPage(id){
   return Shell(`<div class="card">
     <h3>${p.name}</h3>
     <div class="kv">
-      <div class="k">Email</div><div>${p.email}</div>
+      <div class="k">Email</</div><div>${p.email}</div>
       <div class="k">Phone</div><div>${p.phone}</div>
       <div class="k">Company</div><div>${(DATA.companies.find(c=>c.id===p.companyId)||{}).name||''}</div>
     </div>
@@ -302,7 +303,7 @@ function Admin(){
   return Shell(`<div class="card"><h3>Users</h3><table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`,'admin');
 }
 
-// Render & Wire
+// Render & Wire (single delegated listeners to prevent freeze)
 function render(){
   const r=App.state.route;
   let html='';
@@ -317,71 +318,71 @@ function render(){
   else if(r==='case') html=CasePage(App.state.params.id);
   else if(r==='company') html=CompanyPage(App.state.params.id);
   else if(r==='contact') html=ContactPage(App.state.params.id);
-  document.getElementById('app').innerHTML = html;
-  wire();
+  document.getElementById('app').innerHTML = (App.state.modal?renderModal():'') + html;
 }
-function wire(){
-  document.querySelectorAll('[data-route]').forEach(n=>n.onclick=e=>{ route(n.getAttribute('data-route')); });
-  document.querySelectorAll('[data-act]').forEach(n=>n.onclick=ev=>{
-    const act = n.getAttribute('data-act');
-    const id = n.getAttribute('data-id');
-    if(act==='toggleShowUnread'){ App.state.showUnread=!App.state.showUnread; render(); }
-    else if(act==='markAllRead'){ App.state.notifications.forEach(n=>n.read=true); App.state.notificationsUnread=0; render(); }
-    else if(act==='openNotif'){ const it=App.state.notifications.find(x=>x.id===id); if(it){ it.read=true; App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length; route('calendar'); App.state.modal=true; App.state.openEventId = it.payload.id; render(); } }
-    else if(act==='gotoMonth'){ App.state.view='month'; render(); }
-    else if(act==='gotoAgenda'){ App.state.view='agenda'; render(); }
-    else if(act==='addEvent'){
-      const title=(document.getElementById('evTitle')||{}).value||'';
-      const date=(document.getElementById('evDate')||{}).value||today();
-      if(!title) return;
-      const e={ id:'E'+Date.now(), title, date, start:(document.getElementById('evStart')||{}).value||'09:00', end:(document.getElementById('evEnd')||{}).value||'10:00',
-        type:(document.getElementById('evType')||{}).value||'Meeting', location:(document.getElementById('evLoc')||{}).value||'',
-        caseId:(document.getElementById('evCase')||{}).value||null, owner:(document.getElementById('evOwner')||{}).value||DATA.me.id };
-      DATA.events.push(e); persist();
-      if(DATA.me.role==='Admin' && e.owner!==DATA.me.id){ pushNotification('created', e); }
-      render();
-    }
-    else if(act==='openEvent' || act==='editEvent'){ App.state.modal=true; App.state.openEventId=id; render(); }
-    else if(act==='deleteEvent'){
-      const ix=DATA.events.findIndex(x=>x.id===id);
-      if(ix>-1){ const e=DATA.events[ix]; DATA.events.splice(ix,1); persist(); pushNotification('deleted', e); render(); }
-    }
-    else if(act==='modalClose'){ App.state.modal=false; App.state.openEventId=null; render(); }
-    else if(act==='modalSave'){
-      const e=DATA.events.find(x=>x.id===App.state.openEventId); if(!e) return;
-      const G=id=>{const el=document.getElementById(id); return el?el.value:null;};
-      e.title=G('mTitle')||e.title; e.date=G('mDate')||e.date; e.start=G('mStart')||e.start; e.end=G('mEnd')||e.end; e.location=G('mLoc')||e.location;
-      persist(); pushNotification('updated', e); App.state.modal=false; App.state.openEventId=null; render();
-    }
-    else if(act==='openCase'){ route('case',{id:id}); }
-    else if(act==='openCompany'){ route('company',{id:id}); }
-    else if(act==='openContact'){ route('contact',{id:id}); }
-    else if(act==='tab'){ App.state.tab = n.getAttribute('data-tab'); render(); }
-    else if(act==='addNote'){
-      const caseId=n.getAttribute('data-id'); const txt=(document.getElementById('noteTxt')||{}).value||''; if(!txt) return;
-      DATA.notes[caseId]=DATA.notes[caseId]||[]; DATA.notes[caseId].push({text:txt, ts:Date.now()}); persist(); render();
-    }
-    else if(act==='addTask'){
-      const caseId=n.getAttribute('data-id'); const txt=(document.getElementById('taskTxt')||{}).value||''; if(!txt) return;
-      DATA.tasks[caseId]=DATA.tasks[caseId]||[]; DATA.tasks[caseId].push({text:txt, done:false}); persist(); render();
-    }
-    else if(act==='addStdTasks'){
-      const caseId=n.getAttribute('data-id'); DATA.tasks[caseId]=DATA.tasks[caseId]||[];
-      ['Initial interview','Collect documents','Draft report'].forEach(t=>DATA.tasks[caseId].push({text:t,done:false}));
-      persist(); render();
-    }
-    else if(act==='linkPerson'){
-      const caseId=n.getAttribute('data-id'); const pid=(document.getElementById('linkPerson')||{}).value;
-      DATA.people[caseId]=DATA.people[caseId]||[]; if(pid && !DATA.people[caseId].includes(pid)) DATA.people[caseId].push(pid); persist(); render();
-    }
-    else if(act==='unlinkPerson'){
-      const caseId=n.getAttribute('data-id'); const pid=n.getAttribute('data-p');
-      DATA.people[caseId]=(DATA.people[caseId]||[]).filter(x=>x!==pid); persist(); render();
-    }
-    else if(act==='impersonate'){ const who = n.getAttribute('data-id'); const u = DATA.users.find(x=>x.id===who); if(u){ DATA.me=u; persist(); render(); } }
-    else if(act==='clearImpersonation'){ DATA.me = DATA.users.find(x=>x.id==='u-admin'); persist(); render(); }
-  });
-}
+document.addEventListener('click', (ev)=>{
+  const a=ev.target.closest('[data-route],[data-act]'); if(!a) return;
+  const routeTo=a.getAttribute('data-route');
+  if(routeTo){ route(routeTo); return; }
+  const act=a.getAttribute('data-act');
+  const id=a.getAttribute('data-id');
+  if(act==='toggleShowUnread'){ App.state.showUnread=!App.state.showUnread; render(); }
+  else if(act==='markAllRead'){ App.state.notifications.forEach(n=>n.read=true); App.state.notificationsUnread=0; render(); }
+  else if(act==='dismissNotif'){ const nid=a.getAttribute('data-id'); const it=App.state.notifications.find(x=>x.id===nid); if(it){ it.read=true; App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length; render(); } }
+  else if(act==='openNotif'){ const it=App.state.notifications.find(x=>x.id===id); if(it){ it.read=true; App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length; App.state.view='month'; App.state.modal=true; App.state.openEventId = it.payload.id; route('calendar'); } }
+  else if(act==='gotoMonth'){ App.state.view='month'; render(); }
+  else if(act==='gotoAgenda'){ App.state.view='agenda'; render(); }
+  else if(act==='addEvent'){
+    const title=(document.getElementById('evTitle')||{}).value||'';
+    const date=(document.getElementById('evDate')||{}).value||today();
+    if(!title) return;
+    const e={ id:'E'+Date.now(), title, date, start:(document.getElementById('evStart')||{}).value||'09:00', end:(document.getElementById('evEnd')||{}).value||'10:00',
+      type:(document.getElementById('evType')||{}).value||'Meeting', location:(document.getElementById('evLoc')||{}).value||'',
+      caseId:(document.getElementById('evCase')||{}).value||null, owner:(document.getElementById('evOwner')||{}).value||DATA.me.id };
+    DATA.events.push(e); persist();
+    if(DATA.me.role==='Admin' && e.owner!==DATA.me.id){ pushNotification('created', e); }
+    render();
+  }
+  else if(act==='openEvent' || act==='editEvent'){ App.state.modal=true; App.state.openEventId=id; render(); }
+  else if(act==='deleteEvent'){
+    const ix=DATA.events.findIndex(x=>x.id===id);
+    if(ix>-1){ const e=DATA.events[ix]; DATA.events.splice(ix,1); persist(); pushNotification('deleted', e); render(); }
+  }
+  else if(act==='modalClose'){ App.state.modal=false; App.state.openEventId=null; render(); }
+  else if(act==='modalSave'){
+    const e=DATA.events.find(x=>x.id===App.state.openEventId); if(!e) return;
+    const G=id=>{const el=document.getElementById(id); return el?el.value:null;};
+    e.title=G('mTitle')||e.title; e.date=G('mDate')||e.date; e.start=G('mStart')||e.start; e.end=G('mEnd')||e.end; e.location=G('mLoc')||e.location;
+    persist(); pushNotification('updated', e); App.state.modal=false; App.state.openEventId=null; render();
+  }
+  else if(act==='openCase'){ route('case',{id:id}); }
+  else if(act==='openCompany'){ route('company',{id:id}); }
+  else if(act==='openContact'){ route('contact',{id:id}); }
+  else if(act==='tab'){ App.state.tab = a.getAttribute('data-tab'); render(); }
+  else if(act==='addNote'){
+    const caseId=a.getAttribute('data-id'); const txt=(document.getElementById('noteTxt')||{}).value||''; if(!txt) return;
+    DATA.notes[caseId]=DATA.notes[caseId]||[]; DATA.notes[caseId].push({text:txt, ts:Date.now()}); persist(); render();
+  }
+  else if(act==='addTask'){
+    const caseId=a.getAttribute('data-id'); const txt=(document.getElementById('taskTxt')||{}).value||''; if(!txt) return;
+    DATA.tasks[caseId]=DATA.tasks[caseId]||[]; DATA.tasks[caseId].push({text:txt, done:false}); persist(); render();
+  }
+  else if(act==='addStdTasks'){
+    const caseId=a.getAttribute('data-id'); DATA.tasks[caseId]=DATA.tasks[caseId]||[];
+    ['Initial interview','Collect documents','Draft report'].forEach(t=>DATA.tasks[caseId].push({text:t,done:false}));
+    persist(); render();
+  }
+  else if(act==='linkPerson'){
+    const caseId=a.getAttribute('data-id'); const pid=(document.getElementById('linkPerson')||{}).value;
+    DATA.people[caseId]=DATA.people[caseId]||[]; if(pid && !DATA.people[caseId].includes(pid)) DATA.people[caseId].push(pid); persist(); render();
+  }
+  else if(act==='unlinkPerson'){
+    const caseId=a.getAttribute('data-id'); const pid=a.getAttribute('data-p');
+    DATA.people[caseId]=(DATA.people[caseId]||[]).filter(x=>x!==pid); persist(); render();
+  }
+  else if(act==='impersonate'){ const who = a.getAttribute('data-id'); const u = DATA.users.find(x=>x.id===who); if(u){ DATA.me=u; persist(); render(); } }
+  else if(act==='clearImpersonation'){ DATA.me = DATA.users.find(x=>x.id==='u-admin'); persist(); render(); }
+});
 function route(r,p){ App.state.route=r; App.state.params=p||{}; render(); }
 function pushNotification(type, payload){
   const id='N'+Date.now()+Math.random().toString(36).slice(2,6);
@@ -390,11 +391,10 @@ function pushNotification(type, payload){
   App.state.notificationsUnread = App.state.notifications.filter(n=>!n.read).length;
 }
 function renderModal(){
-  if(!App.state.modal) return '';
   const e = DATA.events.find(x=>x.id===App.state.openEventId);
-  if(!e) return '';
-  return `<div class="modal-under" style="position:fixed;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
-    <div class="card" style="width:min(560px,92vw)">
+  if(!App.state.modal || !e) return '';
+  return `<div class="modal-under">
+    <div class="card modal">
       <h3>Edit Event</h3>
       <div class="grid cols-3">
         <div><label>Title</label><input class="input" id="mTitle" value="${e.title}"></div>
@@ -405,24 +405,13 @@ function renderModal(){
       </div>
       <div class="toolbar" style="margin-top:10px">
         <button class="btn primary" data-act="modalSave">Save</button>
+        <div class="sp"></div>
         <button class="btn" data-act="modalClose">Close</button>
+        <button class="btn" data-act="deleteEvent" data-id="${e.id}" title="Delete this event">Delete</button>
       </div>
     </div>
   </div>`;
 }
-function render(){ const html=(function(){ const r=App.state.route;
-  if(r==='dashboard') return Dashboard();
-  if(r==='calendar') return Calendar();
-  if(r==='cases') return Cases();
-  if(r==='companies') return Companies();
-  if(r==='contacts') return Contacts();
-  if(r==='documents') return Documents();
-  if(r==='resources') return Resources();
-  if(r==='admin') return Admin();
-  if(r==='case') return CasePage(App.state.params.id);
-  if(r==='company') return CompanyPage(App.state.params.id);
-  if(r==='contact') return ContactPage(App.state.params.id);
-  return '<div class="card">Not found</div>';
-})(); document.getElementById('app').innerHTML = renderModal()+html; wire(); }
 
+// Boot
 window.addEventListener('DOMContentLoaded', ()=>{ App.state.route='dashboard'; render(); });

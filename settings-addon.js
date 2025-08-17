@@ -1,1 +1,1 @@
-// org settings hook
+// settings hook (kept for compatibility)

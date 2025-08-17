@@ -3,25 +3,29 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Synergy CRM — HubSpot Style</title>
+  <title>Synergy CRM — HubSpot Theme</title>
   <link rel="stylesheet" href="print.css" media="print">
   <style>
-    /* HubSpot-style visual system */
+    /* === HubSpot-like orange/teal palette === */
     :root{
       --bg:#f7f9fc; --ink:#0f1b2d; --muted:#64748b;
-      --brand:#0b2b3d; --brand2:#103245; --brand3:#14506a;
-      --primary:#ff7a59; --border:#e2e8f0; --card:#ffffff;
-      --chip-plan:#6366f1; --chip-invest:#06b6d4; --chip-review:#f59e0b; --chip-report:#10b981; --chip-closed:#9ca3af;
+      --brand:#0b2b3d; --brand2:#103245; --brandGrad2:#14506a;
+      --primary:#ff7a59; --primary-ink:#fff;
+      --border:#e2e8f0; --card:#ffffff;
+      --chip-plan:#7c3aed; --chip-invest:#06b6d4; --chip-review:#f59e0b; --chip-report:#10b981; --chip-closed:#9ca3af;
+      --ok:#16a34a; --danger:#ef4444;
     }
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
     a{color:var(--primary);text-decoration:none}
-    .topbar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:10px 16px;background:linear-gradient(90deg,var(--brand),var(--brand3));color:#fff;border-bottom:1px solid #082231}
+    .topbar{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:10px 16px;
+      background:linear-gradient(90deg,var(--brand),var(--brandGrad2));color:#fff;border-bottom:1px solid #082231}
     .brand{font-weight:800;letter-spacing:.2px}.sp{flex:1}
     .badge{background:#1f8b4c;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
     .notif{display:inline-block;min-width:1.2rem;height:1.2rem;border-radius:999px;background:#f43f5e;color:#fff;font-size:12px;line-height:1.2rem;text-align:center;padding:0 .3rem}
     .shell{display:flex;min-height:calc(100vh - 48px)}
-    aside.sidebar{width:220px;background:var(--brand2);color:#cfe9f4;padding:16px 0}
+    aside.sidebar{width:214px;background:var(--brand2);color:#cfe9f4;padding:16px 0}
     aside.sidebar h3{margin:0 16px 8px;font-size:12px;color:#9fd1e6;letter-spacing:.06em;text-transform:uppercase}
     .nav{list-style:none;margin:0;padding:0}
     .nav li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;display:flex;align-items:center;gap:8px}
@@ -29,14 +33,17 @@
     .nav li.active{background:#10435d;border-left-color:#31a6ff;color:#fff}
     .icon{width:18px;text-align:center;opacity:.9}
     main.main{flex:1;padding:18px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+    .card{background:var(--card); /* opaque white to avoid see-through */ 
+      border:1px solid var(--border);border-radius:12px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
     .section{margin:0 0 18px}.section header{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
     .section-title{margin:0;font-size:16px;font-weight:700}
     .grid{display:grid;gap:10px}.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}
     label{display:block;font-size:12px;margin:2px 0 4px;color:var(--muted)}
     .input,.select,.btn{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff}
-    .btn{cursor:pointer}.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn{cursor:pointer;user-select:none}
+    .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
     .btn.light{background:#fff}
+    .btn.ghost{background:transparent}
     table{border-collapse:collapse;width:100%} th,td{border-top:1px solid var(--border);padding:8px 6px;text-align:left} th{font-size:12px;color:var(--muted);text-transform:uppercase}
     .status{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.15rem .5rem;font-size:12px;color:#fff}
     .status.plan{background:var(--chip-plan)} .status.invest{background:var(--chip-invest)} .status.review{background:var(--chip-review)} .status.report{background:var(--chip-report)} .status.closed{background:var(--chip-closed)}
@@ -50,6 +57,9 @@
     .calendar-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:90px;padding:.25rem .3rem;position:relative}
     .calendar-cell:nth-child(7n){border-right:none}
     .event-chip{display:block;margin:.2rem 0;padding:.15rem .35rem;border-radius:.4rem;border:1px solid var(--border);font-size:12px;background:#f8fafc;cursor:pointer}
+    /* Modal */
+    .modal-under{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+    .modal{width:min(560px,92vw)}
   </style>
 </head>
 <body>
