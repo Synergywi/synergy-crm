@@ -74,7 +74,7 @@ function Shell(content,active){
       <div class="modal-head"><div id="modal-title">Edit Event</div><button class="btn light" data-act="closeModal">Close</button></div>
       <div class="grid cols-3">
         <div><label>Title</label><input class="input" id="md-title"></div>
-        <div><label>Date</label><input class="input" id="md-date" type="date"></value></div>
+        <div><label>Date</label><input class="input" id="md-date" type="date"></div>
         <div><label>Type</label><select class="input" id="md-type"><option>Appointment</option><option>Note</option></select></div>
         <div><label>Start</label><input class="input" id="md-start" type="time"></div>
         <div><label>End</label><input class="input" id="md-end" type="time"></div>
