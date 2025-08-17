@@ -1,7 +1,1 @@
-/* enhanced print rules */
-@media print {
-  body { background:#fff; color:#000; }
-  .topbar, aside.sidebar, #boot, .tabs, .btn { display:none !important; }
-  .card, table, th, td { background:#fff !important; color:#000 !important; box-shadow:none !important; }
-  a { color:#000 !important; text-decoration:underline; }
-}
+/* Print styles placeholder */
