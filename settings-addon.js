@@ -1,1 +1,1 @@
-// Settings addon (placeholder)
+// reserved for org-specific overrides
