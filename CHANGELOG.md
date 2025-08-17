@@ -1,5 +1,1 @@
-baseline-1.0.0
-
-calendar-1.0.0
-- Add Calendar route, views, filters, event add/delete
-- Make impersonation switch the active user for testing permissions
+baseline-1.1.2: case calendar in tabs; click-to-edit events across Month/Agenda/Case; modal editor; admin notifications; persistence.
