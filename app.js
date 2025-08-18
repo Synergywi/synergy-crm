@@ -19,7 +19,7 @@ DATA.calendar = loadStore(STORE_KEY_MAIN, {calendar: DATA.calendar, me: DATA.me}
 DATA.me = loadStore(STORE_KEY_MAIN, {calendar: [], me: DATA.me}).me || DATA.me;
 
 // App state & notifications
-const App = window.App || {state:{route:"dashboard",tabs:{dashboard:"overview"}}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+// Using existing App from baseline; do not redeclare.
 App.state.notifications = loadStore(STORE_KEY_NOTIFS, []);
 function persistMain(){ saveStore(STORE_KEY_MAIN, {calendar: DATA.calendar||[], me: DATA.me||{}}); }
 function persistNotifs(){ saveStore(STORE_KEY_NOTIFS, App.state.notifications||[]); }
@@ -94,7 +94,7 @@ function persistAll(){
 }
 
 /* ===== Notifications (Admin) ===== */
-const App={state:{route:"dashboard", tabs:{dashboard:"overview"}, notifMode:"unread"}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+// Using existing App from baseline; do not redeclare.
 App.state.notifications = pull("notifications", []);
 function addNotif(kind, verb, ev){
   const n = { id:uid(), kind, verb, evId:ev.id, title:ev.title, when:(new Date()).toISOString(), read:false };
@@ -461,3 +461,11 @@ document.addEventListener('change',e=>{
 
 document.addEventListener('DOMContentLoaded',()=>{ App.set({route:'dashboard'}); });
 })();
+
+// === Post-App initializer (extends existing App safely) ===
+(function(){
+  if (typeof App === 'undefined' || !App || !App.state) return;
+  App.state.notifications = App.state.notifications || [];
+  App.state.cal = App.state.cal || { date:new Date(), mode:'month', filterOwner:'' };
+})();
+
