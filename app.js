@@ -3,6 +3,14 @@ const BUILD="baseline-1.0.0"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* utils */
+function notifyCalendar(action, ev){
+  try{
+    DATA.notifications = DATA.notifications||[];
+    DATA.notifications.unshift({id:uid(), action, evId:ev.id, title:ev.title, when:(new Date()).toISOString(), read:false});
+    if(typeof persistAll==='function') persistAll();
+  }catch(_){}
+}
+
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
@@ -15,6 +23,7 @@ function mkCase(y,seq,p){
   Object.assign(b,p||{}); return b;
 }
 const DATA={
+  notifications:[],
   users:[
     {name:"Admin",email:"admin@synergy.com",role:"Admin"},
     {name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},
@@ -79,6 +88,10 @@ function Dashboard(){
   const tab=App.state.tabs.dashboard;
   const rows=DATA.cases.slice(0,6).map(c=>`<tr><td>${c.fileNumber}</td><td>${c.organisation}</td><td>${c.investigatorName}</td><td>${statusChip(c.status)}</td><td class="right"><button class="btn light" data-act="openCase" data-arg="${c.id}">Open</button></td></tr>`).join("");
   const overview=`<div class="card"><h3>Welcome</h3><div class="muted">${STAMP}</div></div><div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const notifState = App.state.notifs||{show:'unread'};
+  const list=(DATA.notifications||[]).filter(n=>notifState.show==='all' || !n.read);
+  const notifRows=list.map(n=>`<tr><td>${new Date(n.when).toLocaleString()}</td><td>${n.action}</td><td>${esc(n.title)}</td><td class="right"><button class="btn light" data-act="notifOpen" data-arg="${n.id}">Open</button> <button class="btn" data-act="notifDismiss" data-arg="${n.id}">Dismiss</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">No notifications</td></tr>`;
+  const notifs=`<div class="card"><h3 class="section-title">Calendar updates</h3><div class="right" style="margin-bottom:6px"><button class="btn light" data-act="notifToggle">${notifState.show==='all'?'Show unread':'Show all'}</button> <button class="btn" data-act="notifMarkAll">Mark all read</button></div><table><thead><tr><th>When</th><th>Action</th><th>Title</th><th></th></tr></thead><tbody>${notifRows}</tbody></table></div>`;
   const week=`<div class="card"><h3>This Week</h3><div class="muted">New cases: ${DATA.cases.filter(c=>c.created.startsWith(String(YEAR)+"-")).length}</div></div>`;
   
   const caseEvents = (function(){
@@ -181,11 +194,35 @@ function CasePage(id){
   const documents = '<div class="card"><h3 class="section-title">Documents</h3><div class="right" style="margin-bottom:6px"><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div><input type="file" id="file-input" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div>';
 
   const tabs = Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People'],['calendar','Calendar']]);
-  const body = `<div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
-                <div class="tabpanel ${tab==='notes'?'active':''}">${notes}</div>
-                <div class="tabpanel ${tab==='tasks'?'active':''}">${tasks}</div>
-                <div class="tabpanel ${tab==='documents'?'active':''}">${documents}</div>
-                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>`;
+  
+  const caseCal = (function(){
+    const list=(DATA.calendar||[]).filter(e=>e.caseId===id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
+    const rows=list.map(e=>`<tr><td>${new Date(e.startISO).toLocaleDateString()}</td>
+      <td>${new Date(e.startISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${new Date(e.endISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+      <td>${esc(e.title)}</td><td>${esc(e.location||'')}</td><td>${e.ownerName||e.ownerEmail}</td>
+      <td class="right"><button class="btn light" data-act="openEvent" data-arg="${e.id}">Open</button></td></tr>`).join("") || `<tr><td colspan="6" class="muted">No events yet.</td></tr>`;
+    const ownerSelect = ((DATA.me||{}).role||'Admin')==='Admin' ? `<div><label>Owner</label><select class="input" id="ce-owner">${(DATA.users||[]).map(u=>`<option value="${u.email}" ${(u.email===(DATA.me.email||'')?'selected':'')}>${u.name}</option>`).join("")}</select></div>` : "";
+    return `<div class="card"><h3 class="section-title">Case Calendar</h3>
+      <table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Location</th><th>Owner</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="card"><h3 class="section-title">Add case event</h3>
+        <div class="grid cols-3">
+          <div><label>Title</label><input class="input" id="ce-title"></div>
+          <div><label>Date</label><input class="input" id="ce-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+          <div><label>Type</label><select class="input" id="ce-type"><option>Appointment</option><option>Note</option></select></div>
+          <div><label>Start</label><input class="input" id="ce-start" type="time" value="10:00"></div>
+          <div><label>End</label><input class="input" id="ce-end" type="time" value="11:00"></div>
+          <div><label>Location</label><input class="input" id="ce-loc"></div>
+          ${ownerSelect}
+        </div>
+        <div class="right" style="margin-top:8px"><button class="btn" data-act="createCaseEvent" data-arg="${id}">Add</button></div>
+      </div>`;
+  })();
+const body = `<div class=\"tabpanel ${tab==='details'?\'active\':\''}\">${details}</div>
+                <div class=\"tabpanel ${tab==='notes'?\'active\':\''}\">${notes}</div>
+                <div class=\"tabpanel ${tab==='tasks'?\'active\':\''}\">${tasks}</div>
+                <div class=\"tabpanel ${tab==='documents'?\'active\':\''}\">${documents}</div>
+                <div class=\"tabpanel ${tab==='people'?\'active\':\''}\">${people}</div>
+                <div class=\"tabpanel ${tab==='calendar'?\'active\':\''}\">${caseCal}</div>`;
   return Shell(`<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ${cs.fileNumber}</h2><div class="sp"></div><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div></div>` + tabs + body, 'cases');
 }
 
@@ -357,6 +394,20 @@ document.addEventListener('click', e=>{
   if(act==='route'){ App.set({route:arg}); return; }
   if(act==='tab'){ const scope=t.getAttribute('data-scope'); const tabs=Object.assign({},App.state.tabs); tabs[scope]=arg; App.set({tabs}); return; }
 
+  if(act==='notifOpen'){
+    const n=(DATA.notifications||[]).find(x=>x.id===arg); if(!n) return;
+    n.read=true;
+    const ev=(DATA.calendar||[]).find(e=>e.id===n.evId);
+    if(ev) renderEventModal(ev);
+    App.set({}); return;
+  }
+  if(act==='notifDismiss'){
+    const n=(DATA.notifications||[]).find(x=>x.id===arg); if(n) n.read=true; App.set({}); return;
+  }
+  if(act==='notifToggle'){
+    const ns=App.state.notifs||{show:'unread'}; ns.show=(ns.show==='all'?'unread':'all'); App.set({notifs:ns}); return;
+  }
+  if(act==='notifMarkAll'){ for(const n of (DATA.notifications||[])) n.read=true; App.set({}); return; }
   if(act==='openCase'){ App.set({currentCaseId:arg,route:'case'}); return; }
   if(act==='newCase'){ App.state.tabs.cases='new'; App.set({}); return; }
   if(act==='createCase'){
@@ -431,6 +482,7 @@ document.addEventListener('click', e=>{
     const sISO = date+'T'+start+':00'; const eISO = date+'T'+end+':00';
     const ev={id:uid(), title, description:'', startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId};
     DATA.calendar = DATA.calendar||[]; DATA.calendar.push(ev);
+    notifyCalendar('created', ev);
     App.set({});
     return;
   }
@@ -678,11 +730,13 @@ document.addEventListener('click', e=>{
     const caseId=(document.getElementById('ev-case')||{}).value||"";
     const sISO = date+"T"+start+":00";
     const eISO = date+"T"+end+":00";
-    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId||null});
-    alert('Event added');
+    const ev={id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId||null};
+    DATA.calendar.push(ev);
+    notifyCalendar('created', ev);
     App.set({}); return;
   }
   if(act==='deleteEvent'){
+    const ev=(DATA.calendar||[]).find(e=>e.id===arg); if(ev) notifyCalendar('deleted', ev);
     DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
     App.set({}); return;
   }
@@ -705,6 +759,7 @@ document.addEventListener('click', e=>{
       const newOwner=(document.getElementById('em-owner')||{}).value||ev.ownerEmail;
       ev.ownerEmail=newOwner; ev.ownerName=((DATA.users||[]).find(u=>u.email===newOwner)||{}).name||newOwner;
     }
+    notifyCalendar('updated', ev);
     App.set({}); document.getElementById('modal-root')?.remove(); return;
   }
   if(act==='closeModal'){ document.getElementById('modal-root')?.remove(); return; }

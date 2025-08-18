@@ -217,13 +217,12 @@ function CasePage(id){
         <div class="right" style="margin-top:8px"><button class="btn" data-act="createCaseEvent" data-arg="${id}">Add</button></div>
       </div>`;
   })();
-const body = `<div class=\"tabpanel ${tab==='details'?\'active\':\''}\">${details}</div>
-                <div class=\"tabpanel ${tab==='notes'?\'active\':\''}\">${notes}</div>
-                <div class=\"tabpanel ${tab==='tasks'?\'active\':\''}\">${tasks}</div>
-                <div class=\"tabpanel ${tab==='documents'?\'active\':\''}\">${documents}</div>
-                <div class=\"tabpanel ${tab==='people'?\'active\':\''}\">${people}</div>
-                <div class=\"tabpanel ${tab==='calendar'?\'active\':\''}\">${caseCal}</div>`;
-  return Shell(`<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ${cs.fileNumber}</h2><div class="sp"></div><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div></div>` + tabs + body, 'cases');
+const body = `<div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
+                <div class="tabpanel ${tab==='notes'?'active':''}">${notes}</div>
+                <div class="tabpanel ${tab==='tasks'?'active':''}">${tasks}</div>
+                <div class="tabpanel ${tab==='documents'?'active':''}">${documents}</div>
+                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>
+                <div class="tabpanel ${tab==='calendar'?'active':''}">${caseCal}</div>`;
 }
 
 function Contacts(){
