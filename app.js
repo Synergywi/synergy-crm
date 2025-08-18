@@ -475,3 +475,12 @@ document.addEventListener('DOMContentLoaded',()=>{ App.set({route:'dashboard'});
   } catch (e) { /* no-op */ }
 })();
 
+
+// === Post-App initializer (outside IIFE, safe) ===
+(function(){
+  try {
+    if (typeof App === 'undefined' || !App || !App.state) return;
+    if (!App.state.notifications) App.state.notifications = [];
+    if (!App.state.cal) App.state.cal = { date:new Date(), mode:'month', filterOwner:'' };
+  } catch(e) { /* no-op */ }
+})();
