@@ -3,7 +3,7 @@
   // ---------- Utilities
   const $ = (sel,root=document)=>root.querySelector(sel);
   const $$ = (sel,root=document)=>Array.from(root.querySelectorAll(sel));
-  const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]);
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
   const uid = () => Math.random().toString(36).slice(2,10);
   const ymd = d => new Date(d).toISOString().slice(0,10);
   const hhmm = d => new Date(d).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
