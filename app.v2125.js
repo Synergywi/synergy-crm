@@ -161,12 +161,36 @@ function CasePage(id){
   }
   const documents = '<div class="card"><h3 class="section-title">Documents</h3><div class="right" style="margin-bottom:6px"><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div><input type="file" id="file-input" multiple style="display:none"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div>';
 
-  const tabs = Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People']]);
-  const body = `<div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
+  const tabs = Tabs('case',[['details','Details'],['notes','Notes'],['tasks','Tasks'],['documents','Documents'],['people','People'],['calendar','Calendar']]);
+  
+  const caseCal = (()=>{
+    const list=(DATA.calendar||[]).filter(e=>e.caseId===id).sort((a,b)=>a.startISO.localeCompare(b.startISO));
+    const rows=list.map(e=>`<tr><td>${new Date(e.startISO).toLocaleDateString()}</td>
+      <td>${new Date(e.startISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}–${new Date(e.endISO).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+      <td>${esc(e.title)}</td><td>${esc(e.location||'')}</td><td>${e.ownerName||e.ownerEmail}</td>
+      <td class="right"><button class="btn light" data-act="openEvent" data-arg="${e.id}">Open</button></td></tr>`).join("") || `<tr><td colspan="6" class="muted">No events yet.</td></tr>`;
+    const ownerSelect = ((DATA.me||{}).role||'Admin')==='Admin' ? `<div><label>Owner</label><select class="input" id="ce-owner">${(DATA.users||[]).map(u=>`<option value="${u.email}" ${(u.email===(DATA.me.email||'')?'selected':'')}>${u.name}</option>`).join("")}</select></div>` : "";
+    return `<div class="card"><h3 class="section-title">Case Calendar</h3>
+      <table><thead><tr><th>Date</th><th>Time</th><th>Title</th><th>Location</th><th>Owner</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="card"><h3 class="section-title">Add case event</h3>
+        <div class="grid cols-3">
+          <div><label>Title</label><input class="input" id="ce-title"></div>
+          <div><label>Date</label><input class="input" id="ce-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+          <div><label>Type</label><select class="input" id="ce-type"><option>Appointment</option><option>Note</option></select></div>
+          <div><label>Start</label><input class="input" id="ce-start" type="time" value="10:00"></div>
+          <div><label>End</label><input class="input" id="ce-end" type="time" value="11:00"></div>
+          <div><label>Location</label><input class="input" id="ce-loc"></div>
+          ${ownerSelect}
+        </div>
+        <div class="right" style="margin-top:8px"><button class="btn" data-act="createCaseEvent" data-arg="${id}">Add</button></div>
+      </div>`;
+  })();
+const body = `<div class="tabpanel ${tab==='details'?'active':''}">${details}</div>
                 <div class="tabpanel ${tab==='notes'?'active':''}">${notes}</div>
                 <div class="tabpanel ${tab==='tasks'?'active':''}">${tasks}</div>
                 <div class="tabpanel ${tab==='documents'?'active':''}">${documents}</div>
-                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>`;
+                <div class="tabpanel ${tab==='people'?'active':''}">${people}</div>
+                <div class="tabpanel ${tab==='calendar'?'active':''}">${caseCal}</div>`;
   return Shell(`<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case ${cs.fileNumber}</h2><div class="sp"></div><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div></div>` + tabs + body, 'cases');
 }
 
@@ -620,8 +644,7 @@ document.addEventListener('click', e=>{
   }
   if(act==='openEvent'){
     const ev=(DATA.calendar||[]).find(x=>x.id===arg);
-    if(!ev) return;
-    alert(ev.title+" — "+(new Date(ev.startISO)).toLocaleString());
+    if(ev && typeof renderEventModal==='function') renderEventModal(ev);
     return;
   }
 });
