@@ -417,23 +417,6 @@ document.addEventListener('click', e=>{
   if(act==='saveSettings'){ App.state.settings={emailAlerts:document.getElementById('set-email').checked,darkMode:document.getElementById('set-dark').checked}; App.state.audit=[...(App.state.audit||[]), 'Settings saved '+(new Date()).toLocaleString()]; App.set({}); return; }
   if(act==='clearImpersonation'){ const admin=DATA.users.find(x=>x.role==='Admin')||{name:'Admin',email:'admin@synergy.com',role:'Admin'}; DATA.me={name:admin.name,email:admin.email,role:admin.role}; try{ localStorage.removeItem('synergy_me'); }catch(_){} alert('Switched back to Admin'); App.set({}); return; }
   if(act==='impersonate'){ let email=arg; if(!email && t && t.dataset){ email=t.dataset.arg||t.dataset.email||""; } const u=DATA.users.find(x=>x.email===email); if(!u){ alert("User not found"); return; } DATA.me={name:u.name,email:u.email,role:u.role}; try{ localStorage.setItem("synergy_me", JSON.stringify(DATA.me)); }catch(_){} alert("Now acting as "+u.name+" ("+u.role+")"); App.set({}); return; }
-
-  if(act==='createCaseEvent'){
-    const caseId=arg; const me=DATA.me||{email:''};
-    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
-    const date=(document.getElementById('ce-date')||{}).value||new Date().toISOString().slice(0,10);
-    const type=(document.getElementById('ce-type')||{}).value||'Appointment';
-    const start=(document.getElementById('ce-start')||{}).value||'10:00';
-    const end=(document.getElementById('ce-end')||{}).value||'11:00';
-    const loc=(document.getElementById('ce-loc')||{}).value||'';
-    const owner = ((DATA.me||{}).role||'Admin')==='Admin' ? ((document.getElementById('ce-owner')||{}).value||me.email) : me.email;
-    const ownerName = ((DATA.users||[]).find(u=>u.email===owner)||{}).name || owner;
-    const sISO = date+'T'+start+':00'; const eISO = date+'T'+end+':00';
-    const ev={id:uid(), title, description:'', startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId};
-    DATA.calendar = DATA.calendar||[]; DATA.calendar.push(ev);
-    App.set({});
-    return;
-  }
 });
 
 document.addEventListener('change', e=>{
