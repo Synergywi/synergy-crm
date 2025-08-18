@@ -1,6 +1,1 @@
 /* Print styles placeholder */
-
-
-/* minimal notification badge dot (non-invasive) */
-.badge-dot{position:relative; display:inline-block; margin-left:4px; padding:2px 6px; border-radius:999px; background:#ff6a00; color:#fff; font-size:11px; line-height:1}
-.notify{position:relative; display:inline-block; margin-right:8px}
