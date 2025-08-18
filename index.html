@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Synergy CRM PRO — Clean v2132</title>
+  <title>Synergy CRM — v2136</title>
   <link rel="stylesheet" href="theme-hubspot.css">
   <link rel="stylesheet" href="custom.css">
   <link rel="stylesheet" href="print.css" media="print">
   <style>
-    body{margin:0;background:#f7f9fb;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-    .sidebar{background:#fff;border-right:1px solid #e6eaef;padding:12px}
-    .brand{font-weight:600;margin:6px 0 12px 8px}
-    .nav .item{padding:10px 12px;border-radius:8px;margin:4px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-    .nav .item.active{background:#f0f4f8}
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e6eaef;background:#fff}
+    body{margin:0;background:#f7f9fb;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a}
+    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e6eaef;background:#fff;position:sticky;top:0;z-index:5}
     .version{font-size:12px;background:#eef3ff;border:1px solid #ccdafc;color:#3757d5;padding:2px 6px;border-radius:6px}
+    .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+    .sidebar{background:#fff;border-right:1px solid #e6eaef;padding:12px 8px}
+    .nav .item{padding:9px 12px;border-radius:8px;margin:4px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .nav .item.active{background:#f0f4f8}
     main{padding:16px}
     .grid{display:grid;gap:12px}
     .cols-2{grid-template-columns:1fr 1fr}
@@ -27,30 +26,30 @@
     .btn.primary{background:#3056ff;color:#fff;border-color:#3056ff}
     .btn.danger{border-color:#ff6b6b;color:#b00020}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
+    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:top}
     .right{text-align:right}
-    .tabs{display:flex;gap:8px;margin-bottom:10px}
+    .muted{color:#64748b}
+    .tabs{display:flex;gap:8px;margin:8px 0}
     .tab{padding:6px 10px;border:1px solid #e6eaef;border-radius:20px;cursor:pointer}
     .tab.active{background:#f0f4f8}
-    .muted{color:#6b7280}
     /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.2)}
-    .modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:680px;max-width:92vw;background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.2);display:none;align-items:center;justify-content:center}
+    .modal{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px;max-width:680px;width:92%}
+    .modal .grid{margin:10px 0}
   </style>
 </head>
 <body>
   <div class="topbar">
-    <div><strong>Synergy CRM PRO</strong> <span class="version">Soft Stable clean-2132</span></div>
+    <div><strong>Synergy CRM</strong> <span class="version">Soft Stable v2136</span></div>
     <div id="userbox"></div>
   </div>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand">🧭 Navigation</div>
       <div class="nav" id="nav"></div>
     </aside>
     <main id="main"></main>
   </div>
-
-  <script src="app.v2132.js"></script>
+  <div id="modal-root" class="modal-backdrop"></div>
+  <script src="app.js?v=2136"></script>
 </body>
 </html>
