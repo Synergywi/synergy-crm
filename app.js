@@ -465,6 +465,7 @@ document.addEventListener('DOMContentLoaded',()=>{ App.set({route:'dashboard'});
 // Removed broken post-init
 })();
 
+
 // === Post-App initializer (outside IIFE, safe) ===
 (function(){
   try {
@@ -473,3 +474,4 @@ document.addEventListener('DOMContentLoaded',()=>{ App.set({route:'dashboard'});
     App.state.cal = App.state.cal || { date:new Date(), mode:'month', filterOwner:'' };
   } catch (e) { /* no-op */ }
 })();
+
