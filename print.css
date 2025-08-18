@@ -1,1 +1,6 @@
-@media print{ body{background:#fff} table{font-size:12px} }
+/* print tables, no dark backgrounds */ 
+@media print{
+  .sidebar,.topbar,#boot{display:none!important}
+  body{background:#fff}
+  .card{box-shadow:none;border:1px solid #ddd}
+}

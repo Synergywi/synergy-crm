@@ -1,63 +1,14 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Synergy CRM — v2142</title>
-  <style>
-    :root{
-      --bg:#f7f9fc; --card:#ffffff; --line:#e6eaef; --muted:#64748b; --text:#0f172a;
-      --brand:#3056ff; --accent:#f0f4f8; --danger:#ef4444; --chip:#eef3ff; --chipborder:#ccdafc; --chiptext:#3757d5;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:#fff}
-    .version{font-size:12px;background:var(--chip);border:1px solid var(--chipborder);color:var(--chiptext);padding:2px 6px;border-radius:6px}
-    .brand{font-weight:600}
-    .badge-dot{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
-    .bell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:#eef2f7;cursor:pointer;margin-right:6px}
-    .bell:hover{background:#e6edf7}
-    .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-    .sidebar{background:#fff;border-right:1px solid var(--line);padding:10px 8px}
-    .nav .item{padding:9px 12px;border-radius:8px;margin:4px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-    .nav .item.active{background:var(--accent)}
-    main{padding:16px}
-    .grid{display:grid;gap:12px}
-    .cols-2{grid-template-columns:1fr 1fr}
-    .cols-3{grid-template-columns:repeat(3,1fr)}
-    .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
-    .section-title{margin:0 0 10px 0;font-size:16px}
-    .input,.select{width:100%;padding:8px 10px;border:1px solid #d7dde5;border-radius:8px;background:#fff}
-    .btn{border:1px solid #d7dde5;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-    .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .btn.danger{border-color:#ff6b6b;color:#b00020}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:top}
-    .right{text-align:right}
-    .muted{color:var(--muted)}
-    .tabs{display:flex;gap:8px;margin:8px 0}
-    .tab{padding:6px 10px;border:1px solid var(--line);border-radius:20px;cursor:pointer}
-    .tab.active{background:var(--accent)}
-    /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.2);display:none;align-items:center;justify-content:center}
-    .modal{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;max-width:720px;width:92%}
-    .modal .grid{margin:10px 0}
-    /* notification panel */
-    .npanel{position:absolute;right:16px;top:48px;width:560px;background:#fff;color:var(--text);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(16,24,40,.12)}
-    .npanel header{padding:10px 12px;border-bottom:1px solid #eef2f6;display:flex;gap:8px;align-items:center}
-    .npanel .nbody{max-height:320px;overflow:auto}
-    .nrow{display:grid;grid-template-columns:140px 1fr 120px;gap:8px;padding:10px 12px;border-top:1px solid #f3f4f6}
-    .nrow:first-child{border-top:0}
-    @media print{ .sidebar,.topbar{display:none} main{padding:0} table{font-size:12px} }
-  </style>
-</head>
-<body>
-  <div class="topbar" id="topbar"></div>
-  <div class="app">
-    <aside class="sidebar"><div class="nav" id="nav"></div></aside>
-    <main id="main"></main>
-  </div>
-  <div id="modal-root" class="modal-backdrop"></div>
-  <script src="app.js?v=2142"></script>
-</body>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Synergy CRM — Baseline</title>
+    <link rel="stylesheet" href="theme-hubspot.css">
+    <link rel="stylesheet" href="print.css">
+  </head>
+  <body>
+    <div id="app">Loading…</div>
+    <script src="app.js"></script>
+  </body>
 </html>
