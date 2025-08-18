@@ -1,55 +1,61 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Synergy CRM — v2136</title>
-  <link rel="stylesheet" href="theme-hubspot.css">
-  <link rel="stylesheet" href="custom.css">
-  <link rel="stylesheet" href="print.css" media="print">
+  <title>Synergy CRM — Baseline Locked</title>
+  <link rel="stylesheet" href="print.css">
   <style>
-    body{margin:0;background:#f7f9fb;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a}
-    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e6eaef;background:#fff;position:sticky;top:0;z-index:5}
-    .version{font-size:12px;background:#eef3ff;border:1px solid #ccdafc;color:#3757d5;padding:2px 6px;border-radius:6px}
-    .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-    .sidebar{background:#fff;border-right:1px solid #e6eaef;padding:12px 8px}
-    .nav .item{padding:9px 12px;border-radius:8px;margin:4px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-    .nav .item.active{background:#f0f4f8}
-    main{padding:16px}
-    .grid{display:grid;gap:12px}
-    .cols-2{grid-template-columns:1fr 1fr}
-    .cols-3{grid-template-columns:repeat(3,1fr)}
-    .card{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:14px}
-    .section-title{margin:0 0 10px 0;font-size:16px}
-    .input,.select{width:100%;padding:8px 10px;border:1px solid #d7dde5;border-radius:8px;background:#fff}
-    .btn{border:1px solid #d7dde5;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
-    .btn.primary{background:#3056ff;color:#fff;border-color:#3056ff}
-    .btn.danger{border-color:#ff6b6b;color:#b00020}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:top}
-    .right{text-align:right}
-    .muted{color:#64748b}
-    .tabs{display:flex;gap:8px;margin:8px 0}
-    .tab{padding:6px 10px;border:1px solid #e6eaef;border-radius:20px;cursor:pointer}
-    .tab.active{background:#f0f4f8}
-    /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.2);display:none;align-items:center;justify-content:center}
-    .modal{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px;max-width:680px;width:92%}
-    .modal .grid{margin:10px 0}
+    :root{
+      --bg:#f7f9fc; --ink:#0f1b2d; --muted:#64748b; --brand:#0b2b3d; --brand2:#103245;
+      --primary:#2563eb; --border:#e2e8f0; --card:#ffffff; --accent:#ff7a59;
+    }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+      font:14px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .topbar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;padding:10px 16px;
+      background:var(--brand);color:#fff;border-bottom:1px solid #082231}
+    .brand{font-weight:800;letter-spacing:.2px}.sp{flex:1}
+    .badge{background:#1f8b4c;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px}
+    .shell{display:flex;min-height:calc(100vh - 48px)}
+    aside.sidebar{width:210px;background:var(--brand2);color:#cfe9f4;padding:16px 0}
+    aside.sidebar h3{margin:0 16px 8px;font-size:12px;color:#9fd1e6;letter-spacing:.06em;text-transform:uppercase}
+    .nav{list-style:none;margin:0;padding:0}
+    .nav li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent}
+    .nav li:hover{background:#0c3b51}
+    .nav li.active{background:#10435d;border-left-color:#31a6ff;color:#fff}
+    main.main{flex:1;padding:18px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin:0 0 12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+    .section{margin:0 0 18px}.section header{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+    .section-title{margin:0;font-size:16px;font-weight:700}
+    .grid{display:grid;gap:10px}.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}
+    label{display:block;font-size:12px;margin:2px 0 6px;color:#475569}
+    .input{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+    textarea.input{min-height:88px}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+    thead th{background:#f8fafc;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.06em}
+    th,td{padding:10px;border-bottom:1px solid #edf2f7;vertical-align:top}.right{text-align:right}
+    .btn{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+    .btn.light{background:#eef2f7;color:#0f172a}.btn.danger{background:#ef4444}.btn.success{background:#059669}
+    .tabs{display:flex;gap:8px;border-bottom:1px solid #e6edf5;margin:2px 0 12px}
+    .tab{padding:10px 12px;border-radius:0;cursor:pointer;background:transparent;color:#334e68;font-weight:700;border-bottom:2px solid transparent}
+    .tab:hover{background:#f8fafc}.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:transparent}
+    .tabpanel{display:none}.tabpanel.active{display:block}
+    .avatar{width:48px;height:48px;border-radius:999px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0c4a6e;box-shadow:inset 0 0 0 1px #bae6fd}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#e5e7eb;color:#111827;border-radius:999px;padding:2px 10px;font-size:12px;line-height:20px;font-weight:600;border:1px solid #e6edf5}
+    .chip i{display:inline-block;width:6px;height:6px;border-radius:999px}
+    .status-planning{background:#eef2ff;color:#3730a3}.status-planning i{background:#6366f1}
+    .status-investigation{background:#fff7ed;color:#9a3412}.status-investigation i{background:#f59e0b}
+    .status-evidence-review{background:#f5f3ff;color:#6d28d9}.status-evidence-review i{background:#a855f7}
+    .status-reporting{background:#ecfeff;color:#115e59}.status-reporting i{background:#14b8a6}
+    .status-closed{background:#f1f5f9;color:#334155}.status-closed i{background:#64748b}
+    #boot{position:fixed;right:10px;bottom:8px;color:#64748b;font-size:12px}
   </style>
+  <link rel="stylesheet" href="theme-hubspot.css?v=8">
+  <link rel="stylesheet" href="custom.css?v=1">
 </head>
 <body>
-  <div class="topbar">
-    <div><strong>Synergy CRM</strong> <span class="version">Soft Stable v2136</span></div>
-    <div id="userbox"></div>
-  </div>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="nav" id="nav"></div>
-    </aside>
-    <main id="main"></main>
-  </div>
-  <div id="modal-root" class="modal-backdrop"></div>
-  <script src="app.js?v=2136"></script>
+  <div id="boot">Booting…</div>
+  <div id="app"></div>
+  <script src="app.js"></script>
 </body>
 </html>
