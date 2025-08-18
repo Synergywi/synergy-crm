@@ -462,10 +462,14 @@ document.addEventListener('change',e=>{
 document.addEventListener('DOMContentLoaded',()=>{ App.set({route:'dashboard'}); });
 })();
 
-// === Post-App initializer (extends existing App safely) ===
-(function(){
-  if (typeof App === 'undefined' || !App || !App.state) return;
-  App.state.notifications = App.state.notifications || [];
-  App.state.cal = App.state.cal || { date:new Date(), mode:'month', filterOwner:'' };
+// Removed broken post-init
 })();
 
+// === Post-App initializer (outside IIFE, safe) ===
+(function(){
+  try {
+    if (typeof App === 'undefined' || !App || !App.state) return;
+    App.state.notifications = App.state.notifications || [];
+    App.state.cal = App.state.cal || { date:new Date(), mode:'month', filterOwner:'' };
+  } catch (e) { /* no-op */ }
+})();
