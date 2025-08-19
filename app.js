@@ -1,3 +1,24 @@
+// ---- Persistence for DATA ----
+const STORE_KEY = 'synergy_data_v2';
+function persist(){
+  try{
+    const out = { cases: DATA.cases, contacts: DATA.contacts, companies: DATA.companies, resources: DATA.resources, users: DATA.users, me: DATA.me };
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+  }catch(_){}
+}
+function loadPersisted(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw)||{};
+    if(obj.cases) DATA.cases = obj.cases;
+    if(obj.contacts) DATA.contacts = obj.contacts;
+    if(obj.companies) DATA.companies = obj.companies;
+    if(obj.resources) DATA.resources = obj.resources;
+    if(obj.users) DATA.users = obj.users;
+    if(obj.me) DATA.me = obj.me;
+  }catch(_){}
+}
 
 (function(){
 "use strict";
@@ -71,7 +92,7 @@ function persist(){
 })();
 
 // ----------------- App shell -----------------
-const App={state:{cal:{y:(new Date()).getFullYear(),m:(new Date()).getMonth()},route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+const App={state:{route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 function statusChip(s){return '<span class="badge status '+(s||'')+'">'+(s||'')+'</span>';}
 
@@ -295,7 +316,7 @@ document.addEventListener('click', (e)=>{
     const fields=[['title','c-title'],['organisation','c-org'],['status','c-status'],['priority','c-priority']];
     fields.forEach(([k,i])=>{ const val=v(i); if(val!=null) cs[k]=val; });
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    persist(); alert('Case saved'); return;
+    persist(); persist(); alert('Case saved'); return;
   }
   if(act==='deleteCase'){
     const cs=findCase(arg); if(!cs) return; if(!confirm('Delete case '+(cs.fileNumber||'')+'?')) return;
@@ -304,25 +325,25 @@ document.addEventListener('click', (e)=>{
   if(act==='addNote'){
     const cs=findCase(arg); if(!cs) return; const tx=document.getElementById('note-text').value.trim(); if(!tx){ alert('Enter a note'); return; }
     const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com';
-    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); App.set({}); return;
+    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); persist(); App.set({}); return;
   }
   if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; const base=cs.tasks;
     ["Gather documents","Interview complainant","Interview respondent","Write report"].forEach(a=> base.push({id:'T-'+(base.length+1), title:a, assignee:cs.investigatorName, due:'', status:'Open'}));
-    persist(); App.set({}); return;
+    persist(); persist(); App.set({}); return;
   }
   if(act==='addTask'){
     const cs=findCase(arg); if(!cs) return;
     const whoSel=document.getElementById('task-assignee'); const who = whoSel.options[whoSel.selectedIndex].text;
     cs.tasks.push({id:'T-'+(cs.tasks.length+1), title:(document.getElementById('task-title').value||'').trim(), assignee:who, due:document.getElementById('task-due').value, status:'Open'});
-    persist(); App.set({}); return;
+    persist(); persist(); App.set({}); return;
   }
 
   // Document actions
-  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); App.set({}); return; }
+  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); persist(); App.set({}); return; }
   if(act==='selectFiles'){ App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return; }
   if(act==='viewDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
-  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); App.set({}); return; }
-  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); App.set({}); } return; }
+  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); persist(); App.set({}); return; }
+  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); persist(); App.set({}); } return; }
 
   // Calendar actions
   if(act==='createEvent'){
@@ -379,59 +400,4 @@ document.addEventListener('change',(e)=>{
 
 // bootstrap
 document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
-
-// ---- Calendar implementation (inside IIFE) ----
-function ymKey(y,m){ return y+"-"+("0"+(m+1)).slice(-2); }
-function monthGrid(y,m){
-  const first = new Date(y,m,1);
-  const start = new Date(first);
-  const day = (first.getDay()+6)%7; // Mon=0
-  start.setDate(first.getDate()-day);
-  let cells = [];
-  for(let i=0;i<42;i++){
-    const d = new Date(start); d.setDate(start.getDate()+i);
-    const iso = d.toISOString().slice(0,10);
-    cells.push({d, iso, inMonth:(d.getMonth()===m)});
-  }
-  return cells;
-}
-function renderMonth(y,m){
-  const cells = monthGrid(y,m);
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>'<div class="cal-head">'+d+'</div>').join('');
-  const evs = (DATA.events||[]);
-  const body = cells.map(c=>{
-    const items = evs.filter(e=>e.date===c.iso).map(e=>'<div class="pill">'+e.title+'</div>').join('');
-    return '<div class="cal-cell '+(c.inMonth?'in':'out')+'"><div class="cal-date">'+c.d.getDate()+'</div>'+items+'</div>';
-  }).join('');
-  const title = new Date(y,m,1).toLocaleString(undefined,{month:'long', year:'numeric'});
-  return '<div class="cal-wrap"><div class="cal-toolbar">'
-    + '<button class="btn light" data-act="calPrev">‹</button>'
-    + '<button class="btn light" data-act="calToday">Today</button>'
-    + '<button class="btn light" data-act="calNext">›</button>'
-    + '<div class="sp"></div><div class="mono">'+title+'</div>'
-    + '</div><div class="cal-grid">'+days+body+'</div></div>';
-}
-function Calendar(){
-  const s = App.state.cal||{y:(new Date()).getFullYear(),m:(new Date()).getMonth()};
-  const grid = renderMonth(s.y, s.m);
-  const add = '<div class="card"><div class="grid cols-3">'
-    + '<input class="input" id="ev-title" placeholder="Appointment or note">'
-    + '<input class="input" id="ev-date" type="date" value="'+(new Date()).toISOString().slice(0,10)+'">'
-    + '<select class="input" id="ev-type"><option>Appointment</option><option>Reminder</option></select>'
-    + '</div><div class="right" style="margin-top:6px"><button class="btn" data-act="calCreate">Create</button></div></div>';
-  return Shell('<div class="card">'+grid+'</div>'+add, 'calendar');
-}
-// Calendar actions
-document.addEventListener('click', function(e){
-  let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode;
-  if(!t||t===document) return;
-  const act=t.getAttribute('data-act');
-  if(act==='calPrev'){ const s=App.state.cal; s.m--; if(s.m<0){s.m=11;s.y--;} App.set({}); }
-  if(act==='calNext'){ const s=App.state.cal; s.m++; if(s.m>11){s.m=0;s.y++;} App.set({}); }
-  if(act==='calToday'){ App.state.cal={y:(new Date()).getFullYear(),m:(new Date()).getMonth()}; App.set({}); }
-  if(act==='calCreate'){ const title=(document.getElementById('ev-title')||{}).value||''; const date=(document.getElementById('ev-date')||{}).value||''; const type=(document.getElementById('ev-type')||{}).value||''; if(!title||!date){ alert('Title and Date are required'); return; } DATA.events=DATA.events||[]; DATA.events.push({id:uid(),title,date,type}); try{ localStorage.setItem('synergy_events_v1', JSON.stringify(DATA.events)); }catch(_){ } App.set({}); }
-});
-// Load events on boot
-try{ const ev=JSON.parse(localStorage.getItem('synergy_events_v1')||'null'); if(ev&&Array.isArray(ev)) DATA.events=ev; }catch(_){}
-// ---- End Calendar ----
 })();
