@@ -75,3 +75,21 @@ tbody tr td:last-child,tbody tr th:last-child{border-right:1px solid var(--line)
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.32);display:flex;align-items:center;justify-content:center}
 .modal .panel{width:min(640px,92vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
 .hidden{display:none}
+
+
+/* --- HubSpot UI: tabs + calendar grid --- */
+.tabs{display:flex;gap:8px;align-items:center;margin:0 0 8px}
+.tab{appearance:none;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:10px;padding:6px 12px;font:inherit;color:#0b1324;cursor:pointer}
+.tab.active{background:#ff7a59;border-color:#ff7a59;color:#fff}
+.tab:focus{outline:2px solid rgba(255,122,89,.35)}
+
+.cal-wrap{display:grid;grid-template-columns:1fr 320px;gap:12px}
+.cal-main{min-width:0}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;color:#6b7280;font-size:12px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-cell{min-height:92px;border:1px solid #e9eef5;border-radius:10px;background:#fff;position:relative;padding:6px}
+.cal-cell.muted{background:#fafafa;color:#9aa5b1}
+.cal-cell .day-num{position:absolute;top:6px;right:8px;font-size:12px;color:#64748b}
+.pill{display:block;background:#fff5f2;border:1px solid #ffd5cb;border-radius:999px;padding:3px 8px;margin:18px 0 4px 0;font-size:12px;color:#7a3415;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-side{min-width:280px}
+.cal-controls .chip{background:#f2f5f9;border:1px solid #e9eef5;color:#0b1324}
