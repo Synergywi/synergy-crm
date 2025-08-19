@@ -1,4 +1,3 @@
-
 (function(){
 "use strict";
 const BUILD = "v2.16.0"; const STAMP=(new Date()).toISOString();
@@ -73,7 +72,11 @@ function persist(){
 // ----------------- App shell -----------------
 const App={state:{route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
-function statusChip(s){return '<span class="badge status '+(s||'')+'">'+(s||'')+'</span>';}
+function statusChip(s){
+  const classes = (s||'').trim().split(/\s+/).filter(Boolean);
+  const cls = 'status ' + classes.join(' ');
+  return '<span class="badge '+cls+'" data-status="'+(s||'')+'">'+(s||'')+'</span>';
+}
 
 function Topbar(){
   let s = '<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>';
@@ -364,21 +367,49 @@ document.addEventListener('click', (e)=>{
 });
 
 document.addEventListener('change',(e)=>{
-  if(e.target && e.target.id==='owner-filter'){ App.set({filterOwner:e.target.value}); }
+  if (e.target && e.target.id==='owner-filter') {
+    const val = e.target.value;
+    try { localStorage.setItem('synergy_filters_calendar_owner_v1', val); } catch(_) {}
+    App.set({filterOwner: val});
+  }
 });
 
 document.addEventListener('change',(e)=>{
   if(e.target && e.target.id==='file-input' && App.state.currentUploadTarget){
-    const p=App.state.currentUploadTarget.split('::'); const cs=findCase(p[0]); if(!cs) return;
-    const folder=p[1]||'General'; cs.folders[folder]=cs.folders[folder]||[];
-    const files=e.target.files; const list=cs.folders[folder];
-    for(let i=0;i<files.length;i++){ const f=files[i]; const reader=new FileReader(); reader.onload=ev=>{ list.push({name:f.name, size:f.size+' B', dataUrl:ev.target.result}); persist(); App.set({}); }; reader.readAsDataURL(f); }
-    e.target.value='';
+    const p = App.state.currentUploadTarget.split('::');
+    const cs = findCase(p[0]); if(!cs) return;
+    const folder = p[1] || 'General';
+    cs.folders[folder] = cs.folders[folder] || [];
+    const files = e.target.files;
+    const list = cs.folders[folder];
+
+    const MAX = 5 * 1024 * 1024; // 5MB
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (f.size > MAX) { alert('File too large (>5MB): ' + f.name); continue; }
+      const ok = /^image\//.test(f.type) || f.type === 'application/pdf';
+      if (!ok) { alert('Only images or PDFs allowed: ' + f.name); continue; }
+
+      const reader = new FileReader();
+      reader.onload = ev => {
+        list.push({ name: f.name, size: f.size + ' B', dataUrl: ev.target.result });
+        try { if (typeof persist === 'function') persist(); } catch(_) {}
+        App.set({});
+      };
+      reader.readAsDataURL(f);
+    }
+    e.target.value = '';
   }
 });
 
 // bootstrap
-document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
+document.addEventListener('DOMContentLoaded', ()=>{
+  try {
+    const saved = localStorage.getItem('synergy_filters_calendar_owner_v1');
+    if (saved) App.state.filterOwner = saved;
+  } catch(_) {}
+  App.set({route:'dashboard'});
+});
 
 // === Safety shim injected ===
 if (typeof DATA==='undefined') { window.DATA = { users:[], companies:[], contacts:[], cases:[], notifications:[], events:[] }; }
@@ -397,7 +428,7 @@ if (typeof App==='undefined') {
 
 if (typeof statusChip!=='function') {
   function statusChip(s){
-    const classes = (s||'').trim().split(/\s+/).filter(Boolean);
+    const classes = (s||'').trim().split(/\\s+/).filter(Boolean);
     const cls = 'status ' + classes.join(' ');
     return '<span class="badge '+cls+'" data-status="'+(s||'')+'">'+(s||'')+'</span>';
   }
