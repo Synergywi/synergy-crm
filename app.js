@@ -1,14 +1,15 @@
 (function(){"use strict";
-const BUILD="v2.17.0"; const STAMP="2025-08-19T23:33:50.444305";
+const BUILD="v2.17.1"; const STAMP="2025-08-19T23:55:10.356467";
 console.log("Synergy CRM "+BUILD+" • "+STAMP);
 
-// ---------- Utilities ----------
+// --- Utils ---
 const uid=()=>"id-"+Math.random().toString(36).slice(2,9);
-const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
-const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const pad=(n)=>(""+n).padStart(2,"0");
+const today = new Date();
+const YEAR=today.getFullYear(), LAST=YEAR-1;
 
-// ---------- Seed Data ----------
-function mkCase(y,seq,p){ let b={id:uid(),fileNumber:"INV-"+y+"-"+("00"+seq).slice(-3),title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+("0"+((seq%12)||1)).slice(-2),notes:[],tasks:[],folders:{General:[]}}; Object.assign(b,p||{}); return b; }
+// --- Seed Data ---
+function mkCase(y,seq,p){ let b={id:uid(),fileNumber:"INV-"+y+"-"+pad(seq),title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+pad(((seq%12)||1)),notes:[],tasks:[],folders:{General:[]}}; Object.assign(b,p||{}); return b; }
 
 const DATA={
   users:[
@@ -37,22 +38,24 @@ const DATA={
   events:[
     {id:uid(), title:"Interview planning", date: YEAR+"-08-06", start:"10:00", end:"11:00", type:"Appointment", owner:"alex@synergy.com", caseId:null, location:"War Room"},
     {id:uid(), title:"Evidence review",   date: YEAR+"-08-13", start:"13:00", end:"14:30", type:"Appointment", owner:"priya@synergy.com", caseId:null, location:"HQ"},
+    {id:uid(), title:"Client check-in",   date: YEAR+"-08-19", start:"09:00", end:"09:30", type:"Note", owner:"alex@synergy.com", caseId:null, location:""},
+    {id:uid(), title:"Admin all-hands",   date: YEAR+"-08-26", start:"15:00", end:"16:00", type:"Appointment", owner:"admin@synergy.com", caseId:null, location:""},
   ],
   notifications:[],
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
 
-// ---------- Persistence ----------
-const STORE="synergy_crm_v2170";
+// --- Persistence ---
+const STORE="synergy_crm_v2171";
 function persist(){ try{ localStorage.setItem(STORE, JSON.stringify({DATA})); }catch(_ ){} }
 (function restore(){ try{ const raw=localStorage.getItem(STORE); if(raw){ const o=JSON.parse(raw)||{}; if(o.DATA) Object.assign(DATA,o.DATA); } }catch(_ ){} })();
 
-// ---------- Lookups ----------
+// Lookups
 const findCase=id=>DATA.cases.find(c=>c.id===id)||null;
 const findEvent=id=>DATA.events.find(e=>e.id===id)||null;
 
-// ---------- App Shell ----------
-const App={ state:{ route:"dashboard", tab:"Details", currentCaseId:null, currentEventId:null, filterOwner:"all", currentUploadTarget:"", showModal:false },
+// App shell
+const App={ state:{ route:"calendar", tab:"Details", currentCaseId:null, currentEventId:null, filterOwner:"all", view:"month", currentMonth:(new Date()).toISOString().slice(0,7) },
   set(p){ Object.assign(App.state,p||{}); render(); },
   get(){ return DATA; }
 };
@@ -73,25 +76,51 @@ function Sidebar(active){
 
 function Shell(content,active){ return Topbar() + '<div class="shell">'+ Sidebar(active) + '<main class="main">' + content + '</main></div><div id="boot">Ready ('+BUILD+')</div>'; }
 
-// ---------- Pages ----------
-function Dashboard(){ 
-  const d=App.get();
-  let rows=''; for(const c of d.cases) rows+='<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>';
-  const html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div><span class="mono">Build '+STAMP+'</span></div></div>'
-    +'<div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  return Shell(html,'dashboard');
+// --- Calendar helpers ---
+function monthStart(y,m){ return new Date(y,m,1); }
+function monthEnd(y,m){ return new Date(y,m+1,0); }
+
+function ymd(d){ return d.toISOString().slice(0,10); }
+function parseYMD(s){ const [Y,M,D]=s.split('-').map(Number); return new Date(Y, M-1, D); }
+
+function eventsByDay(owner){ 
+  const map={}; const list=DATA.events.filter(ev=>owner==='all'||ev.owner===owner);
+  for(const ev of list){ (map[ev.date]=map[ev.date]||[]).push(ev); }
+  return map;
 }
 
-function Calendar(){ 
-  const d=App.get();
-  const ownerOpts=['<option value="all">All users</option>'].concat(d.users.map(u=>'<option value="'+u.email+'" '+(App.state.filterOwner===u.email?'selected':'')+'>'+u.name+'</option>')).join('');
-  const filtered=d.events.filter(ev=>App.state.filterOwner==='all'||ev.owner===App.state.filterOwner);
-  const items=filtered.map(ev=>{ 
-    const caseLabel=ev.caseId?('<span class="chip">Case: '+(findCase(ev.caseId)?.fileNumber||'')+'</span>'):'';
-    return '<div class="event-row"><div class="chip">'+ev.date+'</div><div>'+ev.title+'</div>'+caseLabel+'<div class="sp"></div><button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>';
-  }).join('') || '<div class="muted">No events yet.</div>';
-  const caseOpts=['<option value="">(optional)</option>'].concat(d.cases.map(c=>'<option value="'+c.id+'">'+c.fileNumber+' — '+c.title+'</option>')).join('');
-  const addForm='<div class="card"><h3>Add Event</h3><div class="grid cols-3">'
+function CalendarMonth(){ 
+  const [y,m] = App.state.currentMonth.split('-').map(Number);
+  const start = monthStart(y, m-1);
+  const end = monthEnd(y, m-1);
+  const todayStr = ymd(new Date());
+  const ownerSel = App.state.filterOwner;
+  const byDay = eventsByDay(ownerSel);
+  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let head = '<div class="cal-head"><button class="btn light" data-act="prevMonth">◀</button><button class="btn light" data-act="today">Today</button><div class="mono" style="font-weight:600">'+start.toLocaleString(undefined,{month:'long', year:'numeric'})+'</div><button class="btn light" data-act="nextMonth">▶</button><div class="sp"></div>'+OwnerFilter()+'<div class="view-toggle"><button class="btn '+(App.state.view==='month'?'':'light')+'" data-act="setView" data-arg="month">Month</button> <button class="btn '+(App.state.view==='agenda'?'':'light')+'" data-act="setView" data-arg="agenda">Agenda</button></div></div>';
+  let labels = '<div class="cal-grid">'+ dow.map(d=>'<div class="cal-dow">'+d+'</div>').join('');
+  const firstDow = (start.getDay()+6)%7; // Mon=0
+  for(let i=0;i<firstDow;i++) labels += '<div></div>';
+  for(let d=1; d<=end.getDate(); d++){
+    const dateStr = ymd(new Date(y,m-1,d));
+    const isToday = dateStr===todayStr;
+    const evts = (byDay[dateStr]||[]);
+    labels += '<div class="cal-cell'+(isToday?' today':'')+'"><div class="cal-date">'+d+'</div>'+ evts.map(e=>'<div class="cal-evt"><span class="pill dot"></span><span>'+e.title+'</span>'+ (e.caseId?('<span class="pill">Case: '+(findCase(e.caseId)?.fileNumber||'')+'</span>'):'') +'<span class="sp"></span><button class="btn light" data-act="editEvent" data-arg="'+e.id+'">x</button></div>').join('') +'</div>';
+  }
+  labels += '</div>';
+  return '<div class="section"><header><h3 class="section-title">Calendar</h3></header>'+head+labels+'</div>'+AddEventForm();
+}
+
+function OwnerFilter(){ 
+  const d=DATA; const opts=['<select class="input" id="owner-filter" style="width:180px">'];
+  opts.push('<option value="all"'+(App.state.filterOwner==='all'?' selected':'')+'>All users</option>');
+  for(const u of d.users) opts.push('<option value="'+u.email+'"'+(App.state.filterOwner===u.email?' selected':'')+'>'+u.name+'</option>');
+  opts.push('</select>'); return opts.join('');
+}
+
+function AddEventForm(caseId){ 
+  const d=DATA; const caseOpts=['<option value="">(optional)</option>'].concat(d.cases.map(c=>'<option value="'+c.id+'">'+c.fileNumber+' — '+c.title+'</option>')).join('');
+  return '<div class="card"><h3>Add Event</h3><div class="grid cols-3">'
     +'<div><label>Title</label><input class="input" id="ev-title" placeholder="Appointment or note"></div>'
     +'<div><label>Date</label><input class="input" id="ev-date" type="date"></div>'
     +'<div><label>Owner</label><select class="input" id="ev-owner">'+d.users.map(u=>'<option value="'+u.email+'">'+u.name+'</option>').join('')+'</select></div>'
@@ -101,32 +130,28 @@ function Calendar(){
     +'<div><label>Location</label><input class="input" id="ev-loc" placeholder="Room or link"></div>'
     +'<div><label>Case (optional)</label><select class="input" id="ev-case">'+caseOpts+'</select></div>'
     +'<div></div></div><div class="right" style="margin-top:8px"><button class="btn" data-act="createEvent">Create</button></div></div>';
-  const view='<div class="section"><header><h3 class="section-title">Calendar</h3><div><select class="input" id="owner-filter">'+ownerOpts+'</select></div></header><div>'+items+'</div></div>'+addForm;
+}
+
+function CalendarAgenda(){ 
+  const d=App.get();
+  const ownerOpts=OwnerFilter();
+  const filtered=d.events.filter(ev=>App.state.filterOwner==='all'||ev.owner===App.state.filterOwner);
+  const items=filtered.map(ev=>{ 
+    const caseLabel=ev.caseId?('<span class="pill">Case: '+(findCase(ev.caseId)?.fileNumber||'')+'</span>'):'';
+    return '<div class="event-row"><div class="pill">'+ev.date+'</div><div>'+ev.title+'</div>'+caseLabel+'<div class="sp"></div><button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>';
+  }).join('') || '<div class="muted">No events yet.</div>';
+  return '<div class="section"><header><h3 class="section-title">Calendar</h3></header><div class="cal-head"><div class="sp"></div>'+ownerOpts+'<div class="view-toggle"><button class="btn '+(App.state.view==='month'?'':'light')+'" data-act="setView" data-arg="month">Month</button> <button class="btn '+(App.state.view==='agenda'?'':'light')+'" data-act="setView" data-arg="agenda">Agenda</button></div></div>'+items+'</div>'+AddEventForm();
+}
+
+function Calendar(){ 
+  const body = (App.state.view==='month') ? CalendarMonth() : CalendarAgenda();
   const modal='<div id="modal" class="modal hidden"><div class="panel" id="modal-body"></div></div>';
-  return Shell(view+modal,'calendar');
+  return Shell(body+modal,'calendar');
 }
 
-function renderEditModal(ev){ 
-  const d=DATA;
-  const caseOpts=['<option value="">(none)</option>'].concat(d.cases.map(c=>'<option value="'+c.id+'" '+(ev.caseId===c.id?'selected':'')+'>'+c.fileNumber+' — '+c.title+'</option>')).join('');
-  const ownerOpts=d.users.map(u=>'<option value="'+u.email+'" '+(ev.owner===u.email?'selected':'')+'>'+u.name+'</option>').join('');
-  const html='<h3>Edit Event</h3><div class="grid cols-3">'
-   +'<div><label>Title</label><input class="input" id="ed-title" value="'+ev.title+'"></div>'
-   +'<div><label>Date</label><input class="input" id="ed-date" type="date" value="'+ev.date+'"></div>'
-   +'<div><label>Owner</label><select class="input" id="ed-owner">'+ownerOpts+'</select></div>'
-   +'<div><label>Start</label><input class="input" id="ed-start" type="time" value="'+(ev.start||"")+'"></div>'
-   +'<div><label>End</label><input class="input" id="ed-end" type="time" value="'+(ev.end||"")+'"></div>'
-   +'<div><label>Type</label><select class="input" id="ed-type"><option '+(ev.type==="Appointment"?'selected':'')+'>Appointment</option><option '+(ev.type==="Note"?'selected':'')+'>Note</option></select></div>'
-   +'<div><label>Location</label><input class="input" id="ed-loc" value="'+(ev.location||"")+'"></div>'
-   +'<div><label>Case</label><select class="input" id="ed-case">'+caseOpts+'</select></div>'
-   +'<div></div></div><div class="right" style="margin-top:10px">'
-   +'<button class="btn danger" data-act="deleteEvent" data-arg="'+ev.id+'">Delete</button> '
-   +'<button class="btn light" data-act="closeModal">Cancel</button> '
-   +'<button class="btn" data-act="saveEvent" data-arg="'+ev.id+'">Save</button></div>';
-  const modal=document.getElementById('modal'), body=document.getElementById('modal-body'); if(modal&&body){ body.innerHTML=html; modal.classList.remove('hidden'); }
-}
+// --- Other pages (short) ---
+function Dashboard(){ const d=App.get(); let rows=''; for(const c of d.cases) rows+='<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>'; const html='<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div><span class="mono">Build '+STAMP+'</span></div></div>' + '<div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; return Shell(html,'dashboard'); }
 
-// --- Companies, Contacts, Documents stubs ---
 function Companies(){ const d=App.get(); const rows=d.companies.map(co=>'<tr><td>'+co.id+'</td><td>'+co.name+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Companies</h3></header><table><thead><tr><th>ID</th><th>Name</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies'); }
 function Contacts(){ const d=App.get(); const rows=d.contacts.map(c=>'<tr><td>'+c.name+'</td><td>'+c.email+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3></header><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts'); }
 function Documents(){ const d=App.get(); const rows=d.cases.map(c=>'<tr><td>'+c.fileNumber+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents'); }
@@ -160,7 +185,7 @@ function CasePage(id){
   let docRows=''; for(const fname in cs.folders){ if(!Object.prototype.hasOwnProperty.call(cs.folders,fname)) continue; const files=cs.folders[fname]; docRows+='<tr><th colspan="3">'+fname+'</th></tr>'; docRows+='<tr><td colspan="3" class="right"><button class="btn light" data-act="selectFiles" data-arg="'+id+'::'+fname+'">Upload to '+fname+'</button> '+(fname==='General'?'':'<button class="btn light" data-act="deleteFolder" data-arg="'+id+'::'+fname+'">Delete folder</button>')+'</td></tr>'; if(!files.length) docRows+='<tr><td colspan="3" class="muted">No files</td></tr>'; for(const ff of files){ const a=id+'::'+fname+'::'+ff.name; docRows+='<tr><td>'+ff.name+'</td><td>'+ff.size+'</td><td class="right">'+(ff.dataUrl?('<button class="btn light" data-act="viewDoc" data-arg="'+a+'">View</button> '):'')+'<button class="btn light" data-act="removeDoc" data-arg="'+a+'">Remove</button></td></tr>'; } }
   const docs='<div class="section"><header><h3 class="section-title">Documents</h3><div><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div></header><input type="file" id="file-input" multiple style="display:none"><div style="margin-top:8px"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div></div>';
   const linked=DATA.events.filter(ev=>ev.caseId===cs.id);
-  const list=linked.map(ev=>'<div class="event-row"><div class="chip">'+ev.date+'</div><div>'+ev.title+'</div><div class="sp"></div><button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>').join('') || '<div class="muted">No linked events yet.</div>';
+  const list=linked.map(ev=>'<div class="event-row"><div class="pill">'+ev.date+'</div><div>'+ev.title+'</div><div class="sp"></div><button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>').join('') || '<div class="muted">No linked events yet.</div>';
   const addCaseEvent='<div class="card"><h3>Add case event</h3><div class="grid cols-3">'
    +'<div><label>Title</label><input class="input" id="cv-title"></div>'
    +'<div><label>Date</label><input class="input" id="cv-date" type="date"></div>'
@@ -175,7 +200,7 @@ function CasePage(id){
   return Shell(header+body,'cases');
 }
 
-// ---------- Render ----------
+// --- Render ---
 function render(){ 
   const r=App.state.route, el=document.getElementById('app'); 
   if(r==='dashboard') el.innerHTML=Dashboard();
@@ -190,7 +215,7 @@ function render(){
   else el.innerHTML=Dashboard();
 }
 
-// ---------- Actions ----------
+// --- Actions ---
 document.addEventListener('click',(e)=>{
   let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
@@ -198,41 +223,17 @@ document.addEventListener('click',(e)=>{
   if(act==='route') { App.set({route:arg}); return; }
   if(act==='openCase') { App.set({currentCaseId:arg, route:'case', tab:'Details'}); return; }
   if(act==='switchTab') { App.set({tab:arg}); return; }
+  if(act==='setView') { App.set({view:arg}); return; }
+  if(act==='prevMonth') { const d=parseYMD(App.state.currentMonth+'-01'); d.setMonth(d.getMonth()-1); App.set({currentMonth: d.toISOString().slice(0,7)}); return; }
+  if(act==='nextMonth') { const d=parseYMD(App.state.currentMonth+'-01'); d.setMonth(d.getMonth()+1); App.set({currentMonth: d.toISOString().slice(0,7)}); return; }
+  if(act==='today') { const d=new Date(); App.set({currentMonth:d.toISOString().slice(0,7)}); return; }
 
-  if(act==='newCase'){
-    const seq=('00'+(DATA.cases.length+1)).slice(-3);
-    const inv=DATA.users.find(u=>u.role!=="Client")||{name:'',email:''};
-    const created=(new Date()).toISOString().slice(0,7);
-    const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); persist(); App.set({currentCaseId:cs.id, route:'case', tab:'Details'}); return;
-  }
-  if(act==='saveCase'){ 
-    const cs=findCase(arg); if(!cs) return;
-    const v=id=>{const el=document.getElementById(id); return el?el.value:null;};
-    const invEmail=v('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; cs.investigatorName=(DATA.users.find(u=>u.email===invEmail)||{}).name||''; }
-    const co=v('c-company'); if(co!=null) cs.companyId=co;
-    [['title','c-title'],['organisation','c-org'],['status','c-status'],['priority','c-priority']].forEach(([k,i])=>{ const val=v(i); if(val!=null) cs[k]=val; });
-    const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    persist(); alert('Case saved'); return;
-  }
-  if(act==='deleteCase'){ 
-    const cs=findCase(arg); if(!cs) return; if(!confirm('Delete case '+(cs.fileNumber||'')+'?')) return;
-    DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); persist(); App.set({route:'cases'}); return;
-  }
-  if(act==='addNote'){ 
-    const cs=findCase(arg); if(!cs) return; const tx=(document.getElementById('note-text').value||'').trim(); if(!tx){ alert('Enter a note'); return; }
-    const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com';
-    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); App.set({}); return;
-  }
+  if(act==='newCase'){ const seq=('00'+(DATA.cases.length+1)).slice(-3); const inv=DATA.users.find(u=>u.role!=="Client")||{name:'',email:''}; const created=(new Date()).toISOString().slice(0,7); const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}}; DATA.cases.unshift(cs); persist(); App.set({currentCaseId:cs.id, route:'case', tab:'Details'}); return; }
+  if(act==='saveCase'){ const cs=findCase(arg); if(!cs) return; const v=id=>{const el=document.getElementById(id); return el?el.value:null;}; const invEmail=v('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; cs.investigatorName=(DATA.users.find(u=>u.email===invEmail)||{}).name||''; } const co=v('c-company'); if(co!=null) cs.companyId=co; [['title','c-title'],['organisation','c-org'],['status','c-status'],['priority','c-priority']].forEach(([k,i])=>{ const val=v(i); if(val!=null) cs[k]=val; }); const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim(); persist(); alert('Case saved'); return; }
+  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs) return; if(!confirm('Delete case '+(cs.fileNumber||'')+'?')) return; DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); persist(); App.set({route:'cases'}); return; }
+  if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const tx=(document.getElementById('note-text').value||'').trim(); if(!tx){ alert('Enter a note'); return; } const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); App.set({}); return; }
   if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; const base=cs.tasks; ["Gather documents","Interview complainant","Interview respondent","Write report"].forEach(a=> base.push({id:'T-'+(base.length+1), title:a, assignee:cs.investigatorName, due:'', status:'Open'})); persist(); App.set({}); return; }
   if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const whoSel=document.getElementById('task-assignee'); const who=whoSel.options[whoSel.selectedIndex].text; cs.tasks.push({id:'T-'+(cs.tasks.length+1), title:(document.getElementById('task-title').value||'').trim(), assignee:who, due:document.getElementById('task-due').value, status:'Open'}); persist(); App.set({}); return; }
-
-  // Document actions
-  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); App.set({}); return; }
-  if(act==='selectFiles'){ App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return; }
-  if(act==='viewDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
-  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); App.set({}); return; }
-  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); App.set({}); } return; }
 
   // Calendar actions
   if(act==='createEvent'){ 
@@ -262,23 +263,27 @@ document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='owner-fi
 document.addEventListener('change',(e)=>{ if(e.target && e.target.id==='file-input' && App.state.currentUploadTarget){ const p=App.state.currentUploadTarget.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]||'General'; cs.folders[folder]=cs.folders[folder]||[]; const files=e.target.files; const list=cs.folders[folder]; const MAX=5*1024*1024; for(let i=0;i<files.length;i++){ const f=files[i]; if(f.size>MAX){ alert('File too large (>5MB): '+f.name); continue; } const ok=/^image\//.test(f.type)||f.type==='application/pdf'; if(!ok){ alert('Only images or PDFs allowed: '+f.name); continue; } const reader=new FileReader(); reader.onload=ev=>{ list.push({ name:f.name, size:f.size+' B', dataUrl:ev.target.result }); persist(); App.set({}); }; reader.readAsDataURL(f); } e.target.value=''; } });
 
 // Bootstrap
-document.addEventListener('DOMContentLoaded',()=>{ try{ const saved=localStorage.getItem('synergy_owner_filter_v1'); if(saved) App.state.filterOwner=saved; }catch(_ ){} App.set({route:'dashboard'}); runSmokeTests(); });
+document.addEventListener('DOMContentLoaded',()=>{ try{ const saved=localStorage.getItem('synergy_owner_filter_v1'); if(saved) App.state.filterOwner=saved; }catch(_ ){} App.set({route:'calendar'}); });
 
-// ---------- Smoke Tests (quick, non-blocking) ----------
-window.runSmokeTests=function(){ 
-  try{ 
-    console.log('[SMOKE] Start');
-    if(!document.getElementById('app')) throw new Error('app root missing');
-    App.set({route:'calendar'}); if(App.state.route!=='calendar') throw new Error('route failed');
-    App.set({route:'cases'}); if(App.state.route!=='cases') throw new Error('route failed 2');
-    const any=DATA.cases[0]; App.set({currentCaseId:any.id, route:'case', tab:'Details'});
-    if(!findCase(any.id)) throw new Error('findCase failed');
-    const stamp=new Date().toISOString().slice(0,16).replace('T',' '); any.notes.unshift({time:stamp,by:'test@smoke',text:'hello'});
-    DATA.events.push({id:uid(), title:'Smoke', date: YEAR+'-09-01', start:'09:00', end:'09:30', type:'Note', owner:'alex@synergy.com', caseId:any.id, location:''});
-    persist();
-    document.getElementById('boot').textContent='Ready ('+BUILD+' ✓)';
-    console.log('[SMOKE] OK');
-  } catch(err){ console.error('[SMOKE] Fail', err); document.getElementById('boot').textContent='Ready ('+BUILD+' ⚠︎)'; }
-};
+// Modal renderer
+function renderEditModal(ev){ 
+  const d=DATA;
+  const caseOpts=['<option value="">(none)</option>'].concat(d.cases.map(c=>'<option value="'+c.id+'" '+(ev.caseId===c.id?'selected':'')+'>'+c.fileNumber+' — '+c.title+'</option>')).join('');
+  const ownerOpts=d.users.map(u=>'<option value="'+u.email+'" '+(ev.owner===u.email?'selected':'')+'>'+u.name+'</option>').join('');
+  const html='<h3>Edit Event</h3><div class="grid cols-3">'
+   +'<div><label>Title</label><input class="input" id="ed-title" value="'+ev.title+'"></div>'
+   +'<div><label>Date</label><input class="input" id="ed-date" type="date" value="'+ev.date+'"></div>'
+   +'<div><label>Owner</label><select class="input" id="ed-owner">'+ownerOpts+'</select></div>'
+   +'<div><label>Start</label><input class="input" id="ed-start" type="time" value="'+(ev.start||"")+'"></div>'
+   +'<div><label>End</label><input class="input" id="ed-end" type="time" value="'+(ev.end||"")+'"></div>'
+   +'<div><label>Type</label><select class="input" id="ed-type"><option '+(ev.type==="Appointment"?'selected':'')+'>Appointment</option><option '+(ev.type==="Note"?'selected':'')+'>Note</option></select></div>'
+   +'<div><label>Location</label><input class="input" id="ed-loc" value="'+(ev.location||"")+'"></div>'
+   +'<div><label>Case</label><select class="input" id="ed-case">'+caseOpts+'</select></div>'
+   +'<div></div></div><div class="right" style="margin-top:10px">'
+   +'<button class="btn danger" data-act="deleteEvent" data-arg="'+ev.id+'">Delete</button> '
+   +'<button class="btn light" data-act="closeModal">Cancel</button> '
+   +'<button class="btn" data-act="saveEvent" data-arg="'+ev.id+'">Save</button></div>';
+  const modal=document.getElementById('modal'), body=document.getElementById('modal-body'); if(modal&&body){ body.innerHTML=html; modal.classList.remove('hidden'); }
+}
 
 })();
