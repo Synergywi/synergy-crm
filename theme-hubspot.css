@@ -60,19 +60,15 @@ tbody tr td:last-child,tbody tr th:last-child{border-right:1px solid var(--line)
 .badge.status{padding:4px 8px;border-radius:8px;font-size:12px;border:1px solid var(--line)}
 .status.Planning{background:#f1f5ff;color:#1e40af}
 .status.Investigation{background:#fff7ed;color:#9a3412}
- .status.Evidence{background:#f5f3ff;color:#6d28d9}
+.status.Evidence{background:#f5f3ff;color:#6d28d9}
 .status.Reporting{background:#f0f9ff;color:#0369a1}
 .status.Closed{background:#f1f5f9;color:#334155}
 #boot{position:fixed;right:10px;bottom:8px;color:#94a3b8;font-size:12px}
 /* calendar list */
-.cal-wrap{display:flex;gap:16px}
-.cal-main{flex:3}
-.cal-side{flex:2}
-.event-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#f8fafc;cursor:pointer}
-.event-row{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.event-row{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff}
 .event-row .sp{flex:1}
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.32);display:flex;align-items:center;justify-content:center}
 .modal .panel{width:min(640px,92vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
 .hidden{display:none}
-
+/* Multi-word status support */
 .status.Evidence.Review, .status[data-status="Evidence Review"], .status.Evidence{background:#f5f3ff;color:#6d28d9}
