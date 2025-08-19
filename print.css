@@ -1,7 +1,7 @@
-/* print styles */
-@media print {
-  body { background:#fff; color:#000; }
-  .topbar, aside.sidebar, #boot { display:none !important; }
-  .card { box-shadow:none; border:1px solid #000; }
-  a:after { content: " (" attr(href) ")"; font-size: 90%; }
-}
+/* Print: simple clean tables */
+@page{margin:16mm}
+*{box-sizing:border-box}
+body{font:12pt Arial, sans-serif;color:#000;background:#fff}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:6px}
+thead th{background:#f3f3f3}
