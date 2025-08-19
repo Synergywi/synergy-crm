@@ -1,6 +1,7 @@
-/* print tables, no dark backgrounds */ 
-@media print{
-  .sidebar,.topbar,#boot{display:none!important}
-  body{background:#fff}
-  .card{box-shadow:none;border:1px solid #ddd}
+/* print styles */
+@media print {
+  body { background:#fff; color:#000; }
+  .topbar, aside.sidebar, #boot { display:none !important; }
+  .card { box-shadow:none; border:1px solid #000; }
+  a:after { content: " (" attr(href) ")"; font-size: 90%; }
 }
