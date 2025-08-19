@@ -1,1 +1,1 @@
-// settings placeholder
+// settings addon placeholder
