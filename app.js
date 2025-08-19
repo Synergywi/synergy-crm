@@ -379,25 +379,34 @@ document.addEventListener('change',(e)=>{
 
 // bootstrap
 document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
-})();
 
+// ---- Injected: persistence + boot loaders (inside IIFE) ----
+if (!App.get) { App.get = function(){ return DATA; }; }
+
+function persist(){
+  try{
+    localStorage.setItem('synergy_cases_v2', JSON.stringify(DATA.cases||[]));
+    localStorage.setItem('synergy_filters_cases_v2', JSON.stringify(App.state?.casesFilter||{q:''}));
+  }catch(_){}
+}
+
+// Load persisted data/filters on boot
+try{
+  const _cs = JSON.parse(localStorage.getItem('synergy_cases_v2')||'null');
+  if (_cs && Array.isArray(_cs)) DATA.cases = _cs;
+  const _f  = JSON.parse(localStorage.getItem('synergy_filters_cases_v2')||'null');
+  if (_f && typeof _f==='object') App.state.casesFilter = _f;
+}catch(_){}
+
+// Persist after key actions
 document.addEventListener('click', function(evt){
   let t = evt.target;
   while(t && t!==document && !t.getAttribute('data-act')) t = t.parentNode;
   if(!t || t===document) return;
   const act = t.getAttribute('data-act');
   if(act==='newCase' || act==='saveCase'){
-    setTimeout(function(){
-      try{ persist(); }catch(e){}
-    }, 0);
+    setTimeout(function(){ try{ persist(); }catch(e){} }, 0);
   }
-}); // data-act-persist-hook
-
-document.addEventListener('DOMContentLoaded', function(){
-  try{
-    const cs = JSON.parse(localStorage.getItem('synergy_cases_v2')||'null');
-    if(cs && Array.isArray(cs) && typeof DATA!=='undefined'){ DATA.cases = cs; }
-    const f  = JSON.parse(localStorage.getItem('synergy_filters_cases_v2')||'null');
-    if(f && typeof f==='object' && App.state){ App.state.casesFilter = f; }
-  }catch(_){}
 });
+// ---- End injected ----
+})();
