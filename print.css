@@ -1,10 +1,1 @@
 /* Print styles placeholder */
-
-/* Added: better print styles */
-@media print{
-  body{background:#fff !important;color:#000 !important}
-  .topbar, aside.sidebar, #boot{display:none !important}
-  .shell{display:block !important}
-  .card,.section{box-shadow:none !important;border:1px solid #000 !important}
-  .btn{display:none !important}
-}

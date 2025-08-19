@@ -189,15 +189,11 @@ function Documents(){ const d=App.get();
 }
 
 // ----------------- Cases -----------------
-function Cases(){const d=App.get(), f=App.state.casesFilter||{q:""}; const list=d.cases.filter(c=>{if(!f.q) return true; const q=f.q.toLowerCase(); return (c.title||"").toLowerCase().includes(q)||(c.organisation||"").toLowerCase().includes(q)||(c.fileNumber||"").toLowerCase().includes(q);}); let rows=''; for(const cc of list){ rows+='<tr>'
-  +'<td>'+cc.fileNumber+'</td>'
-  +'<td>'+cc.title+'</td>'
-  +'<td>'+cc.organisation+'</td>'
-  +'<td>'+cc.investigatorName+'</td>'
-  +'<td>'+statusBadge(cc.status)+'</td>'
-  +'<td class="right"><button class="btn light" data-act="openCase" data-arg="'+cc.id+'">Open</button></td>'
-  +'</tr>'; }
-const tools='<div class="grid cols-4" style="gap:8px"><input class="input" id="flt-q" placeholder="Search title, org, ID" value="'+(f.q||'')+'"></div><div class="right" style="margin-top:8px"><button class="btn light" data-act="resetCaseFilters">Reset</button> <button class="btn" data-act="newCase">New Case</button></div>'; return Shell('<div class="section"><header><h3 class="section-title">Cases</h3></header>'+tools+'<table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases');
+function Cases(){
+  const d=App.get();
+  const rows = d.cases.map(cc=>'<tr><td>'+cc.fileNumber+'</td><td>'+cc.title+'</td><td>'+cc.organisation+'</td><td>'+cc.investigatorName+'</td><td>'+statusChip(cc.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cc.id+'">Open</button></td></tr>').join('');
+  const tools = '<div class="right" style="margin-bottom:8px"><button class="btn" data-act="newCase">New Case</button></div>';
+  return Shell('<div class="section"><header><h3 class="section-title">Cases</h3></header>'+tools+'<table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases');
 }
 
 function CasePage(id){
