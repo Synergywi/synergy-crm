@@ -61,7 +61,7 @@ tbody tr td:last-child,tbody tr th:last-child{border-right:1px solid var(--line)
 .badge.status{padding:4px 8px;border-radius:8px;font-size:12px;border:1px solid var(--line)}
 .status.Planning{background:#f1f5ff;color:#1e40af}
 .status.Investigation{background:#fff7ed;color:#9a3412}
-.status.Evidence{background:#f5f3ff;color:#6d28d9}
+.status["Evidence Review"], .status.Evidence{background:#f5f3ff;color:#6d28d9}
 .status.Reporting{background:#f0f9ff;color:#0369a1}
 .status.Closed{background:#f1f5f9;color:#334155}
 #boot{position:fixed;right:10px;bottom:8px;color:#94a3b8;font-size:12px}
@@ -76,4 +76,13 @@ tbody tr td:last-child,tbody tr th:last-child{border-right:1px solid var(--line)
 .modal .panel{width:min(640px,92vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
 .hidden{display:none}
 
-.status.Evidence.Review, .status[data-status="Evidence Review"]{background:#f5f3ff;color:#6d28d9}
+
+/* Calendar styles */
+.cal-wrap{}
+.cal-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-head{font-size:12px;color:#64748b;padding:6px;text-transform:uppercase;letter-spacing:.06em}
+.cal-cell{background:#fff;border:1px solid #e2e8f0;border-radius:10px;min-height:86px;padding:6px;position:relative}
+.cal-cell.out{background:#fafafa;color:#94a3b8}
+.cal-date{position:absolute;top:6px;right:8px;font-size:12px;color:#475569}
+.pill{margin-top:20px;background:#fde7e1;border:1px solid #f7c6b8;border-radius:999px;padding:2px 8px;font-size:12px;display:inline-block}

@@ -71,7 +71,7 @@ function persist(){
 })();
 
 // ----------------- App shell -----------------
-const App={state:{route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+const App={state:{cal:{y:(new Date()).getFullYear(),m:(new Date()).getMonth()},route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
 
 function statusChip(s){return '<span class="badge status '+(s||'')+'">'+(s||'')+'</span>';}
 
@@ -380,33 +380,58 @@ document.addEventListener('change',(e)=>{
 // bootstrap
 document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
 
-// ---- Injected: persistence + boot loaders (inside IIFE) ----
-if (!App.get) { App.get = function(){ return DATA; }; }
-
-function persist(){
-  try{
-    localStorage.setItem('synergy_cases_v2', JSON.stringify(DATA.cases||[]));
-    localStorage.setItem('synergy_filters_cases_v2', JSON.stringify(App.state?.casesFilter||{q:''}));
-  }catch(_){}
-}
-
-// Load persisted data/filters on boot
-try{
-  const _cs = JSON.parse(localStorage.getItem('synergy_cases_v2')||'null');
-  if (_cs && Array.isArray(_cs)) DATA.cases = _cs;
-  const _f  = JSON.parse(localStorage.getItem('synergy_filters_cases_v2')||'null');
-  if (_f && typeof _f==='object') App.state.casesFilter = _f;
-}catch(_){}
-
-// Persist after key actions
-document.addEventListener('click', function(evt){
-  let t = evt.target;
-  while(t && t!==document && !t.getAttribute('data-act')) t = t.parentNode;
-  if(!t || t===document) return;
-  const act = t.getAttribute('data-act');
-  if(act==='newCase' || act==='saveCase'){
-    setTimeout(function(){ try{ persist(); }catch(e){} }, 0);
+// ---- Calendar implementation (inside IIFE) ----
+function ymKey(y,m){ return y+"-"+("0"+(m+1)).slice(-2); }
+function monthGrid(y,m){
+  const first = new Date(y,m,1);
+  const start = new Date(first);
+  const day = (first.getDay()+6)%7; // Mon=0
+  start.setDate(first.getDate()-day);
+  let cells = [];
+  for(let i=0;i<42;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const iso = d.toISOString().slice(0,10);
+    cells.push({d, iso, inMonth:(d.getMonth()===m)});
   }
+  return cells;
+}
+function renderMonth(y,m){
+  const cells = monthGrid(y,m);
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>'<div class="cal-head">'+d+'</div>').join('');
+  const evs = (DATA.events||[]);
+  const body = cells.map(c=>{
+    const items = evs.filter(e=>e.date===c.iso).map(e=>'<div class="pill">'+e.title+'</div>').join('');
+    return '<div class="cal-cell '+(c.inMonth?'in':'out')+'"><div class="cal-date">'+c.d.getDate()+'</div>'+items+'</div>';
+  }).join('');
+  const title = new Date(y,m,1).toLocaleString(undefined,{month:'long', year:'numeric'});
+  return '<div class="cal-wrap"><div class="cal-toolbar">'
+    + '<button class="btn light" data-act="calPrev">‹</button>'
+    + '<button class="btn light" data-act="calToday">Today</button>'
+    + '<button class="btn light" data-act="calNext">›</button>'
+    + '<div class="sp"></div><div class="mono">'+title+'</div>'
+    + '</div><div class="cal-grid">'+days+body+'</div></div>';
+}
+function Calendar(){
+  const s = App.state.cal||{y:(new Date()).getFullYear(),m:(new Date()).getMonth()};
+  const grid = renderMonth(s.y, s.m);
+  const add = '<div class="card"><div class="grid cols-3">'
+    + '<input class="input" id="ev-title" placeholder="Appointment or note">'
+    + '<input class="input" id="ev-date" type="date" value="'+(new Date()).toISOString().slice(0,10)+'">'
+    + '<select class="input" id="ev-type"><option>Appointment</option><option>Reminder</option></select>'
+    + '</div><div class="right" style="margin-top:6px"><button class="btn" data-act="calCreate">Create</button></div></div>';
+  return Shell('<div class="card">'+grid+'</div>'+add, 'calendar');
+}
+// Calendar actions
+document.addEventListener('click', function(e){
+  let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode;
+  if(!t||t===document) return;
+  const act=t.getAttribute('data-act');
+  if(act==='calPrev'){ const s=App.state.cal; s.m--; if(s.m<0){s.m=11;s.y--;} App.set({}); }
+  if(act==='calNext'){ const s=App.state.cal; s.m++; if(s.m>11){s.m=0;s.y++;} App.set({}); }
+  if(act==='calToday'){ App.state.cal={y:(new Date()).getFullYear(),m:(new Date()).getMonth()}; App.set({}); }
+  if(act==='calCreate'){ const title=(document.getElementById('ev-title')||{}).value||''; const date=(document.getElementById('ev-date')||{}).value||''; const type=(document.getElementById('ev-type')||{}).value||''; if(!title||!date){ alert('Title and Date are required'); return; } DATA.events=DATA.events||[]; DATA.events.push({id:uid(),title,date,type}); try{ localStorage.setItem('synergy_events_v1', JSON.stringify(DATA.events)); }catch(_){ } App.set({}); }
 });
-// ---- End injected ----
+// Load events on boot
+try{ const ev=JSON.parse(localStorage.getItem('synergy_events_v1')||'null'); if(ev&&Array.isArray(ev)) DATA.events=ev; }catch(_){}
+// ---- End Calendar ----
 })();
