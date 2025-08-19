@@ -1,24 +1,3 @@
-// ---- Persistence for DATA ----
-const STORE_KEY = 'synergy_data_v2';
-function persist(){
-  try{
-    const out = { cases: DATA.cases, contacts: DATA.contacts, companies: DATA.companies, resources: DATA.resources, users: DATA.users, me: DATA.me };
-    localStorage.setItem(STORE_KEY, JSON.stringify(out));
-  }catch(_){}
-}
-function loadPersisted(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(!raw) return;
-    const obj = JSON.parse(raw)||{};
-    if(obj.cases) DATA.cases = obj.cases;
-    if(obj.contacts) DATA.contacts = obj.contacts;
-    if(obj.companies) DATA.companies = obj.companies;
-    if(obj.resources) DATA.resources = obj.resources;
-    if(obj.users) DATA.users = obj.users;
-    if(obj.me) DATA.me = obj.me;
-  }catch(_){}
-}
 
 (function(){
 "use strict";
@@ -316,7 +295,7 @@ document.addEventListener('click', (e)=>{
     const fields=[['title','c-title'],['organisation','c-org'],['status','c-status'],['priority','c-priority']];
     fields.forEach(([k,i])=>{ const val=v(i); if(val!=null) cs[k]=val; });
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    persist(); persist(); alert('Case saved'); return;
+    persist(); alert('Case saved'); return;
   }
   if(act==='deleteCase'){
     const cs=findCase(arg); if(!cs) return; if(!confirm('Delete case '+(cs.fileNumber||'')+'?')) return;
@@ -325,25 +304,25 @@ document.addEventListener('click', (e)=>{
   if(act==='addNote'){
     const cs=findCase(arg); if(!cs) return; const tx=document.getElementById('note-text').value.trim(); if(!tx){ alert('Enter a note'); return; }
     const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com';
-    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); persist(); App.set({}); return;
+    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); App.set({}); return;
   }
   if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; const base=cs.tasks;
     ["Gather documents","Interview complainant","Interview respondent","Write report"].forEach(a=> base.push({id:'T-'+(base.length+1), title:a, assignee:cs.investigatorName, due:'', status:'Open'}));
-    persist(); persist(); App.set({}); return;
+    persist(); App.set({}); return;
   }
   if(act==='addTask'){
     const cs=findCase(arg); if(!cs) return;
     const whoSel=document.getElementById('task-assignee'); const who = whoSel.options[whoSel.selectedIndex].text;
     cs.tasks.push({id:'T-'+(cs.tasks.length+1), title:(document.getElementById('task-title').value||'').trim(), assignee:who, due:document.getElementById('task-due').value, status:'Open'});
-    persist(); persist(); App.set({}); return;
+    persist(); App.set({}); return;
   }
 
   // Document actions
-  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); persist(); App.set({}); return; }
+  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); App.set({}); return; }
   if(act==='selectFiles'){ App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return; }
   if(act==='viewDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
-  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); persist(); App.set({}); return; }
-  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); persist(); App.set({}); } return; }
+  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); App.set({}); return; }
+  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); App.set({}); } return; }
 
   // Calendar actions
   if(act==='createEvent'){
@@ -400,4 +379,77 @@ document.addEventListener('change',(e)=>{
 
 // bootstrap
 document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
+
+// === Safety shim injected ===
+if (typeof DATA==='undefined') { window.DATA = { users:[], companies:[], contacts:[], cases:[], notifications:[], events:[] }; }
+if (!Array.isArray(DATA.notifications)) DATA.notifications = [];
+if (!Array.isArray(DATA.events)) DATA.events = [];
+
+if (typeof findCase!=='function') { function findCase(id){ return (DATA.cases||[]).find(c=>c.id===id) || null; } }
+if (typeof findEvent!=='function'){ function findEvent(id){ return (DATA.events||[]).find(e=>e.id===id) || null; } }
+
+if (typeof App==='undefined') {
+  window.App = {
+    state: { route:'dashboard', filterOwner:'', casesFilter:{q:''}, cal:{ y:(new Date()).getFullYear(), m:(new Date()).getMonth() }, currentUploadTarget:'' },
+    set: function(s) { try{ Object.assign(this.state, s||{}); }catch(_){ } try{ if (typeof render==='function') render(); }catch(_){ } }
+  };
+}
+
+if (typeof statusChip!=='function') {
+  function statusChip(s){
+    const classes = (s||'').trim().split(/\s+/).filter(Boolean);
+    const cls = 'status ' + classes.join(' ');
+    return '<span class="badge '+cls+'" data-status="'+(s||'')+'">'+(s||'')+'</span>';
+  }
+}
+
+if (typeof persist!=='function') {
+  const STORE_KEY='synergy_data_v2';
+  function persist(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({
+      users:DATA.users, companies:DATA.companies, contacts:DATA.contacts, cases:DATA.cases, notifications:DATA.notifications, events:DATA.events
+    })); }catch(_){}
+  }
+  function loadPersisted(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw){ const obj=JSON.parse(raw)||{};
+        if(obj.users) DATA.users=obj.users;
+        if(obj.companies) DATA.companies=obj.companies;
+        if(obj.contacts) DATA.contacts=obj.contacts;
+        if(obj.cases) DATA.cases=obj.cases;
+        if(obj.notifications) DATA.notifications=obj.notifications;
+        if(obj.events) DATA.events=obj.events;
+      }
+      const evOld = localStorage.getItem('synergy_events_v1');
+      if(evOld && !DATA.events?.length) {
+        try{ DATA.events = JSON.parse(evOld)||[]; }catch(_){}
+      }
+      const filt = localStorage.getItem('synergy_filters_cases_v2');
+      if(filt){ try{ App.state.casesFilter = JSON.parse(filt)||{q:''}; }catch(_){ } }
+    }catch(_){}
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ loadPersisted(); }catch(_){}
+  }, { once:true });
+}
+
+// Ensure render exists to avoid crashes
+if (typeof render!=='function') {
+  function render(){
+    var boot = document.getElementById('boot');
+    if(boot) boot.textContent = 'Ready';
+  }
+}
+
+// Persist after key actions (inside IIFE scope)
+document.addEventListener('click', function(e){
+  var t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode;
+  if(!t||t===document) return;
+  var act=t.getAttribute('data-act');
+  if(act==='newCase' || act==='saveCase' || act==='deleteCase' || act==='addNote' || act==='addTask' || act==='removeDoc' || act==='deleteFolder') {
+    setTimeout(function(){ try{ persist(); }catch(_){ } },0);
+  }
+});
+// === End safety shim ===
 })();
