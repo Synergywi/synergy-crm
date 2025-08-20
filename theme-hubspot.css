@@ -78,6 +78,11 @@ tbody td, tbody th{background:var(--surface);padding:10px;border-bottom:1px soli
 .pill .x{border:none;background:transparent;color:#6b7280;cursor:pointer}
 .pill .x:hover{color:#111827}
 
+/* Tabs helper */
+.tabbar{display:flex;gap:8px;flex-wrap:wrap}
+.tabbar .btn{background:#eef2f7;color:#0f172a}
+.tabbar .btn.active{background:var(--brand);color:#fff}
+
 /* Modal */
 .modal.hidden{display:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -85,3 +90,5 @@ tbody td, tbody th{background:var(--surface);padding:10px;border-bottom:1px soli
 .modal-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
 .modal-body{padding:12px 14px}
 .modal-foot{display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
+
+@media print{ .sidebar,#boot,.cal-head,.section header .btn { display:none } main.main{padding:0} }
