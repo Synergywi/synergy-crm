@@ -10,7 +10,7 @@
 <body>
   <div id="app"></div>
 
-  <!-- Event Modal -->
+  <!-- Event Modal (simple) -->
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="modal-head">
@@ -20,35 +20,26 @@
       <div class="modal-body grid cols-2">
         <div><label>Title</label><input id="md-title" class="input" autocomplete="off"></div>
         <div><label>Date</label><input id="md-date" type="date" class="input"></div>
-        <div><label>End date (optional)</label><input id="md-dateend" type="date" class="input"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:22px"><input id="md-allday" type="checkbox"><label for="md-allday" style="margin:0">All-day</label></div>
         <div><label>Start</label><input id="md-start" type="time" class="input" value="09:00"></div>
         <div><label>End</label><input id="md-end" type="time" class="input" value="10:00"></div>
         <div><label>Owner</label><select id="md-owner" class="input"></select></div>
         <div><label>Type</label><select id="md-type" class="input">
           <option>Appointment</option><option>Interview</option>
-          <option>Evidence review</option><option>Admin</option><option>Risk</option>
+          <option>Evidence review</option><option>Admin</option>
         </select></div>
+        <div class="span-2"><label>Location</label><input id="md-loc" class="input" placeholder="Room or link"></div>
         <div class="span-2"><label>Link to Case (optional)</label><select id="md-case" class="input"></select></div>
-        <div><label>Reminder (mins before)</label><input id="md-remind" type="number" class="input" min="0" step="5" placeholder="e.g., 15"></div>
-        <div></div>
-        <div><label>Repeat</label><select id="md-repeat" class="input">
-          <option value="none">None</option><option value="daily">Daily</option>
-          <option value="weekly">Weekly</option><option value="monthly">Monthly</option>
-        </select></div>
-        <div><label>Occurrences</label><input id="md-rcount" type="number" class="input" min="1" value="1"></div>
       </div>
       <div class="modal-foot">
-        <button class="btn light" data-act="duplicateEvent">Duplicate</button>
-        <div class="sp"></div>
         <button class="btn danger" data-act="deleteEvent">Delete</button>
+        <div class="sp"></div>
         <button class="btn" data-act="saveEvent">Save</button>
       </div>
     </div>
   </div>
 
   <div id="boot">Booting…</div>
-  <script>window.__STAMP__="2025-08-20T02:18:37.244381";</script>
+  <script>window.__STAMP__="2025-08-20T02:34:11.901228";</script>
   <script src="app.js"></script>
   <script src="toolbar.js"></script>
   <script src="settings-addon.js"></script>
