@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const BUILD="v2.20.3-hs";
+const BUILD="v2.20.4-hs";
 const STAMP=window.__STAMP__||(new Date()).toISOString();
 const EV_KEY="synergy_events_v7", CFG_KEY="synergy_settings_v2";
 const pad=n=>(""+n).padStart(2,"0");
@@ -95,7 +95,68 @@ function closeModal(){ document.getElementById('modal').classList.add('hidden');
 function scheduleReminders(){ if(!("Notification" in window)) return; if(Notification.permission!=='granted' && Notification.permission!=='denied'){ Notification.requestPermission(()=>{}); } const now=Date.now(), dayAhead=now+24*3600*1000; DATA.events.forEach(e=>{ if(!e.remind) return; const startTs=new Date(e.date+'T'+(e.allDay?'09:00':(e.start||'09:00'))).getTime(); const fireTs=startTs-Number(e.remind)*60000; if(fireTs>now && fireTs<dayAhead){ setTimeout(()=>{ if(Notification.permission==='granted'){ new Notification(e.title,{body:(e.allDay?'All-day':(e.start+'–'+e.end))+' • '+(e.owner||'')}); } }, fireTs-now); } }); }
 function toICSDateTime(date,time){ return date.replace(/-/g,'')+(time?('T'+time.replace(':','')+'00'):''); }
 function exportICS(){ const events=DATA.events.filter(e=>byFilters(e)); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SynergyCRM//Demo//EN']; events.forEach(e=>{ lines.push('BEGIN:VEVENT'); if(e.allDay){ lines.push('DTSTART;VALUE=DATE:'+e.date.replace(/-/g,'')); const ed=e.dateEnd||e.date; const dayAfter=ymdLocal(addDays(parseYMD(ed),1)).replace(/-/g,''); lines.push('DTEND;VALUE=DATE:'+dayAfter); }else{ lines.push('DTSTART:'+toICSDateTime(e.date,e.start)); lines.push('DTEND:'+toICSDateTime(e.date,e.end)); } lines.push('SUMMARY:'+e.title); if(e.owner) lines.push('ORGANIZER:'+e.owner); lines.push('END:VEVENT'); }); lines.push('END:VCALENDAR'); const blob=new Blob([lines.join('\\r\\n')],{type:'text/calendar'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='synergy-calendar.ics'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
-function importICS(text){ const evs=[]; const lines=text.split(/\\r?\\n/); let cur=null; function flush(){ if(!cur) return; const ev={id:uid(), title:cur.SUMMARY||'Untitled', date:'', start:'09:00', end:'10:00', owner:cur.ORGANIZER||'Admin', type:'Appointment', caseId:null, allDay:false}; if(cur['DTSTART;VALUE=DATE']){ ev.allDay=true; const y=cur['DTSTART;VALUE=DATE']; ev.date = y[:4]+'-'+y[4:6]+'-'+y[6:8]; if(cur['DTEND;VALUE=DATE']){ const y2=cur['DTEND;VALUE=DATE']; const d2=y2[:4]+'-'+y2[4:6]+'-'+y2[6:8]; ev.dateEnd = ymdLocal(addDays(parseYMD(d2),-1)); } } else if(cur.DTSTART){ const s=cur.DTSTART; ev.date = s[:4]+'-'+s[4:6]+'-'+s[6:8]; ev.start = s[9:11]+':'+s[11:13]; if(cur.DTEND){ const t=cur.DTEND; ev.end = t[9:11]+':'+t[11:13]; } } evs.push(ev); cur=null; }
+
+function importICS(text){
+  const evs=[];
+  const lines=text.split(/?
+/);
+  let cur=null;
+
+  function flush(){
+    if(!cur) return;
+    const ev={
+      id:uid(),
+      title:cur.SUMMARY||'Untitled',
+      date:'',
+      start:'09:00',
+      end:'10:00',
+      owner:cur.ORGANIZER||'Admin',
+      type:'Appointment',
+      caseId:null,
+      allDay:false
+    };
+
+    if(cur['DTSTART;VALUE=DATE']){
+      ev.allDay=true;
+      const y=cur['DTSTART;VALUE=DATE'];
+      ev.date = y.slice(0,4)+'-'+y.slice(4,6)+'-'+y.slice(6,8);
+      if(cur['DTEND;VALUE=DATE']){
+        const y2=cur['DTEND;VALUE=DATE'];
+        const d2=y2.slice(0,4)+'-'+y2.slice(4,6)+'-'+y2.slice(6,8);
+        ev.dateEnd = ymdLocal(addDays(parseYMD(d2),-1)); // ICS DTEND DATE is exclusive
+      }
+    } else if(cur.DTSTART){
+      const s=cur.DTSTART;
+      ev.date  = s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8);
+      ev.start = s.slice(9,11)+':'+s.slice(11,13);
+      if(cur.DTEND){
+        const t=cur.DTEND;
+        ev.end = t.slice(9,11)+':'+t.slice(11,13);
+      }
+    }
+
+    evs.push(ev);
+    cur=null;
+  }
+
+  lines.forEach(ln=>{
+    if(ln==='BEGIN:VEVENT'){ cur={}; }
+    else if(ln==='END:VEVENT'){ flush(); }
+    else if(cur){
+      const i=ln.indexOf(':');
+      if(i>-1){
+        const k=ln.slice(0,i);
+        const v=ln.slice(i+1);
+        cur[k]=v;
+      }
+    }
+  });
+
+  DATA.events.push(...evs);
+  persistEvents();
+  App.set({});
+}
+
   lines.forEach(ln=>{ if(ln==='BEGIN:VEVENT'){ cur={}; } else if(ln==='END:VEVENT'){ flush(); } else if(cur){ const i=ln.indexOf(':'); if(i>-1){ const k=ln.slice(0,i); const v=ln.slice(i+1); cur[k]=v; } } });
   DATA.events.push(...evs); persistEvents(); App.set({}); }
 function render(){ const r=App.state.route, el=document.getElementById('app'); document.getElementById('boot').textContent='Rendering '+r+'…'; if(r==='dashboard') el.innerHTML=Dashboard(); else if(r==='calendar') el.innerHTML=Calendar(); else if(r==='cases') el.innerHTML=Cases(); else if(r==='case') el.innerHTML=CasePage(App.state.currentCaseId); else if(r==='contacts') el.innerHTML=Contacts(); else if(r==='contact') el.innerHTML=ContactPage(App.state.currentContactId); else if(r==='companies') el.innerHTML=Companies(); else if(r==='company') el.innerHTML=CompanyPage(App.state.currentCompanyId); else if(r==='documents') el.innerHTML=Documents(); else if(r==='document') el.innerHTML=DocumentPage(App.state.currentDocId); else el.innerHTML=Dashboard(); document.getElementById('boot').textContent='Ready ('+BUILD+')'; scheduleReminders(); }
