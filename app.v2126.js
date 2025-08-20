@@ -5,7 +5,15 @@ console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* helpers */
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
-function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\\"":"&quot;","'":"&#39;"}[m]||m)); }
+function esc(s){
+  return (s||"").replace(/[&<>"']/g, m => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[m] || m));
+}[m]||m)); }
 const LS_KEYS = {CAL:"synergy_calendar_v2126", ME:"synergy_me"};
 function saveCal(){ try{ localStorage.setItem(LS_KEYS.CAL, JSON.stringify(DATA.calendar||[])); }catch(_){ } }
 function loadCal(){
