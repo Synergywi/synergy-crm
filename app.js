@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const BUILD="v2.20.2-hs";
+const BUILD="v2.20.3-hs";
 const STAMP=window.__STAMP__||(new Date()).toISOString();
 const EV_KEY="synergy_events_v7", CFG_KEY="synergy_settings_v2";
 const pad=n=>(""+n).padStart(2,"0");

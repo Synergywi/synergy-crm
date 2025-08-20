@@ -15,13 +15,13 @@
     <div class="modal-card">
       <div class="modal-head">
         <h3 id="modal-title">Event</h3>
-        <button class="btn light" data-act="closeModal">✕</button>
+        <button class="btn light" data-act="closeModal" aria-label="Close">✕</button>
       </div>
       <div class="modal-body grid cols-2">
-        <div><label>Title</label><input id="md-title" class="input"></div>
+        <div><label>Title</label><input id="md-title" class="input" autocomplete="off"></div>
         <div><label>Date</label><input id="md-date" type="date" class="input"></div>
         <div><label>End date (optional)</label><input id="md-dateend" type="date" class="input"></div>
-        <div><label><input id="md-allday" type="checkbox"> All-day</label></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:22px"><input id="md-allday" type="checkbox"><label for="md-allday" style="margin:0">All-day</label></div>
         <div><label>Start</label><input id="md-start" type="time" class="input" value="09:00"></div>
         <div><label>End</label><input id="md-end" type="time" class="input" value="10:00"></div>
         <div><label>Owner</label><select id="md-owner" class="input"></select></div>
@@ -48,7 +48,7 @@
   </div>
 
   <div id="boot">Booting…</div>
-  <script>window.__STAMP__="2025-08-20T02:13:50.245491";</script>
+  <script>window.__STAMP__="2025-08-20T02:18:37.244381";</script>
   <script src="app.js"></script>
   <script src="toolbar.js"></script>
   <script src="settings-addon.js"></script>
