@@ -3,6 +3,15 @@ const BUILD="baseline-1.0.0"; const STAMP=(new Date()).toISOString();
 console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 
 /* utils */
+/* === Calendar persistence (localStorage) === */
+function loadCalendarFromStorage(){
+  try{ const raw = localStorage.getItem('synergy-calendar'); if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr)){ DATA.calendar = arr; } } }catch(_){}
+}
+function saveCalendarToStorage(){
+  try{ localStorage.setItem('synergy-calendar', JSON.stringify(DATA.calendar||[])); }catch(_){}
+}
+
+
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
@@ -359,6 +368,66 @@ document.addEventListener('click', e=>{
   let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
 
+// === Calendar handlers ===
+if(act==='calPrev'){ const cs=App.state.calendar||{}; const d=new Date(cs.ym+'-01'); d.setMonth(d.getMonth()-1); cs.ym=d.toISOString().slice(0,7); App.set({calendar:cs}); return; }
+if(act==='calNext'){ const cs=App.state.calendar||{}; const d=new Date(cs.ym+'-01'); d.setMonth(d.getMonth()+1); cs.ym=d.toISOString().slice(0,7); App.set({calendar:cs}); return; }
+if(act==='calToday'){ const cs=App.state.calendar||{}; const d=new Date(); cs.ym=d.toISOString().slice(0,7); cs.selectedDate=d.toISOString().slice(0,10); App.set({calendar:cs}); return; }
+if(act==='calView'){ const cs=App.state.calendar||{}; cs.view=arg; App.set({calendar:cs}); return; }
+if(act==='pickDay'){ const cs=App.state.calendar||{}; cs.selectedDate=arg; App.set({calendar:cs}); 
+  // open new event editor prefilled
+  const startISO = arg+'T10:00:00.000Z', endISO=arg+'T11:00:00.000Z';
+  App.set({currentEvent:{ title:"", startISO, endISO, type:"Appointment", location:"", notes:"" }});
+  return;
+}
+if(act==='newEvent'){ const d=(App.state.calendar&&App.state.calendar.selectedDate)||new Date().toISOString().slice(0,10); const s=d+'T10:00:00.000Z', e=d+'T11:00:00.000Z'; App.set({currentEvent:{ title:"", startISO:s, endISO:e, type:"Appointment", location:"", notes:"" }}); return; }
+if(act==='saveEvent'){
+  const id = arg || null;
+  const get = id=>document.getElementById(id);
+  const title = (get('ev-title')||{}).value || 'Event';
+  const date  = (get('ev-date')||{}).value || (App.state.calendar&&App.state.calendar.selectedDate) || new Date().toISOString().slice(0,10);
+  const start = (get('ev-start')||{}).value || '10:00';
+  const end   = (get('ev-end')||{}).value || '11:00';
+  const type  = (get('ev-type')||{}).value || 'Appointment';
+  const loc   = (get('ev-loc')||{}).value || '';
+  const ownerEmail = (get('ev-owner')||{}).value || ((DATA.me||{}).email || "admin@synergy.com");
+  const ownerName  = ((DATA.users||[]).find(u=>u.email===ownerEmail)||{}).name || ownerEmail;
+  const caseId = (get('ev-case')||{}).value || null;
+  const notes = (get('ev-notes')||{}).value || "";
+  const payload = { id: id||uid(), title, type, location:loc, notes, ownerEmail, ownerName, caseId: caseId||null,
+    startISO:new Date(date+'T'+start).toISOString(),
+    endISO:new Date(date+'T'+end).toISOString()
+  };
+  if(!DATA.calendar) DATA.calendar=[];
+  if(id){
+    const i=(DATA.calendar||[]).findIndex(x=>x.id===id);
+    if(i>=0) DATA.calendar[i]=payload;
+  }else{
+    DATA.calendar.push(payload);
+  }
+  saveCalendarToStorage();
+  App.set({currentEvent:null});
+  alert('Event saved');
+  return;
+}
+if(act==='deleteEvent'){
+  const id = arg;
+  if(!confirm('Delete this event?')) return;
+  DATA.calendar = (DATA.calendar||[]).filter(x=>x.id!==id);
+  saveCalendarToStorage();
+  App.set({currentEvent:null});
+  return;
+}
+if(act==='openEvent'){
+  const ev=(DATA.calendar||[]).find(x=>x.id===arg);
+  if(!ev){ alert('Event not found'); return; }
+  App.set({currentEvent:Object.assign({},ev)});
+  return;
+}
+if(act==='closeEvent'){ App.set({currentEvent:null}); return; }
+if(act==='toggleMine'){ const cs=App.state.calendar||{}; cs.mineOnly=!cs.mineOnly; App.set({calendar:cs}); return; }
+if(act==='toggleCaseLinked'){ const cs=App.state.calendar||{}; cs.caseLinkedOnly=!cs.caseLinkedOnly; App.set({calendar:cs}); return; }
+
+
   if(act==='route'){ App.set({route:arg}); return; }
   if(act==='tab'){ const scope=t.getAttribute('data-scope'); const tabs=Object.assign({},App.state.tabs); tabs[scope]=arg; App.set({tabs}); return; }
 
@@ -425,6 +494,8 @@ document.addEventListener('click', e=>{
 });
 
 document.addEventListener('change', e=>{
+if(e.target && e.target.id==='cal-owner-filter'){ const cs=App.state.calendar||{}; cs.filterUsers=e.target.value||'ALL'; App.set({calendar:cs}); }
+
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
@@ -482,7 +553,46 @@ if(!DATA.calendar){ DATA.calendar=[]; }
 })();
 
 // App state for calendar
-if(!App.state.calendar){ App.state.calendar={ view:"month", ym:(new Date()).toISOString().slice(0,7), selectedDate:(new Date()).toISOString().slice(0,10), filterUsers:"ALL" }; }
+if(!App.state.calendar){ App.state.calendar={ view:"month", ym:(new Date()).toISOString().slice(0,7), selectedDate:(new Date()).toISOString().slice(0,10), filterUsers:"ALL", caseLinkedOnly:false, mineOnly:false }; }
+
+
+// ---- Event modal (inline) ----
+function EventEditor(ev){
+  const users = (DATA.users||[]);
+  const ownerEmail = ev.ownerEmail || ((DATA.me||{}).email || (users[0]||{}).email || "");
+  const ownerName  = ev.ownerName  || ((users.find(u=>u.email===ownerEmail)||{}).name || "");
+  const dateISO = (ev.startISO? new Date(ev.startISO) : new Date());
+  const startHH = String(dateISO.getHours()).padStart(2,'0')+':'+String(dateISO.getMinutes()).padStart(2,'0');
+  const endISO  = ev.endISO? new Date(ev.endISO) : new Date(dateISO.getTime()+60*60*1000);
+  const endHH   = String(endISO.getHours()).padStart(2,'0')+':'+String(endISO.getMinutes()).padStart(2,'0');
+  return `
+    <div class="card" id="event-editor">
+      <h3 class="section-title">${ev.id ? "Edit event" : "New event"}</h3>
+      <div class="grid cols-3">
+        <div><label>Title</label><input class="input" id="ev-title" value="${esc(ev.title||"")}"></div>
+        <div><label>Date</label><input class="input" id="ev-date" type="date" value="${new Date(dateISO).toISOString().slice(0,10)}"></div>
+        <div><label>Type</label><select class="input" id="ev-type"><option ${ev.type==="Appointment"?"selected":""}>Appointment</option><option ${ev.type==="Note"?"selected":""}>Note</option></select></div>
+        <div><label>Start</label><input class="input" id="ev-start" type="time" value="${startHH}"></div>
+        <div><label>End</label><input class="input" id="ev-end" type="time" value="${endHH}"></div>
+        <div><label>Location</label><input class="input" id="ev-loc" value="${esc(ev.location||"")}"></div>
+        <div><label>Owner</label><select class="input" id="ev-owner">
+          ${users.map(u=>`<option value="${u.email}" ${u.email===ownerEmail?"selected":""}>${esc(u.name)}</option>`).join("")}
+        </select></div>
+        <div><label>Case link (optional)</label>
+          <select class="input" id="ev-case">
+            <option value="">— None —</option>
+            ${(DATA.cases||[]).map(c=>`<option value="${c.id}" ${ev.caseId===c.id?"selected":""}>${c.fileNumber} — ${esc(c.title||"")}</option>`).join("")}
+          </select>
+        </div>
+        <div><label>Notes</label><textarea class="input" id="ev-notes">${esc(ev.notes||"")}</textarea></div>
+      </div>
+      <div class="right" style="margin-top:8px">
+        ${ev.id ? `<button class="btn danger" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>` : ""}
+        <button class="btn" data-act="saveEvent" data-arg="${ev.id||""}">Save</button>
+        <button class="btn light" data-act="closeEvent">Close</button>
+      </div>
+    </div>`;
+}
 
 function Calendar(){
   const me = DATA.me || {email:"",role:""};
@@ -508,6 +618,8 @@ function Calendar(){
     return (DATA.calendar||[]).filter(ev=>{
       if(!isAdmin && ev.ownerEmail!==me.email) return false;
       if(isAdmin && calState.filterUsers!=="ALL" && ev.ownerEmail!==calState.filterUsers) return false;
+      if(calState.mineOnly && ev.ownerEmail!==me.email) return false;
+      if(calState.caseLinkedOnly && !ev.caseId) return false;
       return CAL.fmtDate(ev.startISO)===dayISO;
     }).sort((a,b)=>a.startISO.localeCompare(b.startISO));
   }
@@ -553,6 +665,8 @@ function Calendar(){
     const list = (DATA.calendar||[]).filter(ev=>{
       if(!isAdmin && ev.ownerEmail!==me.email) return false;
       if(isAdmin && calState.filterUsers!=="ALL" && ev.ownerEmail!==calState.filterUsers) return false;
+      if(calState.mineOnly && ev.ownerEmail!==me.email) return false;
+      if(calState.caseLinkedOnly && !ev.caseId) return false;
       const d = new Date(ev.startISO);
       return (d.getMonth()===monthIndex && d.getFullYear()===yy);
     }).sort((a,b)=>a.startISO.localeCompare(b.startISO));
@@ -650,6 +764,8 @@ document.addEventListener('click', e=>{
 });
 
 document.addEventListener('change', e=>{
+if(e.target && e.target.id==='cal-owner-filter'){ const cs=App.state.calendar||{}; cs.filterUsers=e.target.value||'ALL'; App.set({calendar:cs}); }
+
   if(e.target && e.target.id==='cal-owner-filter'){
     const S=App.state.calendar||{}; S.filterUsers=e.target.value||"ALL"; App.set({calendar:S});
   }
