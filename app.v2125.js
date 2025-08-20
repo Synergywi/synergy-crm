@@ -14,7 +14,7 @@ function mkCase(y,seq,p){
     relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
   Object.assign(b,p||{}); return b;
 }
-const DATA={
+let DATA={
   users:[
     {name:"Admin",email:"admin@synergy.com",role:"Admin"},
     {name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},
@@ -45,6 +45,31 @@ const DATA={
   },
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
+// === demo persistence (localStorage) ===
+const LS_KEY="synergy_demo_data_v1";
+function loadPersisted(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const saved=JSON.parse(raw);
+    if(saved && typeof saved==='object'){
+      // merge shallow pieces we care about
+      if(Array.isArray(saved.calendar)) DATA.calendar=saved.calendar;
+      if(Array.isArray(saved.cases)) DATA.cases=saved.cases;
+      if(Array.isArray(saved.contacts)) DATA.contacts=saved.contacts;
+      if(Array.isArray(saved.companies)) DATA.companies=saved.companies;
+      if(Array.isArray(saved.users)) DATA.users=saved.users;
+      if(saved.me) DATA.me=saved.me;
+    }
+  }catch(e){ console.warn("Load persisted failed", e); }
+}
+function savePersisted(){
+  try{
+    const out={calendar:DATA.calendar, cases:DATA.cases, contacts:DATA.contacts, companies:DATA.companies, users:DATA.users, me:DATA.me};
+    localStorage.setItem(LS_KEY, JSON.stringify(out));
+  }catch(e){ console.warn("Persist failed", e); }
+}
+
 // ---- Persisted storage helpers (calendar & me) ----
 function loadCalendarFromStore(){
   try{
@@ -67,6 +92,58 @@ if(!DATA.calendar){ DATA.calendar=[]; }
   if(stored && stored.length){
     DATA.calendar = stored;
   }
+/* lightweight modal for event view/edit */
+function renderEventModal(ev){
+  const wrap=document.createElement('div');
+  wrap.id='ev-modal';
+  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+  const d=new Date(ev.startISO), e=new Date(ev.endISO);
+  function hhmm(x){ return String(x).padStart(2,'0'); }
+  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
+  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
+  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
+      <div class="sp"></div>
+      <button class="btn light" data-act="closeEvModal">Close</button>
+    </div>
+    <div class="grid cols-3" style="gap:10px">
+      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
+      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
+      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
+      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
+      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
+      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
+    </div>
+    <div class="right" style="margin-top:12px">
+      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
+      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+}
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
+  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
+  if(act==='saveEvent'){
+    const id=arg;
+    const ev=(DATA.calendar||[]).find(x=>x.id===id);
+    if(!ev) return;
+    const title=(document.getElementById('mv-title')||{}).value||ev.title;
+    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
+    const type=(document.getElementById('mv-type')||{}).value||ev.type;
+    const start=(document.getElementById('mv-start')||{}).value||'09:00';
+    const end=(document.getElementById('mv-end')||{}).value||'10:00';
+    const loc=(document.getElementById('mv-loc')||{}).value||'';
+    ev.title=title; ev.type=type; ev.location=loc;
+    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
+    savePersisted();
+    const m=document.getElementById('ev-modal'); if(m) m.remove();
+    App.set({});
+  }
+});
+
 })();
 
 
@@ -411,7 +488,7 @@ document.addEventListener('click', e=>{
     const company=document.getElementById('nc-company').value||'C-001';
     const seq=('00'+(DATA.cases.length+1)).slice(-3);
     const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title,organisation:org,companyId:company,investigatorEmail:invEmail,investigatorName:inv.name,status:'Planning',priority:'Medium',created:(new Date()).toISOString().slice(0,7),relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;
+    DATA.cases.unshift(cs); savePersisted(); App.set({currentCaseId:cs.id,route:'case'}); return;
   }
   if(act==='saveCase'){
     const cs=findCase(arg); if(!cs) return;
@@ -422,9 +499,9 @@ document.addEventListener('click', e=>{
     const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; }
     setIf('status',getV('c-status')); setIf('priority',getV('c-priority'));
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    alert('Case saved'); return;
+    alert('Case saved'); savePersisted(); return;
   }
-  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); App.set({route:'cases'});} return; }
+  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); savePersisted(); App.set({route:'cases'});} return; }
   if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
   if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return; }
   if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); App.set({}); return; }
@@ -434,12 +511,12 @@ document.addEventListener('click', e=>{
   if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; App.set({}); return; }
 
   if(act==='openContact'){ App.set({currentContactId:arg,route:'contact'}); return; }
-  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); App.set({route:'contacts'}); return; }
-  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); App.set({route:'contacts'}); return; }
+  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); savePersisted(); App.set({route:'contacts'}); return; }
+  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); savePersisted(); App.set({route:'contacts'}); return; }
 
   if(act==='openCompany'){ App.set({currentCompanyId:arg,route:'company'}); return; }
-  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); App.set({route:'companies'}); return; }
-  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); App.set({}); return; }
+  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); savePersisted(); App.set({route:'companies'}); return; }
+  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); savePersisted(); App.set({}); return; }
 
   if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; App.set({}); return; }
   if(act==='deleteCompanyFolder'){ const [id,folder]=arg.split('::'); const co=findCompany(id); if(!co) return; if(confirm('Delete folder '+folder+' ?')){ delete co.folders[folder]; App.set({}); } return; }
@@ -468,6 +545,7 @@ document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
+  loadPersisted();
   
   // Baseline Integrity Guard
   try{
@@ -520,6 +598,58 @@ if(!DATA.calendar){ DATA.calendar=[]; }
     ev(21,13,14, u[2], "Draft report sync", "Zoom", "Appointment"),
     ev(26, 9,10, u[0], "Admin all-hands", "Boardroom", "Appointment")
   );
+/* lightweight modal for event view/edit */
+function renderEventModal(ev){
+  const wrap=document.createElement('div');
+  wrap.id='ev-modal';
+  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+  const d=new Date(ev.startISO), e=new Date(ev.endISO);
+  function hhmm(x){ return String(x).padStart(2,'0'); }
+  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
+  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
+  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
+      <div class="sp"></div>
+      <button class="btn light" data-act="closeEvModal">Close</button>
+    </div>
+    <div class="grid cols-3" style="gap:10px">
+      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
+      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
+      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
+      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
+      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
+      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
+    </div>
+    <div class="right" style="margin-top:12px">
+      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
+      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+}
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
+  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
+  if(act==='saveEvent'){
+    const id=arg;
+    const ev=(DATA.calendar||[]).find(x=>x.id===id);
+    if(!ev) return;
+    const title=(document.getElementById('mv-title')||{}).value||ev.title;
+    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
+    const type=(document.getElementById('mv-type')||{}).value||ev.type;
+    const start=(document.getElementById('mv-start')||{}).value||'09:00';
+    const end=(document.getElementById('mv-end')||{}).value||'10:00';
+    const loc=(document.getElementById('mv-loc')||{}).value||'';
+    ev.title=title; ev.type=type; ev.location=loc;
+    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
+    savePersisted();
+    const m=document.getElementById('ev-modal'); if(m) m.remove();
+    App.set({});
+  }
+});
+
 })();
 
 // App state for calendar
@@ -707,6 +837,7 @@ document.addEventListener('click', e=>{
     DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
     saveCalendarToStore();
     alert('Event added');
+    savePersisted();
     App.set({}); return;
   }
   if(act==='deleteEvent'){ DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg); saveCalendarLS(); App.set({}); return; }
@@ -794,5 +925,57 @@ function closeEventModal(){
 /* ===== End Event Modal ===== */
 
 /* ===== End Calendar Feature ===== */
+
+/* lightweight modal for event view/edit */
+function renderEventModal(ev){
+  const wrap=document.createElement('div');
+  wrap.id='ev-modal';
+  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+  const d=new Date(ev.startISO), e=new Date(ev.endISO);
+  function hhmm(x){ return String(x).padStart(2,'0'); }
+  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
+  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
+  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
+      <div class="sp"></div>
+      <button class="btn light" data-act="closeEvModal">Close</button>
+    </div>
+    <div class="grid cols-3" style="gap:10px">
+      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
+      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
+      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
+      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
+      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
+      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
+    </div>
+    <div class="right" style="margin-top:12px">
+      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
+      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+}
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
+  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
+  if(act==='saveEvent'){
+    const id=arg;
+    const ev=(DATA.calendar||[]).find(x=>x.id===id);
+    if(!ev) return;
+    const title=(document.getElementById('mv-title')||{}).value||ev.title;
+    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
+    const type=(document.getElementById('mv-type')||{}).value||ev.type;
+    const start=(document.getElementById('mv-start')||{}).value||'09:00';
+    const end=(document.getElementById('mv-end')||{}).value||'10:00';
+    const loc=(document.getElementById('mv-loc')||{}).value||'';
+    ev.title=title; ev.type=type; ev.location=loc;
+    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
+    savePersisted();
+    const m=document.getElementById('ev-modal'); if(m) m.remove();
+    App.set({});
+  }
+});
 
 })();
