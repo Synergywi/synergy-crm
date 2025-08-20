@@ -367,6 +367,60 @@ function render(){
 document.addEventListener('click', e=>{
   let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
+// === Calendar handlers (added) ===
+if(act==='pickDay'){ const cs=App.state.calendar||{}; cs.selectedDate=arg; App.set({calendar:cs});
+  const startISO = arg+'T10:00:00.000Z', endISO=arg+'T11:00:00.000Z';
+  App.set({currentEvent:{ title:"", startISO, endISO, type:"Appointment", location:"", notes:"" }});
+  return;
+}
+if(act==='newEvent'){ const d=(App.state.calendar&&App.state.calendar.selectedDate)||new Date().toISOString().slice(0,10); const s=d+'T10:00:00.000Z', e=d+'T11:00:00.000Z'; App.set({currentEvent:{ title:"", startISO:s, endISO:e, type:"Appointment", location:"", notes:"" }}); return; }
+if(act==='saveEvent'){
+  const id = arg || null;
+  const get = id=>document.getElementById(id);
+  const title = (get('ev-title')||{}).value || 'Event';
+  const date  = (get('ev-date')||{}).value || (App.state.calendar&&App.state.calendar.selectedDate) || new Date().toISOString().slice(0,10);
+  const start = (get('ev-start')||{}).value || '10:00';
+  const end   = (get('ev-end')||{}).value || '11:00';
+  const type  = (get('ev-type')||{}).value || 'Appointment';
+  const loc   = (get('ev-loc')||{}).value || '';
+  const ownerEmail = (get('ev-owner')||{}).value || ((DATA.me||{}).email || "admin@synergy.com");
+  const ownerName  = ((DATA.users||[]).find(u=>u.email===ownerEmail)||{}).name || ownerEmail;
+  const caseId = (get('ev-case')||{}).value || null;
+  const notes = (get('ev-notes')||{}).value || "";
+  const payload = { id: id||uid(), title, type, location:loc, notes, ownerEmail, ownerName, caseId: caseId||null,
+    startISO:new Date(date+'T'+start).toISOString(),
+    endISO:new Date(date+'T'+end).toISOString()
+  };
+  if(!DATA.calendar) DATA.calendar=[];
+  if(id){
+    const i=(DATA.calendar||[]).findIndex(x=>x.id===id);
+    if(i>=0) DATA.calendar[i]=payload;
+  }else{
+    DATA.calendar.push(payload);
+  }
+  saveCalendarToStorage();
+  App.set({currentEvent:null});
+  alert('Event saved');
+  return;
+}
+if(act==='deleteEvent'){
+  const id = arg;
+  if(!confirm('Delete this event?')) return;
+  DATA.calendar = (DATA.calendar||[]).filter(x=>x.id!==id);
+  saveCalendarToStorage();
+  App.set({currentEvent:null});
+  return;
+}
+if(act==='openEvent'){
+  const ev=(DATA.calendar||[]).find(x=>x.id===arg);
+  if(!ev){ alert('Event not found'); return; }
+  App.set({currentEvent:Object.assign({},ev)});
+  return;
+}
+if(act==='closeEvent'){ App.set({currentEvent:null}); return; }
+if(act==='toggleMine'){ const cs=App.state.calendar||{}; cs.mineOnly=!cs.mineOnly; App.set({calendar:cs}); return; }
+if(act==='toggleCaseLinked'){ const cs=App.state.calendar||{}; cs.caseLinkedOnly=!cs.caseLinkedOnly; App.set({calendar:cs}); return; }
+
 
 // === Calendar handlers ===
 if(act==='calPrev'){ const cs=App.state.calendar||{}; const d=new Date(cs.ym+'-01'); d.setMonth(d.getMonth()-1); cs.ym=d.toISOString().slice(0,7); App.set({calendar:cs}); return; }
@@ -507,6 +561,8 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.
     const miss=reqVars.filter(v=>!root.getPropertyValue(v));
     if(miss.length) console.warn("Theme variables missing:", miss);
   }catch(e){}
+  /* load calendar events */
+  loadCalendarFromStorage();
   App.set({route:'dashboard'});
 });
 /* ===== Calendar Feature (Outlook-style) ===== */
