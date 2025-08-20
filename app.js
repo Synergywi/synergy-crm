@@ -1,382 +1,137 @@
-
 (function(){
 "use strict";
-const BUILD = "v2.16.0"; const STAMP=(new Date()).toISOString();
-console.log("Synergy CRM "+BUILD+" • "+STAMP);
+const BUILD="v2.20.2-hs";
+const STAMP=window.__STAMP__||(new Date()).toISOString();
+const EV_KEY="synergy_events_v7", CFG_KEY="synergy_settings_v2";
+const pad=n=>(""+n).padStart(2,"0");
+const ymdLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ymLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const parseYMD=s=>{const [Y,M,D]=s.split("-").map(Number);return new Date(Y,M-1,D);};
+const addDays=(d,n)=>{const x=new Date(d.getTime());x.setDate(x.getDate()+n);return x;};
+const uid=()=>"id-"+Math.random().toString(36).slice(2,9);
+const YEAR=(new Date()).getFullYear();
 
-// ----------------- Seed & Helpers -----------------
-function uid(){return "id-"+Math.random().toString(36).slice(2,9);}
-const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
-
-function mkCase(y,seq,p){
-  let b={id:uid(),fileNumber:"INV-"+y+"-"+("00"+seq).slice(-3),title:"",organisation:"",companyId:"C-001",
-    investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:y+"-"+("0"+((seq%12)||1)).slice(-2),
-    notes:[],tasks:[],folders:{General:[]}}; Object.assign(b,p||{}); return b;
-}
-
+function mkCase(y,seq,p){let b={id:uid(),fileNumber:`INV-${y}-${pad(seq)}`,title:"",organisation:"",companyId:"C-001",investigatorEmail:"",investigatorName:"",status:"Planning",priority:"Medium",created:`${y}-${pad(((seq%12)||1))}`,notes:[],tasks:[],folders:{General:[]}};Object.assign(b,p||{});return b;}
 const DATA={
-  users:[
-    {name:"Admin",email:"admin@synergy.com",role:"Admin"},
-    {name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},
-    {name:"Priya Menon",email:"priya@synergy.com",role:"Investigator"},
-    {name:"Chris Rice",email:"chris@synergy.com",role:"Reviewer"}
-  ],
-  companies:[
-    {id:"C-001",name:"Sunrise Mining Pty Ltd",folders:{General:[]}},
-    {id:"C-002",name:"City of Melbourne",folders:{General:[]}},
-    {id:"C-003",name:"Queensland Health (Metro North)",folders:{General:[]}},
-  ],
-  contacts:[
-    {id:uid(),name:"Alex Ng",email:"alex@synergy.com",companyId:"C-001",notes:""},
-    {id:uid(),name:"Priya Menon",email:"priya@synergy.com",companyId:"C-003",notes:""},
-    {id:uid(),name:"Chris Rice",email:"chris@synergy.com",companyId:"C-002",notes:""}
-  ],
+  users:[{name:"Admin",email:"admin@synergy.com",role:"Admin"},{name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},{name:"Priya Menon",email:"priya@synergy.com",role:"Investigator"},{name:"Chris Rice",email:"chris@synergy.com",role:"Reviewer"}],
+  companies:[{id:"C-001",name:"Sunrise Mining Pty Ltd",city:"Perth",state:"WA",industry:"Mining",folders:{General:[]}},
+             {id:"C-002",name:"City of Melbourne",city:"Melbourne",state:"VIC",industry:"Public",folders:{General:[]}},
+             {id:"C-003",name:"Queensland Health (Metro North)",city:"Brisbane",state:"QLD",industry:"Health",folders:{General:[]}}],
+  contacts:[{id:"P-1",name:"Alex Ng",email:"alex@synergy.com",phone:"0400 111 333",companyId:"C-001",notes:[]},
+            {id:"P-2",name:"Priya Menon",email:"priya@synergy.com",phone:"0400 222 444",companyId:"C-003",notes:[]},
+            {id:"P-3",name:"Chris Rice",email:"chris@synergy.com",phone:"0400 333 555",companyId:"C-002",notes:[]}],
   cases:[
-    mkCase(LAST,101,{title:"Safety complaint – workshop",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Closed",priority:"Medium",created:LAST+"-01"}),
-    mkCase(LAST,102,{title:"Bullying allegation – IT",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Closed",priority:"High",created:LAST+"-07"}),
-    mkCase(YEAR,1,{title:"Bullying complaint in Finance",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Investigation",priority:"High",created:YEAR+"-01"}),
-    mkCase(YEAR,2,{title:"Sexual harassment allegation at Brisbane site",organisation:"Queensland Health (Metro North)",companyId:"C-003",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Planning",priority:"Critical",created:YEAR+"-06"}),
-    mkCase(YEAR,3,{title:"Misconduct – data exfiltration",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"chris@synergy.com",investigatorName:"Chris Rice",status:"Evidence Review",priority:"Medium",created:YEAR+"-07"}),
+    mkCase(YEAR-1,101,{title:"Safety complaint – workshop",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Closed",priority:"Medium",created:`${YEAR-1}-01`}),
+    mkCase(YEAR-1,102,{title:"Bullying allegation – IT",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Closed",priority:"High",created:`${YEAR-1}-07`}),
+    mkCase(YEAR,1,{title:"Bullying complaint in Finance",organisation:"Sunrise Mining Pty Ltd",companyId:"C-001",investigatorEmail:"alex@synergy.com",investigatorName:"Alex Ng",status:"Investigation",priority:"High",created:`${YEAR}-01`}),
+    mkCase(YEAR,2,{title:"Sexual harassment allegation at Brisbane site",organisation:"Queensland Health (Metro North)",companyId:"C-003",investigatorEmail:"priya@synergy.com",investigatorName:"Priya Menon",status:"Planning",priority:"Critical",created:`${YEAR}-06`}),
+    mkCase(YEAR,3,{title:"Misconduct – data exfiltration",organisation:"City of Melbourne",companyId:"C-002",investigatorEmail:"chris@synergy.com",investigatorName:"Chris Rice",status:"Evidence Review",priority:"Medium",created:`${YEAR}-07`})
   ],
-  // Calendar events (global), optional caseId to link
-  events:[
-    {id:uid(), title:"Interview planning", date: YEAR+"-08-06", start:"10:00", end:"11:00", type:"Appointment", owner:"alex@synergy.com", caseId:null, location:"War Room"},
-    {id:uid(), title:"Evidence review",   date: YEAR+"-08-13", start:"13:00", end:"14:30", type:"Appointment", owner:"priya@synergy.com", caseId:null, location:"HQ"},
+  documents:[
+    {id:"D-1",title:"Investigation plan template",type:"doc",size:"52 KB",companyId:"",caseId:"",owner:"Admin",created:ymdLocal(new Date(YEAR,6,1)),content:"Template body..."},
+    {id:"D-2",title:"Interview guide (Sunrise)",type:"pdf",size:"128 KB",companyId:"C-001",caseId:"",owner:"Admin",created:ymdLocal(new Date(YEAR,6,3)),content:""},
+    {id:"D-3",title:"Evidence snapshot",type:"image",size:"420 KB",companyId:"",caseId:"",owner:"Admin",created:ymdLocal(new Date(YEAR,6,10)),content:""}
   ],
-  notifications:[], // {id, time, verb, title, eventId, read:false}
+  events:[],
+  notifications:[],
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
 
-function isAdmin(){return (DATA.me&&DATA.me.role)==="Admin";}
-const findCase=id=>DATA.cases.find(c=>c.id===id)||null;
-const findEvent=id=>DATA.events.find(e=>e.id===id)||null;
-const findCompany=id=>DATA.companies.find(c=>c.id===id)||null;
-const fmt=(d)=>d;
-
-function pushNote(verb, ev){
-  if(!isAdmin()) return;
-  DATA.notifications.unshift({
-    id:uid(), time:(new Date()).toISOString(), verb, title:ev.title, eventId:ev.id, read:false
-  });
-  persist();
-}
-
-// -------- persistence ----------
-const LSKEY="synergy_demo_v2160";
-function persist(){
-  try{localStorage.setItem(LSKEY, JSON.stringify({DATA}));}catch(_){}
-}
-(function restore(){
-  try{const raw=localStorage.getItem(LSKEY); if(raw){ const obj=JSON.parse(raw); if(obj&&obj.DATA){ Object.assign(DATA, obj.DATA); } }}catch(_){}
+(function restoreEvents(){
+  try{const raw=localStorage.getItem(EV_KEY); if(raw) DATA.events=JSON.parse(raw)||[];}catch(_){}
+  if(!Array.isArray(DATA.events)) DATA.events=[];
+  if(!DATA.events.length){
+    DATA.events=[
+      {id:uid(), title:"Interview planning", date:`${YEAR}-08-06`, start:"09:00", end:"10:00", owner:"Admin", type:"Interview", caseId:null, allDay:false},
+      {id:uid(), title:"Evidence review", date:`${YEAR}-08-13`, start:"10:00", end:"12:00", owner:"Admin", type:"Evidence review", caseId:null, allDay:false},
+      {id:uid(), title:"Client check-in", date:`${YEAR}-08-19`, start:"11:00", end:"11:30", owner:"Admin", type:"Appointment", caseId:null, allDay:false},
+      {id:uid(), title:"Admin all-hands", date:`${YEAR}-08-26`, start:"15:00", end:"16:00", owner:"Admin", type:"Admin", caseId:null, allDay:false},
+      {id:uid(), title:"Case intake - Sunrise", date:`${YEAR}-08-03`, start:"00:00", end:"23:59", owner:"Admin", type:"Risk", caseId:null, allDay:true, dateEnd:`${YEAR}-08-03`}
+    ];
+    persistEvents();
+  }
 })();
+function persistEvents(){ try{localStorage.setItem(EV_KEY, JSON.stringify(DATA.events));}catch(_){ } }
 
-// ----------------- App shell -----------------
-const App={state:{route:"dashboard",tab:"Details",currentCaseId:null, currentEventId:null, filterOwner:"all", showModal:false}, set(p){Object.assign(App.state,p||{}); render();}, get(){return DATA;}};
+const App={ state:{
+  route:"calendar", view:"month", currentMonth: ymLocal(new Date()), selectedDate: ymdLocal(new Date()),
+  filters:{owner:"",type:"",caseId:"",q:""},
+  currentCaseId:null, caseTab:"Details",
+  currentCompanyId:null, companyTab:"Overview",
+  currentContactId:null, contactTab:"Details",
+  currentDocId:null, docTab:"Details"
+}, _raf:null, set(p){ Object.assign(this.state,p||{}); if(this._raf) cancelAnimationFrame(this._raf); this._raf=requestAnimationFrame(()=>{ render(); this._raf=null; }); } };
 
-function statusChip(s){return '<span class="badge status '+(s||'')+'">'+(s||'')+'</span>';}
+function Topbar(){ return '<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div><span class="badge">Soft Stable '+BUILD+'</span></div>'; }
+function Sidebar(active){ const items=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]]; let html='<aside class="sidebar"><h3>Investigations</h3><ul class="nav">'; for(const it of items) html+='<li '+(active===it[0]?'class="active"':'')+' data-act="route" data-arg="'+it[0]+'">'+it[1]+'</li>'; html+='</ul></aside>'; return html; }
+function Shell(content,active){ return Topbar()+'<div class="shell">'+Sidebar(active)+'<main class="main">'+content+'</main></div><div id="boot">Ready ('+BUILD+')</div>'; }
+function Legend(){ return '<div class="legend"><span class="chip"><span class="dot" style="background:var(--c-appointment)"></span>Appointment</span><span class="chip"><span class="dot" style="background:var(--c-interview)"></span>Interview</span><span class="chip"><span class="dot" style="background:var(--c-review)"></span>Evidence review</span><span class="chip"><span class="dot" style="background:var(--c-admin)"></span>Admin</span><span class="chip"><span class="dot" style="background:var(--c-risk)"></span>Risk</span></div>'; }
+function Filters(){ const U=DATA.users.map(u=>'<option value="'+u.name+'">'+u.name+'</option>').join(''); const types=['Appointment','Interview','Evidence review','Admin','Risk'].map(t=>'<option>'+t+'</option>').join(''); const cases=['<option value="">All</option>'].concat(DATA.cases.map(c=>'<option value="'+c.id+'">'+c.fileNumber+'</option>')); return '<div class="controls" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="input" id="fil-q" placeholder="Search title" value="'+(App.state.filters.q||'')+'"><select class="input" id="fil-owner"><option value="">All owners</option>'+U+'</select><select class="input" id="fil-type"><option value="">All types</option>'+types+'</select><select class="input" id="fil-case">'+cases.join('')+'</select><button class="btn light" data-act="clearFilters">Clear</button><div class="sp"></div><div class="view-switch"><button class="btn light '+(App.state.view==='month'?'active':'')+'" data-act="setView" data-arg="month">Month</button><button class="btn light '+(App.state.view==='week'?'active':'')+'" data-act="setView" data-arg="week">Week</button><button class="btn light '+(App.state.view==='day'?'active':'')+'" data-act="setView" data-arg="day">Day</button><button class="btn light '+(App.state.view==='agenda'?'active':'')+'" data-act="setView" data-arg="agenda">Agenda</button></div><button class="btn light" data-act="exportICS">Export ICS</button><label class="btn light" style="cursor:pointer">Import ICS<input id="ics-file" type="file" accept=".ics,text/calendar" style="display:none"></label><button class="btn light" data-act="printAgenda">Print Agenda</button></div>'; }
+function Dashboard(){ const rows=DATA.cases.map(c=>'<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>').join(''); return Shell('<div class="card"><div style="display:flex;gap:8px;align-items:center"><h3>Welcome</h3><div class="sp"></div><span class="mono">Build '+STAMP+'</span></div></div><div class="section"><header><h3 class="section-title">Active Cases</h3></header><table><thead><tr><th>Case</th><th>Org</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','dashboard'); }
+function Cases(){ const rows=DATA.cases.map(c=>'<tr><td>'+c.fileNumber+'</td><td>'+c.title+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Cases</h3><button class="btn" data-act="newCase">New Case</button></header><table><thead><tr><th>Case</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases'); }
+function CasePage(id){ const cs=DATA.cases.find(x=>x.id===id); if(!cs) return Shell('<div class="card">Case not found.</div>','cases'); const tabs=["Details","Notes","Tasks","Documents","Calendar"]; const t=tabs.map(n=>'<button class="btn '+(App.state.caseTab===n?'':'light')+'" data-act="caseTab" data-arg="'+n+'">'+n+'</button>').join(' '); let header='<div class="card"><div style="display:flex;gap:8px;align-items:center"><h2>Case '+cs.fileNumber+'</h2><div class="sp"></div><div class="tabbar">'+t+'</div><div class="sp"></div><button class="btn" data-act="saveCase" data-arg="'+id+'">Save</button><button class="btn danger" data-act="deleteCase" data-arg="'+id+'">Delete</button><button class="btn light" data-act="route" data-arg="cases">Back</button></div></div>'; let body=''; if(App.state.caseTab==="Details"){ body='<div class="card"><div class="grid cols-2"><div><label>Title</label><input id="c-title" class="input" value="'+(cs.title||'')+'"></div><div><label>Organisation</label><input id="c-org" class="input" value="'+(cs.organisation||'')+'"></div><div><label>Status</label><select id="c-status" class="input"><option'+(cs.status==='Planning'?' selected':'')+'>Planning</option><option'+(cs.status==='Investigation'?' selected':'')+'>Investigation</option><option'+(cs.status==='Evidence Review'?' selected':'')+'>Evidence Review</option><option'+(cs.status==='Reporting'?' selected':'')+'>Reporting</option><option'+(cs.status==='Closed'?' selected':'')+'>Closed</option></select></div><div><label>Priority</label><select id="c-priority" class="input"><option'+(cs.priority==='Low'?' selected':'')+'>Low</option><option'+(cs.priority==='Medium'?' selected':'')+'>Medium</option><option'+(cs.priority==='High'?' selected':'')+'>High</option><option'+(cs.priority==='Critical'?' selected':'')+'>Critical</option></select></div></div></div>'; } else if(App.state.caseTab==="Notes"){ const rows=(cs.notes||[]).map(n=>'<tr><td>'+n.time+'</td><td>'+n.by+'</td><td>'+n.text+'</td></tr>').join('')||'<tr><td colspan="3" class="muted">No notes</td></tr>'; body='<div class="section"><header><h3 class="section-title">Notes</h3><button class="btn light" data-act="addNote" data-arg="'+id+'">Add</button></header><textarea id="note-text" class="input" placeholder="Type note…"></textarea><table><thead><tr><th>Time</th><th>By</th><th>Note</th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.caseTab==="Tasks"){ let rows=(cs.tasks||[]).map(t=>'<tr><td>'+t.id+'</td><td>'+t.title+'</td><td>'+t.assignee+'</td><td>'+t.due+'</td><td>'+t.status+'</td></tr>').join('')||'<tr><td colspan="5" class="muted">No tasks</td></tr>'; const assignees=DATA.users.map(u=>'<option>'+u.name+'</option>').join(''); body='<div class="section"><header><h3 class="section-title">Tasks</h3><button class="btn light" data-act="addStdTasks" data-arg="'+id+'">Add standard tasks</button></header><div class="grid cols-3"><input id="task-title" class="input" placeholder="Task title"><input id="task-due" class="input" type="date"><select id="task-assignee" class="input">'+assignees+'</select></div><div class="right" style="margin-top:6px"><button class="btn light" data-act="addTask" data-arg="'+id+'">Add</button></div><table><thead><tr><th>ID</th><th>Title</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.caseTab==="Documents"){ const docs=DATA.documents.filter(d=>d.caseId===cs.id); const rows=docs.map(d=>'<tr><td>'+d.id+'</td><td>'+d.title+'</td><td>'+d.type+'</td><td>'+d.size+'</td><td class="right"><button class="btn light" data-act="openDoc" data-arg="'+d.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="5" class="muted">No linked documents</td></tr>'; body='<div class="section"><header><h3 class="section-title">Case Documents</h3></header><table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Size</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.caseTab==="Calendar"){ const ev=DATA.events.filter(e=>e.caseId===cs.id); const items=ev.map(e=>'<div class="pill" data-act="openEvent" data-arg="'+e.id+'"><span class="dot" style="background:#0ea5e9"></span>'+e.title+' <span class="mono" style="font-size:11px">'+e.date+'</span></div>').join('')||'<div class="muted">No linked events</div>'; body='<div class="section"><header><h3 class="section-title">Case Events</h3><button class="btn light" data-act="addEventForCase" data-arg="'+id+'">Add event</button></header>'+items+'</div>'; } return Shell(header+body,'cases'); }
 
-function Topbar(){
-  let s = '<div class="topbar"><div class="brand">Synergy CRM</div><div class="sp"></div>';
-  if(DATA.me && isAdmin()){
-    const unread = (DATA.notifications||[]).filter(n=>!n.read).length;
-    s += '<div class="bell" data-act="openNotif"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2Zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z" stroke="#0f172a" stroke-width="1.5"/></svg>'
-       + (unread?('<span class="dot">'+unread+'</span>'):'')
-       + '</div>';
-  }
-  s += '<span class="badge">Soft Stable '+BUILD+'</span></div>';
-  return s;
-}
+function Contacts(){ const rows=DATA.contacts.map(p=>'<tr><td>'+p.name+'</td><td>'+p.email+'</td><td>'+p.companyId+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+p.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3><button class="btn" data-act="newContact">New</button></header><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts'); }
+function ContactPage(id){ const p=DATA.contacts.find(x=>x.id===id); if(!p) return Shell('<div class="card">Contact not found.</div>','contacts'); const tabs=["Details","Notes","Cases","Documents"]; const t=tabs.map(n=>'<button class="btn '+(App.state.contactTab===n?'':'light')+'" data-act="contactTab" data-arg="'+n+'">'+n+'</button>').join(' '); const header='<div class="card"><div style="display:flex;gap:8px;align-items:center"><h2>'+p.name+'</h2><div class="sp"></div><div class="tabbar">'+t+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="contacts">Back</button></div></div>'; let body=''; if(App.state.contactTab==="Details"){ body='<div class="card"><div class="grid cols-2"><div><label>Email</label><input class="input" value="'+p.email+'"></div><div><label>Phone</label><input class="input" value="'+(p.phone||"")+'"></div><div><label>Company</label><input class="input" value="'+p.companyId+'"></div></div></div>'; } else if(App.state.contactTab==="Notes"){ const rows=(p.notes||[]).map(n=>'<tr><td>'+n.time+'</td><td>'+n.by+'</td><td>'+n.text+'</td></tr>').join('')||'<tr><td colspan="3" class="muted">No notes</td></tr>'; body='<div class="section"><header><h3 class="section-title">Notes</h3><button class="btn light" data-act="addContactNote" data-arg="'+id+'">Add</button></header><textarea id="contact-note" class="input" placeholder="Type note…"></textarea><table><thead><tr><th>Time</th><th>By</th><th>Note</th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.contactTab==="Cases"){ const cs=DATA.cases.filter(c=>c.organisation && c.companyId===p.companyId); const rows=cs.map(c=>'<tr><td>'+c.fileNumber+'</td><td>'+c.title+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="4" class="muted">No cases</td></tr>'; body='<div class="section"><header><h3 class="section-title">Related Cases</h3></header><table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.contactTab==="Documents"){ const docs=DATA.documents.filter(d=>d.companyId===p.companyId); const rows=docs.map(d=>'<tr><td>'+d.id+'</td><td>'+d.title+'</td><td>'+d.type+'</td><td class="right"><button class="btn light" data-act="openDoc" data-arg="'+d.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="4" class="muted">No docs</td></tr>'; body='<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } return Shell(header+body,'contacts'); }
 
-function Sidebar(active){
-  const base=[["dashboard","Dashboard"],["calendar","Calendar"],["cases","Cases"],["contacts","Contacts"],["companies","Companies"],["documents","Documents"],["resources","Resources"],["admin","Admin"]];
-  let out=['<aside class="sidebar"><h3>Investigations</h3><ul class="nav">'];
-  for(const it of base){ out.push('<li '+(active===it[0]?'class="active"':'')+' data-act="route" data-arg="'+it[0]+'">'+it[1]+'</li>'); }
-  out.push('</ul></aside>'); return out.join('');
-}
+function Companies(){ const rows=DATA.companies.map(co=>'<tr><td>'+co.id+'</td><td>'+co.name+'</td><td>'+co.city+'</td><td>'+co.state+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Companies</h3><button class="btn" data-act="newCompany">New</button></header><table><thead><tr><th>ID</th><th>Name</th><th>City</th><th>State</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies'); }
+function CompanyPage(id){ const co=DATA.companies.find(x=>x.id===id); if(!co) return Shell('<div class="card">Company not found.</div>','companies'); const tabs=["Overview","Contacts","Cases","Documents"]; const t=tabs.map(n=>'<button class="btn '+(App.state.companyTab===n?'':'light')+'" data-act="companyTab" data-arg="'+n+'">'+n+'</button>').join(' '); const header='<div class="card"><div style="display:flex;gap:8px;align-items:center"><h2>'+co.name+'</h2><div class="sp"></div><div class="tabbar">'+t+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="companies">Back</button></div></div>'; let body=''; if(App.state.companyTab==="Overview"){ body='<div class="card"><div class="grid cols-3"><div><label>Company ID</label><input class="input" value="'+co.id+'"></div><div><label>City</label><input class="input" value="'+(co.city||"")+'"></div><div><label>State</label><input class="input" value="'+(co.state||"")+'"></div><div class="span-2"><label>Industry</label><input class="input" value="'+(co.industry||"")+'"></div></div></div>'; } else if(App.state.companyTab==="Contacts"){ const rows=DATA.contacts.filter(p=>p.companyId===id).map(p=>'<tr><td>'+p.name+'</td><td>'+p.email+'</td><td>'+p.phone+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+p.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="4" class="muted">No contacts</td></tr>'; body='<div class="section"><header><h3 class="section-title">Contacts</h3></header><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.companyTab==="Cases"){ const rows=DATA.cases.filter(c=>c.companyId===id).map(c=>'<tr><td>'+c.fileNumber+'</td><td>'+c.title+'</td><td>'+c.status+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="4" class="muted">No cases</td></tr>'; body='<div class="section"><header><h3 class="section-title">Cases</h3></header><table><thead><tr><th>Case</th><th>Title</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } else if(App.state.companyTab==="Documents"){ const rows=DATA.documents.filter(d=>d.companyId===id).map(d=>'<tr><td>'+d.id+'</td><td>'+d.title+'</td><td>'+d.type+'</td><td>'+d.size+'</td><td class="right"><button class="btn light" data-act="openDoc" data-arg="'+d.id+'">Open</button></td></tr>').join('')||'<tr><td colspan="5" class="muted">No docs</td></tr>'; body='<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Size</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'; } return Shell(header+body,'companies'); }
 
-function Shell(content,active){
-  return Topbar() + '<div class="shell">'+ Sidebar(active) + '<main class="main">' + content + '</main></div><div id="boot">Ready ('+BUILD+')</div>';
-}
+function Documents(){ const rows=DATA.documents.map(d=>'<tr><td>'+d.id+'</td><td>'+d.title+'</td><td>'+d.type+'</td><td>'+d.size+'</td><td class="right"><button class="btn light" data-act="openDoc" data-arg="'+d.id+'">Open</button></td></tr>').join(''); return Shell('<div class="section"><header><h3 class="section-title">Documents</h3><button class="btn" data-act="newDoc">New</button></header><table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Size</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents'); }
+function DocumentPage(id){ const d=DATA.documents.find(x=>x.id===id); if(!d) return Shell('<div class="card">Document not found</div>','documents'); const tabs=["Details","Preview","Activity"]; const t=tabs.map(n=>'<button class="btn '+(App.state.docTab===n?'':'light')+'" data-act="docTab" data-arg="'+n+'">'+n+'</button>').join(' '); const header='<div class="card"><div style="display:flex;gap:8px;align-items:center"><h2>'+d.title+'</h2><div class="sp"></div><div class="tabbar">'+t+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="documents">Back</button></div></div>'; let body=''; if(App.state.docTab==="Details"){ body='<div class="card"><div class="grid cols-3"><div><label>Type</label><input class="input" value="'+d.type+'"></div><div><label>Size</label><input class="input" value="'+(d.size||"")+'"></div><div><label>Owner</label><input class="input" value="'+(d.owner||"")+'"></div><div><label>Created</label><input class="input" value="'+(d.created||"")+'"></div></div></div>'; } else if(App.state.docTab==="Preview"){ body='<div class="card"><div class="muted">Preview not available in demo (type: '+d.type+').</div></div>'; } else if(App.state.docTab==="Activity"){ body='<div class="card"><div class="muted">No activity recorded.</div></div>'; } return Shell(header+body,'documents'); }
 
-// ----------------- Dashboard -----------------
-function Dashboard(){
-  const d=App.get();
-  let rows='';
-  for(const c of d.cases){
-    rows += '<tr><td>'+c.fileNumber+'</td><td>'+c.organisation+'</td><td>'+c.investigatorName+'</td><td>'+statusChip(c.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open</button></td></tr>';
-  }
-  const notif = (isAdmin() && (d.notifications||[]).length)
-    ? '<div class="section"><header><h3 class="section-title">Calendar updates (Admin)</h3><div><button class="btn light" data-act="showUnread">Show unread</button> <button class="btn light" data-act="markAllRead">Mark all read</button></div></header>'+
-      '<div id="notif-body"></div></div>' : '';
-
-  const html = '<div class="card"><div style="display:flex;align-items:center;gap:8px"><h3>Welcome</h3><div class="sp"></div></div><div class="mono">Timestamp: '+STAMP+'</div></div>'
-    + '<div class="section"><header><h3 class="section-title">Active Cases</h3></header>'
-    + '<table><thead><tr><th>Case ID</th><th>Company</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-    + notif;
-  return Shell(html,'dashboard');
-}
-
-// --------------- Calendar ---------------
-function Calendar(){
-  const d=App.get();
-  const ownerOpts = ['<option value="all">All users</option>']
-    .concat(d.users.map(u=>'<option value="'+u.email+'" '+(App.state.filterOwner===u.email?'selected':'')+'>'+u.name+'</option>')).join('');
-
-  const filtered = d.events.filter(ev => App.state.filterOwner==='all' || ev.owner===App.state.filterOwner);
-
-  const items = filtered.map(ev => {
-    const caseLabel = ev.caseId ? ('<span class="chip">Case: '+(findCase(ev.caseId)?.fileNumber||'')+'</span>') : '';
-    return '<div class="event-row"><div class="chip">'+ev.date+'</div><div>'+ev.title+'</div>'+caseLabel+'<div class="sp"></div>'+
-           '<button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>';
-  }).join('') || '<div class="muted">No events yet.</div>';
-
-  const caseOpts = ['<option value="">(optional)</option>']
-    .concat(d.cases.map(c=>'<option value="'+c.id+'">'+c.fileNumber+' — '+c.title+'</option>')).join('');
-
-  const addForm = '<div class="card"><h3>Add Event</h3><div class="grid cols-3">'+
-    '<div><label>Title</label><input class="input" id="ev-title" placeholder="Appointment or note"></div>'+
-    '<div><label>Date</label><input class="input" id="ev-date" type="date"></div>'+
-    '<div><label>Owner</label><select class="input" id="ev-owner">'+d.users.map(u=>'<option value="'+u.email+'">'+u.name+'</option>').join('')+'</select></div>'+
-    '<div><label>Start</label><input class="input" id="ev-start" type="time" value="09:00"></div>'+
-    '<div><label>End</label><input class="input" id="ev-end" type="time" value="10:00"></div>'+
-    '<div><label>Type</label><select class="input" id="ev-type"><option>Appointment</option><option>Note</option></select></div>'+
-    '<div><label>Location</label><input class="input" id="ev-loc" placeholder="Room or link"></div>'+
-    '<div><label>Case (optional)</label><select class="input" id="ev-case">'+caseOpts+'</select></div>'+
-    '<div></div></div><div class="right" style="margin-top:8px"><button class="btn" data-act="createEvent">Create</button></div></div>';
-
-  const view = '<div class="section"><header><h3 class="section-title">Calendar</h3><div><select class="input" id="owner-filter">'+ownerOpts+'</select></div></header>'+
-    '<div>'+items+'</div></div>' + addForm;
-
-  // edit modal container
-  const modal = '<div id="modal" class="modal hidden"><div class="panel" id="modal-body"></div></div>';
-  return Shell(view+modal,'calendar');
-}
-
-function renderEditModal(ev){
-  const d=DATA;
-  const caseOpts = ['<option value="">(none)</option>']
-    .concat(d.cases.map(c=>'<option value="'+c.id+'" '+(ev.caseId===c.id?'selected':'')+'>'+c.fileNumber+' — '+c.title+'</option>')).join('');
-  const ownerOpts = d.users.map(u=>'<option value="'+u.email+'" '+(ev.owner===u.email?'selected':'')+'>'+u.name+'</option>').join('');
-  const html = '<h3>Edit Event</h3><div class="grid cols-3">'+
-    '<div><label>Title</label><input class="input" id="ed-title" value="'+ev.title+'"></div>'+
-    '<div><label>Date</label><input class="input" id="ed-date" type="date" value="'+ev.date+'"></div>'+
-    '<div><label>Owner</label><select class="input" id="ed-owner">'+ownerOpts+'</select></div>'+
-    '<div><label>Start</label><input class="input" id="ed-start" type="time" value="'+(ev.start||"")+'"></div>'+
-    '<div><label>End</label><input class="input" id="ed-end" type="time" value="'+(ev.end||"")+'"></div>'+
-    '<div><label>Type</label><select class="input" id="ed-type"><option '+(ev.type==="Appointment"?'selected':'')+'>Appointment</option><option '+(ev.type==="Note"?'selected':'')+'>Note</option></select></div>'+
-    '<div><label>Location</label><input class="input" id="ed-loc" value="'+(ev.location||"")+'"></div>'+
-    '<div><label>Case</label><select class="input" id="ed-case">'+caseOpts+'</select></div>'+
-    '<div></div></div><div class="right" style="margin-top:10px">'+
-    '<button class="btn danger" data-act="deleteEvent" data-arg="'+ev.id+'">Delete</button> '+
-    '<button class="btn light" data-act="closeModal">Cancel</button> '+
-    '<button class="btn" data-act="saveEvent" data-arg="'+ev.id+'">Save</button></div>';
-  const modal = document.getElementById('modal'); const body=document.getElementById('modal-body');
-  if(modal&&body){ body.innerHTML = html; modal.classList.remove('hidden'); }
-}
-
-// ----------------- Companies, Contacts, Documents stubs (same layout as before) -----------------
-function Companies(){ const d=App.get();
-  const rows = d.companies.map(co=>'<tr><td>'+co.id+'</td><td>'+co.name+'</td><td class="right"><button class="btn light" data-act="openCompany" data-arg="'+co.id+'">Open</button></td></tr>').join('');
-  return Shell('<div class="section"><header><h3 class="section-title">Companies</h3></header><table><thead><tr><th>ID</th><th>Name</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','companies');
-}
-function Contacts(){ const d=App.get();
-  const rows = d.contacts.map(c=>'<tr><td>'+c.name+'</td><td>'+c.email+'</td><td class="right"><button class="btn light" data-act="openContact" data-arg="'+c.id+'">Open</button></td></tr>').join('');
-  return Shell('<div class="section"><header><h3 class="section-title">Contacts</h3></header><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','contacts');
-}
-function Documents(){ const d=App.get();
-  const rows = d.cases.map(c=>'<tr><td>'+c.fileNumber+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+c.id+'">Open Case</button></td></tr>').join('');
-  return Shell('<div class="section"><header><h3 class="section-title">Documents</h3></header><table><thead><tr><th>Case</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','documents');
-}
-
-// ----------------- Cases -----------------
-function Cases(){
-  const d=App.get();
-  const rows = d.cases.map(cc=>'<tr><td>'+cc.fileNumber+'</td><td>'+cc.title+'</td><td>'+cc.organisation+'</td><td>'+cc.investigatorName+'</td><td>'+statusChip(cc.status)+'</td><td class="right"><button class="btn light" data-act="openCase" data-arg="'+cc.id+'">Open</button></td></tr>').join('');
-  const tools = '<div class="right" style="margin-bottom:8px"><button class="btn" data-act="newCase">New Case</button></div>';
-  return Shell('<div class="section"><header><h3 class="section-title">Cases</h3></header>'+tools+'<table><thead><tr><th>Case ID</th><th>Title</th><th>Organisation</th><th>Investigator</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>','cases');
-}
-
-function CasePage(id){
-  const d=App.get(), cs=findCase(id);
-  if(!cs) return Shell('<div class="card">Case not found.</div>','cases');
-  const tabs = ["Details","Notes","Tasks","Documents","Calendar"];
-  const tabLinks = tabs.map(t=>'<button class="btn '+(App.state.tab===t?'':'light')+'" data-act="switchTab" data-arg="'+t+'">'+t+'</button>').join(' ');
-  const header = '<div class="card"><div style="display:flex;align-items:center;gap:8px"><h2>Case '+cs.fileNumber+'</h2><div class="sp"></div>'+tabLinks+'<div class="sp"></div><button class="btn" data-act="saveCase" data-arg="'+id+'">Save Case</button><button class="btn danger" data-act="deleteCase" data-arg="'+id+'">Delete Case</button><button class="btn light" data-act="route" data-arg="cases">Back to Cases</button></div></div>';
-
-  // details
-  const invOpts=d.users.map(u=>'<option '+(u.email===cs.investigatorEmail?'selected':'')+' value="'+u.email+'">'+u.name+' ('+u.role+')</option>').join('');
-  const coOpts=d.companies.map(c=>'<option '+(c.id===cs.companyId?'selected':'')+' value="'+c.id+'">'+c.name+' ('+c.id+')</option>').join('');
-  const details = '<div class="card"><div class="grid cols-2">'
-    +'<div><label>Case ID</label><input class="input" id="c-id" value="'+(cs.fileNumber||'')+'"></div>'
-    +'<div><label>Organisation (display)</label><input class="input" id="c-org" value="'+(cs.organisation||'')+'"></div>'
-    +'<div style="grid-column:span 2"><label>Title</label><input class="input" id="c-title" value="'+(cs.title||'')+'"></div>'
-    +'<div><label>Company</label><select class="input" id="c-company">'+coOpts+'</select></div>'
-    +'<div><label>Investigator</label><select class="input" id="c-inv">'+invOpts+'</select></div>'
-    +'<div><label>Status</label><select class="input" id="c-status"><option'+(cs.status==='Planning'?' selected':'')+'>Planning</option><option'+(cs.status==='Investigation'?' selected':'')+'>Investigation</option><option'+(cs.status==='Evidence Review'?' selected':'')+'>Evidence Review</option><option'+(cs.status==='Reporting'?' selected':'')+'>Reporting</option><option'+(cs.status==='Closed'?' selected':'')+'>Closed</option></select></div>'
-    +'<div><label>Priority</label><select class="input" id="c-priority"><option'+(cs.priority==='Low'?' selected':'')+'>Low</option><option'+(cs.priority==='Medium'?' selected':'')+'>Medium</option><option'+(cs.priority==='High'?' selected':'')+'>High</option><option'+(cs.priority==='Critical'?' selected':'')+'>Critical</option></select></div>'
-    +'</div></div>';
-
-  // notes
-  let notesRows=(cs.notes&&cs.notes.length)?'':'<tr><td colspan="3" class="muted">No notes yet.</td></tr>';
-  for(const nn of (cs.notes||[])){ notesRows+='<tr><td>'+nn.time+'</td><td>'+nn.by+'</td><td>'+nn.text+'</td></tr>'; }
-  const notes = '<div class="section"><header><h3 class="section-title">Notes</h3><button class="btn light" data-act="addNote" data-arg="'+id+'">Add Note</button></header><textarea class="input" id="note-text" placeholder="Type your note here"></textarea><table><thead><tr><th>Time</th><th>By</th><th>Note</th></tr></thead><tbody>'+notesRows+'</tbody></table></div>';
-
-  // tasks
-  let taskRows=(cs.tasks&&cs.tasks.length)?'':'<tr><td colspan="5" class="muted">No tasks yet.</td></tr>';
-  for(const tt of (cs.tasks||[])){ taskRows+='<tr><td>'+tt.id+'</td><td>'+tt.title+'</td><td>'+tt.assignee+'</td><td>'+tt.due+'</td><td>'+tt.status+'</td></tr>'; }
-  const tasks = '<div class="section"><header><h3 class="section-title">Tasks</h3><button class="btn light" data-act="addStdTasks" data-arg="'+id+'">Add standard tasks</button></header><div class="grid cols-3"><input class="input" id="task-title" placeholder="Task title"><input class="input" id="task-due" type="date"><select class="input" id="task-assignee">'+invOpts+'</select></div><div class="right" style="margin-top:6px"><button class="btn light" data-act="addTask" data-arg="'+id+'">Add</button></div><table><thead><tr><th>ID</th><th>Title</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>'+taskRows+'</tbody></table></div>';
-
-  // documents
-  if(!cs.folders) cs.folders={General:[]};
-  let docRows='';
-  for(const fname in cs.folders){ if(!Object.prototype.hasOwnProperty.call(cs.folders,fname)) continue; const files=cs.folders[fname];
-    docRows+='<tr><th colspan="3">'+fname+'</th></tr>';
-    docRows+='<tr><td colspan="3" class="right"><button class="btn light" data-act="selectFiles" data-arg="'+id+'::'+fname+'">Upload to '+fname+'</button> '+(fname==='General'?'':'<button class="btn light" data-act="deleteFolder" data-arg="'+id+'::'+fname+'">Delete folder</button>')+'</td></tr>';
-    if(!files.length){docRows+='<tr><td colspan="3" class="muted">No files</td></tr>';}
-    for(const ff of files){const a=id+'::'+fname+'::'+ff.name; docRows+='<tr><td>'+ff.name+'</td><td>'+ff.size+'</td><td class="right">'+(ff.dataUrl?('<button class="btn light" data-act="viewDoc" data-arg="'+a+'">View</button> '):'')+'<button class="btn light" data-act="removeDoc" data-arg="'+a+'">Remove</button></td></tr>'; }
-  }
-  const docs = '<div class="section"><header><h3 class="section-title">Documents</h3><div><button class="btn light" data-act="addFolderPrompt" data-arg="'+id+'">Add folder</button> <button class="btn light" data-act="selectFiles" data-arg="'+id+'::General">Select files</button></div></header><input type="file" id="file-input" multiple style="display:none"><div style="margin-top:8px"><table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody>'+docRows+'</tbody></table></div></div>';
-
-  // calendar (case-linked)
-  const linked = DATA.events.filter(ev=>ev.caseId===cs.id);
-  const list = linked.map(ev=>'<div class="event-row"><div class="chip">'+ev.date+'</div><div>'+ev.title+'</div><div class="sp"></div><button class="btn light" data-act="editEvent" data-arg="'+ev.id+'">Edit</button></div>').join('') || '<div class="muted">No linked events yet.</div>';
-  const addCaseEvent = '<div class="card"><h3>Add case event</h3><div class="grid cols-3">'+
-    '<div><label>Title</label><input class="input" id="cv-title"></div>'+
-    '<div><label>Date</label><input class="input" id="cv-date" type="date"></div>'+
-    '<div><label>Owner</label><select class="input" id="cv-owner">'+DATA.users.map(u=>'<option value="'+u.email+'">'+u.name+'</option>').join('')+'</select></div>'+
-    '<div><label>Start</label><input class="input" id="cv-start" type="time" value="10:00"></div>'+
-    '<div><label>End</label><input class="input" id="cv-end" type="time" value="11:00"></div>'+
-    '<div><label>Type</label><select class="input" id="cv-type"><option>Appointment</option><option>Note</option></select></div>'+
-    '<div><label>Location</label><input class="input" id="cv-loc"></div>'+
-    '<div></div><div></div></div><div class="right" style="margin-top:8px"><button class="btn" data-act="createCaseEvent" data-arg="'+id+'">Create</button></div></div>';
-
-  const calTab = '<div class="section"><header><h3 class="section-title">Case Calendar</h3></header>'+list+'</div>'+addCaseEvent+'<div id="modal" class="modal hidden"><div class="panel" id="modal-body"></div></div>';
-
-  let body=details; if(App.state.tab==="Notes") body=notes; else if(App.state.tab==="Tasks") body=tasks; else if(App.state.tab==="Documents") body=docs; else if(App.state.tab==="Calendar") body=calTab;
-  return Shell(header+body,'cases');
-}
-
-// ----------------- Render -----------------
-function render(){
-  const r=App.state.route, el = document.getElementById('app');
-  if(r==='dashboard') el.innerHTML = Dashboard();
-  else if(r==='calendar') el.innerHTML = Calendar();
-  else if(r==='cases') el.innerHTML = Cases();
-  else if(r==='case') el.innerHTML = CasePage(App.state.currentCaseId);
-  else if(r==='contacts') el.innerHTML = Contacts();
-  else if(r==='companies') el.innerHTML = Companies();
-  else if(r==='documents') el.innerHTML = Documents();
-  else if(r==='resources') el.innerHTML = '<div class="section"><header><h3 class="section-title">Resources</h3></header><div class="card">Templates/Guides placeholder</div></div>';
-  else if(r==='admin') el.innerHTML = '<div class="section"><header><h3 class="section-title">Admin</h3></header><div class="card">Admin placeholder</div></div>';
-  else el.innerHTML = Dashboard();
-}
-
-// ----------------- Actions -----------------
-document.addEventListener('click', (e)=>{
-  let t=e.target; while(t && t!==document && !t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return;
-  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
-
+function monthStart(y,m){return new Date(y,m,1);} function monthEnd(y,m){return new Date(y,m+1,0);} function startOfWeek(d){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x;}
+function byFilters(ev){ const f=App.state.filters; if(f.owner && ev.owner!==f.owner) return false; if(f.type && ev.type!==f.type) return false; if(f.caseId && ev.caseId!==f.caseId) return false; if(f.q && !ev.title.toLowerCase().includes(f.q.toLowerCase())) return false; return true; }
+function renderPill(ev){ const cls=(ev.type||'Appointment').toLowerCase().replace(/\s+/g,' '); const tag=ev.caseId?('<span class="mono" style="font-size:11px"> '+(DATA.cases.find(c=>c.id===ev.caseId)?.fileNumber||'')+'</span>'):''; const title=ev.title+(ev.allDay?'':' '+ev.start); const attrs='draggable="true" data-act="openEvent" data-arg="'+ev.id+'" ondragstart="window.__dragStart(event)"'; return '<div class="pill '+cls+'" '+attrs+'><span class="dot"></span><span>'+title+'</span>'+tag+' <button class="x" title="Delete" data-act="deleteEvent" data-arg="'+ev.id+'">x</button></div>'; }
+function Calendar(){ const view=App.state.view; let header='<div class="cal-head">'+Legend()+Filters()+'</div>'; if(view==='month') return Shell(header+MonthView(),'calendar'); if(view==='week') return Shell(header+WeekView(),'calendar'); if(view==='day') return Shell(header+DayView(),'calendar'); if(view==='agenda') return Shell(header+AgendaView(),'calendar'); return Shell(header+MonthView(),'calendar'); }
+function MonthView(){ const [Y,M]=App.state.currentMonth.split('-').map(Number); const start=monthStart(Y,M-1); const end=monthEnd(Y,M-1); const dow=['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; let head='<div class="controls" style="display:flex;gap:8px;align-items:center;margin:6px 0"><button class="btn light" data-act="prevPeriod">◀</button><button class="btn light" data-act="today">Today</button><div style="font-weight:600;margin-left:8px">'+start.toLocaleString(undefined,{month:"long",year:"numeric"})+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="dashboard">Back to dashboard</button></div>'; head+='<div class="cal-grid" style="margin-bottom:6px">'+dow.map(d=>'<div class="cal-dow">'+d+'</div>').join('')+'</div>'; let grid='<div class="cal-grid">'; const firstDow=(start.getDay()+6)%7; for(let i=0;i<firstDow;i++) grid+='<div class="cal-cell"></div>'; const byDay={}; for(const e of DATA.events){ if(!byFilters(e)) continue; const spanStart=parseYMD(e.date), spanEnd=parseYMD(e.dateEnd||e.date); for(let d=new Date(spanStart); d<=spanEnd; d.setDate(d.getDate()+1)){ const ds=ymdLocal(d); (byDay[ds]=byDay[ds]||[]).push(e); } } for(let d=1; d<=end.getDate(); d++){ const ds=ymdLocal(new Date(Y,M-1,d)); const list=(byDay[ds]||[]); grid+=`<div class="cal-cell" data-day="${ds}" ondragover="window.__dragOver(event)" ondragleave="window.__dragLeave(event)" ondrop="window.__dropOnDay(event)" data-act="newEventOn" data-arg="${ds}"><div class="cal-date">${d}</div><div class="cal-evt">${list.map(renderPill).join('')}</div></div>`; } grid+='</div>'; const quick=AddEventForm(); return '<div class="section"><header><h3 class="section-title">Calendar — Month</h3></header>'+head+grid+'</div>'+quick; }
+function WeekView(){ const anchor=parseYMD(App.state.selectedDate); const weekStart=startOfWeek(anchor); const days=[0,1,2,3,4,5,6].map(i=>ymdLocal(addDays(weekStart,i))); const label=weekStart.toLocaleDateString(undefined,{day:"numeric",month:"short"})+" – "+ymdLocal(addDays(weekStart,6)); let html='<div class="controls" style="display:flex;gap:8px;align-items:center;margin:6px 0"><button class="btn light" data-act="prevPeriod">◀</button><button class="btn light" data-act="today">Today</button><div style="font-weight:600;margin-left:8px">Week of '+label+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="dashboard">Back to dashboard</button></div>'; html+='<div class="all-day"><div></div>'+days.map(ds=>`<div class="slot" data-day="${ds}" ondragover="window.__dragOver(event)" ondragleave="window.__dragLeave(event)" ondrop="window.__dropOnDay(event)" data-act="newEventOn" data-arg="${ds}"></div>`).join('')+'</div>'; html+='<div class="time-grid"><div></div>'+days.map(ds=>`<div class="time-col" data-day="${ds}"></div>`).join('')+'</div>'; for(let hr=8; hr<=18; hr++){ const label=pad(hr)+":00"; const cells=days.map(ds=>`<div class="hour" data-hour="${pad(hr)}:00" data-day="${ds}" ondragover="window.__dragOver(event)" ondragleave="window.__dragLeave(event)" ondrop="window.__dropOnHour(event)"></div>`).join(''); html+=`<div class="time-grid"><div class="hour"><div class="label">${label}</div></div>${cells}</div>`; } const evs=DATA.events.filter(e=>byFilters(e)); setTimeout(()=>{ days.forEach(ds=>{ const host=document.querySelector('.all-day .slot[data-day="'+ds+'"]'); if(!host) return; const list=evs.filter(e=> e.allDay || (e.dateEnd && parseYMD(ds)>=parseYMD(e.date) && parseYMD(ds)<=parseYMD(e.dateEnd))); host.innerHTML=list.map(renderPill).join(''); }); document.querySelectorAll('.time-grid .hour[data-day]').forEach(cell=>{ const ds=cell.getAttribute('data-day'), hh=cell.getAttribute('data-hour'); const list=evs.filter(e=>!e.allDay && (!e.dateEnd ? e.date===ds : (parseYMD(ds)>=parseYMD(e.date) && parseYMD(ds)<=parseYMD(e.dateEnd))) && (e.start===hh)); cell.innerHTML=list.map(renderPill).join(''); }); },0); return '<div class="section"><header><h3 class="section-title">Calendar — Week</h3></header>'+html+'</div>'+AddEventForm(); }
+function DayView(){ const ds=App.state.selectedDate; let html='<div class="controls" style="display:flex;gap:8px;align-items:center;margin:6px 0"><button class="btn light" data-act="prevPeriod">◀</button><button class="btn light" data-act="today">Today</button><div style="font-weight:600;margin-left:8px">Day '+ds+'</div><div class="sp"></div><button class="btn light" data-act="route" data-arg="dashboard">Back to dashboard</button></div>'; html+='<div class="all-day"><div></div><div class="slot" style="grid-column:span 7" data-day="'+ds+'" ondragover="window.__dragOver(event)" ondragleave="window.__dragLeave(event)" ondrop="window.__dropOnDay(event)" data-act="newEventOn" data-arg="'+ds+'"></div></div>'; for(let hr=0; hr<24; hr++){ const label=pad(hr)+":00"; html+=`<div class="time-grid"><div class="hour"><div class="label">${label}</div></div><div class="hour" data-hour="${pad(hr)}:00" data-day="${ds}" ondragover="window.__dragOver(event)" ondragleave="window.__dragLeave(event)" ondrop="window.__dropOnHour(event)"></div></div>`; } setTimeout(()=>{ const evs=DATA.events.filter(e=>byFilters(e)); const host=document.querySelector('.all-day .slot[data-day="'+ds+'"]'); const list=evs.filter(e=> e.allDay || (e.dateEnd && parseYMD(ds)>=parseYMD(e.date) && parseYMD(ds)<=parseYMD(e.dateEnd)) ); host.innerHTML=list.map(renderPill).join(''); document.querySelectorAll('.time-grid .hour[data-day]').forEach(cell=>{ const hh=cell.getAttribute('data-hour'); const list=evs.filter(e=>!e.allDay && (!e.dateEnd ? e.date===ds : (parseYMD(ds)>=parseYMD(e.date) && parseYMD(ds)<=parseYMD(e.dateEnd))) && (e.start===hh)); cell.innerHTML=list.map(renderPill).join(''); }); },0); return '<div class="section"><header><h3 class="section-title">Calendar — Day</h3></header>'+html+'</div>'+AddEventForm(); }
+function AgendaView(){ const [Y,M]=App.state.currentMonth.split('-').map(Number); const start=monthStart(Y,M-1); const end=monthEnd(Y,M-1); const rows=DATA.events.filter(e=>byFilters(e)).filter(e=>{ const s=parseYMD(e.date), t=parseYMD(e.dateEnd||e.date); return !(t<start || s>end); }).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).map(e=>'<div class="row"><div>'+e.date+(e.dateEnd&&e.dateEnd!==e.date?(' → '+e.dateEnd):'')+'</div><div>'+e.title+'</div><div>'+e.owner+'</div><div>'+(e.allDay?'All-day':(e.start+'–'+e.end))+'</div></div>').join(''); return '<div class="section"><header><h3 class="section-title">Agenda (month)</h3></header><div class="agenda-list">'+rows+'</div></div>'; }
+function AddEventForm(){ const u=DATA.users; const caseOpts=['<option value="">(optional)</option>'].concat(DATA.cases.map(c=>'<option value="'+c.id+'">'+c.fileNumber+'</option>')).join(''); return '<div class="section"><header><h3 class="section-title">Add Event</h3></header><div class="grid cols-4"><input class="input" id="qa-title" placeholder="Appointment or note"><input class="input" id="qa-date" type="date" value="'+ymdLocal(new Date())+'"><input class="input" id="qa-start" type="time" value="09:00"><input class="input" id="qa-end" type="time" value="10:00"><select class="input" id="qa-owner">'+u.map(x=>'<option>'+x.name+'</option>').join('')+'</select><select class="input" id="qa-type"><option>Appointment</option><option>Interview</option><option>Evidence review</option><option>Admin</option><option>Risk</option></select><select class="input" id="qa-case">'+caseOpts+'</select></div><div style="margin-top:8px;display:flex;align-items:center;gap:8px"><label><input type="checkbox" id="qa-allday"> All-day</label><label>End date <input class="input" id="qa-dateend" type="date"></label><button class="btn" data-act="createQuickEvent">Create</button></div></div>'; }
+let currentEditId=null;
+function openModal(ev){ currentEditId=ev&&ev.id?ev.id:null; const m=document.getElementById('modal'); const ownerSel=document.getElementById('md-owner'); ownerSel.innerHTML=DATA.users.map(u=>'<option '+((ev&&ev.owner)===u.name?'selected':'')+'>'+u.name+'</option>').join(''); const caseSel=document.getElementById('md-case'); caseSel.innerHTML=['<option value="">(optional)</option>'].concat(DATA.cases.map(c=>'<option value="'+c.id+'" '+((ev&&ev.caseId)===c.id?'selected':'')+'>'+c.fileNumber+'</option>')).join(''); document.getElementById('md-title').value=(ev&&ev.title)||''; document.getElementById('md-date').value=(ev&&ev.date)||ymdLocal(new Date()); document.getElementById('md-dateend').value=(ev&&ev.dateEnd)||''; document.getElementById('md-allday').checked=!!(ev&&ev.allDay); document.getElementById('md-start').value=(ev&&ev.start)||'09:00'; document.getElementById('md-end').value=(ev&&ev.end)||'10:00'; document.getElementById('md-type').value=(ev&&ev.type)||'Appointment'; document.getElementById('md-remind').value=(ev&&ev.remind||''); document.getElementById('md-repeat').value='none'; document.getElementById('md-rcount').value='1'; m.classList.remove('hidden'); }
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); currentEditId=null; }
+function scheduleReminders(){ if(!("Notification" in window)) return; if(Notification.permission!=='granted' && Notification.permission!=='denied'){ Notification.requestPermission(()=>{}); } const now=Date.now(), dayAhead=now+24*3600*1000; DATA.events.forEach(e=>{ if(!e.remind) return; const startTs=new Date(e.date+'T'+(e.allDay?'09:00':(e.start||'09:00'))).getTime(); const fireTs=startTs-Number(e.remind)*60000; if(fireTs>now && fireTs<dayAhead){ setTimeout(()=>{ if(Notification.permission==='granted'){ new Notification(e.title,{body:(e.allDay?'All-day':(e.start+'–'+e.end))+' • '+(e.owner||'')}); } }, fireTs-now); } }); }
+function toICSDateTime(date,time){ return date.replace(/-/g,'')+(time?('T'+time.replace(':','')+'00'):''); }
+function exportICS(){ const events=DATA.events.filter(e=>byFilters(e)); const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SynergyCRM//Demo//EN']; events.forEach(e=>{ lines.push('BEGIN:VEVENT'); if(e.allDay){ lines.push('DTSTART;VALUE=DATE:'+e.date.replace(/-/g,'')); const ed=e.dateEnd||e.date; const dayAfter=ymdLocal(addDays(parseYMD(ed),1)).replace(/-/g,''); lines.push('DTEND;VALUE=DATE:'+dayAfter); }else{ lines.push('DTSTART:'+toICSDateTime(e.date,e.start)); lines.push('DTEND:'+toICSDateTime(e.date,e.end)); } lines.push('SUMMARY:'+e.title); if(e.owner) lines.push('ORGANIZER:'+e.owner); lines.push('END:VEVENT'); }); lines.push('END:VCALENDAR'); const blob=new Blob([lines.join('\\r\\n')],{type:'text/calendar'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='synergy-calendar.ics'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function importICS(text){ const evs=[]; const lines=text.split(/\\r?\\n/); let cur=null; function flush(){ if(!cur) return; const ev={id:uid(), title:cur.SUMMARY||'Untitled', date:'', start:'09:00', end:'10:00', owner:cur.ORGANIZER||'Admin', type:'Appointment', caseId:null, allDay:false}; if(cur['DTSTART;VALUE=DATE']){ ev.allDay=true; const y=cur['DTSTART;VALUE=DATE']; ev.date = y[:4]+'-'+y[4:6]+'-'+y[6:8]; if(cur['DTEND;VALUE=DATE']){ const y2=cur['DTEND;VALUE=DATE']; const d2=y2[:4]+'-'+y2[4:6]+'-'+y2[6:8]; ev.dateEnd = ymdLocal(addDays(parseYMD(d2),-1)); } } else if(cur.DTSTART){ const s=cur.DTSTART; ev.date = s[:4]+'-'+s[4:6]+'-'+s[6:8]; ev.start = s[9:11]+':'+s[11:13]; if(cur.DTEND){ const t=cur.DTEND; ev.end = t[9:11]+':'+t[11:13]; } } evs.push(ev); cur=null; }
+  lines.forEach(ln=>{ if(ln==='BEGIN:VEVENT'){ cur={}; } else if(ln==='END:VEVENT'){ flush(); } else if(cur){ const i=ln.indexOf(':'); if(i>-1){ const k=ln.slice(0,i); const v=ln.slice(i+1); cur[k]=v; } } });
+  DATA.events.push(...evs); persistEvents(); App.set({}); }
+function render(){ const r=App.state.route, el=document.getElementById('app'); document.getElementById('boot').textContent='Rendering '+r+'…'; if(r==='dashboard') el.innerHTML=Dashboard(); else if(r==='calendar') el.innerHTML=Calendar(); else if(r==='cases') el.innerHTML=Cases(); else if(r==='case') el.innerHTML=CasePage(App.state.currentCaseId); else if(r==='contacts') el.innerHTML=Contacts(); else if(r==='contact') el.innerHTML=ContactPage(App.state.currentContactId); else if(r==='companies') el.innerHTML=Companies(); else if(r==='company') el.innerHTML=CompanyPage(App.state.currentCompanyId); else if(r==='documents') el.innerHTML=Documents(); else if(r==='document') el.innerHTML=DocumentPage(App.state.currentDocId); else el.innerHTML=Dashboard(); document.getElementById('boot').textContent='Ready ('+BUILD+')'; scheduleReminders(); }
+window.__dragStart=function(ev){ ev.dataTransfer.setData('text/plain', ev.target.getAttribute('data-arg')); };
+window.__dragOver=function(ev){ if(ev.currentTarget){ ev.currentTarget.setAttribute('data-drop','1'); } ev.preventDefault(); };
+window.__dragLeave=function(ev){ if(ev.currentTarget){ ev.currentTarget.removeAttribute('data-drop'); } };
+window.__dropOnDay=function(ev){ ev.preventDefault(); const id=ev.dataTransfer.getData('text/plain'); const ds=ev.currentTarget.getAttribute('data-day'); const e=DATA.events.find(x=>x.id===id); if(!e) return; const oldStart=parseYMD(e.date); const oldEnd=parseYMD(e.dateEnd||e.date); const durDays=Math.max(0,Math.round((oldEnd-oldStart)/(24*3600*1000))); e.date=ds; e.dateEnd= durDays? ymdLocal(addDays(parseYMD(ds),durDays)) : (e.dateEnd?ds:undefined); persistEvents(); App.set({}); };
+window.__dropOnHour=function(ev){ ev.preventDefault(); const id=ev.dataTransfer.getData('text/plain'); const ds=ev.currentTarget.getAttribute('data-day'); const hh=ev.currentTarget.getAttribute('data-hour'); const e=DATA.events.find(x=>x.id===id); if(!e) return; e.date=ds; e.start=hh; const startH=parseInt(hh.slice(0,2),10); const endH=Math.min(23,startH+1); e.end=pad(endH)+':'+hh.slice(3); e.allDay=false; e.dateEnd=undefined; persistEvents(); App.set({}); };
+document.addEventListener('change',e=>{ if(e.target.id==='fil-owner'||e.target.id==='fil-type'||e.target.id==='fil-case'){ const f=App.state.filters; if(e.target.id==='fil-owner') f.owner=e.target.value; if(e.target.id==='fil-type') f.type=e.target.value; if(e.target.id==='fil-case') f.caseId=e.target.value; App.set({filters:f}); } if(e.target.id==='fil-q'){ const f=App.state.filters; f.q=e.target.value; App.set({filters:f}); } if(e.target.id==='ics-file'){ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>importICS(r.result); r.readAsText(file); } });
+document.addEventListener('click',e=>{ let t=e.target; while(t&&t!==document&&!t.getAttribute('data-act')) t=t.parentNode; if(!t||t===document) return; const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg');
   if(act==='route'){ App.set({route:arg}); return; }
-  if(act==='openCase'){ App.set({currentCaseId:arg, route:'case', tab:'Details'}); return; }
-  if(act==='switchTab'){ App.set({tab:arg}); return; }
-
-  if(act==='newCase'){
-    const seq=('00'+(DATA.cases.length+1)).slice(-3);
-    const inv=DATA.users.find(u=>u.role!=="Client")||{name:'',email:''};
-    const created=(new Date()).toISOString().slice(0,7);
-    const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title:'',organisation:'',companyId:'C-001',investigatorEmail:inv.email,investigatorName:inv.name,status:'Planning',priority:'Medium',created,notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); persist(); App.set({currentCaseId:cs.id, route:'case', tab:'Details'}); return;
-  }
-  if(act==='saveCase'){
-    const cs=findCase(arg); if(!cs) return;
-    const v=id=>{const el=document.getElementById(id); return el?el.value:null;};
-    const invEmail=v('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; cs.investigatorName=(DATA.users.find(u=>u.email===invEmail)||{}).name||''; }
-    const co=v('c-company'); if(co!=null) cs.companyId=co;
-    const fields=[['title','c-title'],['organisation','c-org'],['status','c-status'],['priority','c-priority']];
-    fields.forEach(([k,i])=>{ const val=v(i); if(val!=null) cs[k]=val; });
-    const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    persist(); alert('Case saved'); return;
-  }
-  if(act==='deleteCase'){
-    const cs=findCase(arg); if(!cs) return; if(!confirm('Delete case '+(cs.fileNumber||'')+'?')) return;
-    DATA.cases = DATA.cases.filter(x=>x.id!==cs.id); persist(); App.set({route:'cases'}); return;
-  }
-  if(act==='addNote'){
-    const cs=findCase(arg); if(!cs) return; const tx=document.getElementById('note-text').value.trim(); if(!tx){ alert('Enter a note'); return; }
-    const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com';
-    cs.notes.unshift({time:stamp, by:me, text:tx}); document.getElementById('note-text').value=''; persist(); App.set({}); return;
-  }
-  if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; const base=cs.tasks;
-    ["Gather documents","Interview complainant","Interview respondent","Write report"].forEach(a=> base.push({id:'T-'+(base.length+1), title:a, assignee:cs.investigatorName, due:'', status:'Open'}));
-    persist(); App.set({}); return;
-  }
-  if(act==='addTask'){
-    const cs=findCase(arg); if(!cs) return;
-    const whoSel=document.getElementById('task-assignee'); const who = whoSel.options[whoSel.selectedIndex].text;
-    cs.tasks.push({id:'T-'+(cs.tasks.length+1), title:(document.getElementById('task-title').value||'').trim(), assignee:who, due:document.getElementById('task-due').value, status:'Open'});
-    persist(); App.set({}); return;
-  }
-
-  // Document actions
-  if(act==='addFolderPrompt'){ const cs=findCase(arg); if(!cs) return; const name=prompt('New folder name'); if(!name) return; cs.folders[name]=cs.folders[name]||[]; persist(); App.set({}); return; }
-  if(act==='selectFiles'){ App.state.currentUploadTarget=arg||((App.state.currentCaseId||'')+'::General'); const fi=document.getElementById('file-input'); if(fi) fi.click(); return; }
-  if(act==='viewDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const list=cs.folders[p[1]]||[]; const f=list.find(x=>x.name===p[2]&&x.dataUrl); if(f) window.open(f.dataUrl,'_blank'); return; }
-  if(act==='removeDoc'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; cs.folders[p[1]]=(cs.folders[p[1]]||[]).filter(x=>x.name!==p[2]); persist(); App.set({}); return; }
-  if(act==='deleteFolder'){ const p=arg.split('::'); const cs=findCase(p[0]); if(!cs) return; const folder=p[1]; if(folder==='General'){alert('Cannot delete General');return;} if(confirm('Delete folder '+folder+' and its files?')){ delete cs.folders[folder]; persist(); App.set({}); } return; }
-
-  // Calendar actions
-  if(act==='createEvent'){
-    const ev={ id:uid(), title:(document.getElementById('ev-title').value||'').trim(), date:document.getElementById('ev-date').value,
-      start:document.getElementById('ev-start').value, end:document.getElementById('ev-end').value, type:document.getElementById('ev-type').value,
-      owner:document.getElementById('ev-owner').value, location:document.getElementById('ev-loc').value, caseId:(document.getElementById('ev-case').value||null) || null };
-    DATA.events.push(ev); pushNote('created', ev); persist(); App.set({}); return;
-  }
-  if(act==='editEvent'){
-    const ev=findEvent(arg); if(!ev) return; App.state.currentEventId=arg; App.state.showModal=true; render(); renderEditModal(ev); return;
-  }
-  if(act==='saveEvent'){
-    const ev=findEvent(arg); if(!ev) return;
-    ev.title=document.getElementById('ed-title').value; ev.date=document.getElementById('ed-date').value; ev.owner=document.getElementById('ed-owner').value;
-    ev.start=document.getElementById('ed-start').value; ev.end=document.getElementById('ed-end').value; ev.type=document.getElementById('ed-type').value;
-    ev.location=document.getElementById('ed-loc').value; ev.caseId=(document.getElementById('ed-case').value||'')||null;
-    pushNote('updated', ev); persist(); document.getElementById('modal').classList.add('hidden'); App.set({}); return;
-  }
-  if(act==='deleteEvent'){
-    const ev=findEvent(arg); if(!ev) return; if(!confirm('Delete event "'+(ev.title||'')+'"?')) return;
-    DATA.events = DATA.events.filter(x=>x.id!==ev.id); pushNote('deleted', ev); persist(); document.getElementById('modal').classList.add('hidden'); App.set({}); return;
-  }
-  if(act==='closeModal'){ document.getElementById('modal').classList.add('hidden'); return; }
-  if(act==='createCaseEvent'){
-    const ev={ id:uid(), title:(document.getElementById('cv-title').value||'').trim(), date:document.getElementById('cv-date').value,
-      start:document.getElementById('cv-start').value, end:document.getElementById('cv-end').value, type:document.getElementById('cv-type').value,
-      owner:document.getElementById('cv-owner').value, location:document.getElementById('cv-loc').value, caseId:arg };
-    DATA.events.push(ev); pushNote('created', ev); persist(); App.set({}); return;
-  }
-
-  // Notifications
-  if(act==='openNotif'){ App.set({route:'dashboard'}); setTimeout(()=>{ const s=document.getElementById('notif-body'); if(!s) return;
-      s.innerHTML = (DATA.notifications||[]).map(n=>'<div class="event-row"><div class="chip">'+n.time.slice(0,16).replace("T"," ")+'</div><div><b>'+n.verb+'</b> '+n.title+'</div><div class="sp"></div><button class="btn light" data-act="gotoEvent" data-arg="'+n.eventId+'">Open</button> <button class="btn light" data-act="dismiss" data-arg="'+n.id+'">Dismiss</button></div>').join('') || '<div class="muted">No notifications</div>'; },0); return; }
-  if(act==='dismiss'){ const id=arg; DATA.notifications = DATA.notifications.map(n=>n.id===id?{...n,read:true}:n); persist(); App.set({}); return; }
-  if(act==='showUnread'){ DATA.notifications = DATA.notifications.map(n=>n); const s=document.getElementById('notif-body'); if(s) s.innerHTML = (DATA.notifications||[]).filter(n=>!n.read).map(n=>'<div class="event-row"><div class="chip">'+n.time.slice(0,16).replace("T"," ")+'</div><div><b>'+n.verb+'</b> '+n.title+'</div><div class="sp"></div><button class="btn light" data-act="gotoEvent" data-arg="'+n.eventId+'">Open</button> <button class="btn light" data-act="dismiss" data-arg="'+n.id+'">Dismiss</button></div>').join('') || '<div class="muted">No unread</div>'; return; }
-  if(act==='markAllRead'){ DATA.notifications = (DATA.notifications||[]).map(n=>{ n.read=true; return n; }); persist(); App.set({}); return; }
-  if(act==='gotoEvent'){ const ev=findEvent(arg); if(!ev){ alert('Event missing'); return; } App.set({route:'calendar'}); return; }
-
+  if(act==='setView'){ App.set({view:arg}); return; }
+  if(act==='prevPeriod'){ if(App.state.view==='month'){ const d=parseYMD(App.state.currentMonth+'-01'); d.setMonth(d.getMonth()-1); App.set({currentMonth: ymLocal(d)}); } else if(App.state.view==='week'){ const d=parseYMD(App.state.selectedDate); d.setDate(d.getDate()-7); App.set({selectedDate: ymdLocal(d)}); } else if(App.state.view==='day'){ const d=parseYMD(App.state.selectedDate); d.setDate(d.getDate()-1); App.set({selectedDate: ymdLocal(d)}); } return; }
+  if(act==='today'){ const d=new Date(); if(App.state.view==='month') App.set({currentMonth: ymLocal(d)}); else App.set({selectedDate: ymdLocal(d)}); return; }
+  if(act==='openCase'){ App.set({route:'case', currentCaseId:arg, caseTab:'Details'}); return; }
+  if(act==='openCompany'){ App.set({route:'company', currentCompanyId:arg, companyTab:'Overview'}); return; }
+  if(act==='openContact'){ App.set({route:'contact', currentContactId:arg, contactTab:'Details'}); return; }
+  if(act==='openDoc'){ App.set({route:'document', currentDocId:arg, docTab:'Details'}); return; }
+  if(act==='caseTab'){ App.set({caseTab:arg}); return; }
+  if(act==='companyTab'){ App.set({companyTab:arg}); return; }
+  if(act==='contactTab'){ App.set({contactTab:arg}); return; }
+  if(act==='docTab'){ App.set({docTab:arg}); return; }
+  if(act==='clearFilters'){ App.set({filters:{owner:"",type:"",caseId:"",q:""}}); return; }
+  if(act==='createQuickEvent'){ const ev={id:uid(), title:document.getElementById('qa-title').value||'Untitled', date:document.getElementById('qa-date').value||ymdLocal(new Date()), start:(document.getElementById('qa-start').value||'09:00'), end:(document.getElementById('qa-end').value||'10:00'), owner:document.getElementById('qa-owner').value||'Admin', type:document.getElementById('qa-type').value||'Appointment', caseId:(document.getElementById('qa-case').value||'')||null, allDay:document.getElementById('qa-allday').checked||false }; const de=(document.getElementById('qa-dateend').value||''); if(de) ev.dateEnd=de; DATA.events.push(ev); persistEvents(); App.set({}); return; }
+  if(act==='newEventOn'){ openModal({date:arg}); return; }
+  if(act==='openEvent'){ const ev=DATA.events.find(e=>e.id===arg); if(ev) openModal(ev); return; }
+  if(act==='deleteEvent'){ DATA.events=DATA.events.filter(e=>e.id!==arg); persistEvents(); App.set({}); return; }
+  if(act==='duplicateEvent'){ const base=DATA.events.find(e=>e.id===currentEditId); if(!base) return; const copy=Object.assign({},base,{id:uid(),title:base.title+' (copy)'}); DATA.events.push(copy); persistEvents(); closeModal(); App.set({}); return; }
+  if(act==='closeModal'){ closeModal(); return; }
+  if(act==='saveEvent'){ const payload={ id: currentEditId || uid(), title:(document.getElementById('md-title').value||'Untitled').trim(), date:document.getElementById('md-date').value||ymdLocal(new Date()), dateEnd:(document.getElementById('md-dateend').value||'')||undefined, allDay:document.getElementById('md-allday').checked, start:document.getElementById('md-start').value||'09:00', end:document.getElementById('md-end').value||'10:00', owner:document.getElementById('md-owner').value||'Admin', type:document.getElementById('md-type').value||'Appointment', caseId:(document.getElementById('md-case').value||'')||null, remind:(document.getElementById('md-remind').value||'')||undefined, seriesId: currentEditId? (DATA.events.find(e=>e.id===currentEditId)?.seriesId||undefined) : uid() }; const rep=document.getElementById('md-repeat').value; const rcount=Math.max(1,parseInt(document.getElementById('md-rcount').value||'1',10)); function saveOne(p){ const i=DATA.events.findIndex(e=>e.id===p.id); if(i>=0) DATA.events[i]=p; else DATA.events.push(p); }
+    saveOne(Object.assign({},payload));
+    if(rep!=='none' && rcount>1){ for(let i=1;i<rcount;i++){ let d=parseYMD(payload.date); if(rep==='daily') d=addDays(d,i); if(rep==='weekly') d=addDays(d,7*i); if(rep==='monthly'){ d.setMonth(d.getMonth()+i); } const clone=Object.assign({},payload,{id:uid(),date:ymdLocal(d)}); if(payload.dateEnd){ const sd=parseYMD(payload.date), ed=parseYMD(payload.dateEnd); const span=Math.round((ed-sd)/(24*3600*1000)); const nd=addDays(d,span); clone.dateEnd=ymdLocal(nd); } DATA.events.push(clone); } }
+    persistEvents(); closeModal(); App.set({}); return; }
+  if(act==='addEventForCase'){ openModal({date:ymdLocal(new Date()),caseId:arg}); return; }
+  if(act==='exportICS'){ exportICS(); return; }
+  if(act==='printAgenda'){ App.set({view:'agenda'}); setTimeout(()=>window.print(),100); return; }
 });
-
-document.addEventListener('change',(e)=>{
-  if(e.target && e.target.id==='owner-filter'){ App.set({filterOwner:e.target.value}); }
-});
-
-document.addEventListener('change',(e)=>{
-  if(e.target && e.target.id==='file-input' && App.state.currentUploadTarget){
-    const p=App.state.currentUploadTarget.split('::'); const cs=findCase(p[0]); if(!cs) return;
-    const folder=p[1]||'General'; cs.folders[folder]=cs.folders[folder]||[];
-    const files=e.target.files; const list=cs.folders[folder];
-    for(let i=0;i<files.length;i++){ const f=files[i]; const reader=new FileReader(); reader.onload=ev=>{ list.push({name:f.name, size:f.size+' B', dataUrl:ev.target.result}); persist(); App.set({}); }; reader.readAsDataURL(f); }
-    e.target.value='';
-  }
-});
-
-// bootstrap
-document.addEventListener('DOMContentLoaded', ()=>{ App.set({route:'dashboard'}); });
+document.addEventListener('DOMContentLoaded',()=>{ let start='calendar', view='month'; try{const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}"); start=cfg.startRoute||'calendar'; view=cfg.view||'month'; }catch(_){ } App.set({route:start, view}); });
 })();

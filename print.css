@@ -1,1 +1,1 @@
-/* Print styles placeholder */
+@media print{ .sidebar,#boot,.cal-head .controls,.view-switch,.legend { display:none } main.main{padding:0 } }
