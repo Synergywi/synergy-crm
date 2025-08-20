@@ -1,7 +1,17 @@
-HubSpot Theme Override (orange/teal)
------------------------------------
-1) Upload `theme-hubspot.css` next to your index.html on your host.
-2) Add this line inside <head> after any other CSS:
-   <link rel="stylesheet" href="theme-hubspot.css">
-3) Hard reload the page (Cmd/Ctrl+Shift+R). If using DevTools, tick "Disable cache".
-This forces orange/teal and opaque cards even if older CSS is cached.
+
+Synergy CRM — Calendar Patch (v2126)
+
+What’s included
+- Event modal with “Attach to case” (and Owner for Admins)
+- Click a date to open New Event prefilled with the exact local date
+- Create/Edit/Delete events
+- Events persist in localStorage (key: synergy_calendar_v2126)
+
+How to run
+1) Unzip and open index.html in a browser.
+2) Click any date cell → modal opens with that date. Save.
+3) Reopen the event to attach it to a case (dropdown).
+4) (Optional) Use createCaseEvent in your existing Case page to link events by caseId.
+
+Integrating into your app
+- If you want to keep your file names, rename app.v2126.js to your bundle name and update your HTML <script> tag accordingly.
