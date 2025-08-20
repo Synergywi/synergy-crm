@@ -5,11 +5,6 @@ console.log("Synergy CRM PRO "+BUILD+" • "+STAMP);
 /* utils */
 function uid(){ return "id-"+Math.random().toString(36).slice(2,10); }
 function esc(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;","—":"—",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m)); }
-
-// === calendar persistence ===
-const LS_CAL='synergy_calendar_v1';
-function saveCal(){ try{ localStorage.setItem(LS_CAL, JSON.stringify(DATA.calendar||[])); }catch(_){ } }
-function loadCal(){ try{ const raw=localStorage.getItem(LS_CAL); if(raw){ const arr=JSON.parse(raw); if(Array.isArray(arr)) DATA.calendar=arr; } }catch(_){ }
 const YEAR=(new Date()).getFullYear(), LAST=YEAR-1;
 
 /* seed */
@@ -441,7 +436,7 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.
     const miss=reqVars.filter(v=>!root.getPropertyValue(v));
     if(miss.length) console.warn("Theme variables missing:", miss);
   }catch(e){}
-  loadCal(); App.set({route:'dashboard'});
+  App.set({route:'dashboard'});
 });
 /* ===== Calendar Feature (Outlook-style) ===== */
 const CAL={
@@ -626,7 +621,7 @@ document.addEventListener('click', e=>{
     S.ym= `${y}-${String(m+1).padStart(2,'0')}`;
     App.set({calendar:S}); return;
   }
-  if(act==='pickDay'){ S.selectedDate=arg; App.set({calendar:S}); if(typeof renderEventModal==='function'){ renderEventModal(null,{isNew:true,date:arg}); } return; }
+  if(act==='pickDay'){ S.selectedDate=arg; App.set({calendar:S}); return; }
   if(act==='createEvent'){
     const me=DATA.me||{email:""};
     const title=(document.getElementById('ev-title')||{}).value||'Untitled';
@@ -641,26 +636,11 @@ document.addEventListener('click', e=>{
     const eISO = date+"T"+end+":00";
     DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
     alert('Event added');
-    App.set({}
-  if(act==='createCaseEvent'){
-    const me=DATA.me||{email:"",name:""};
-    const caseId=arg;
-    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
-    const date=(document.getElementById('ce-date')||{}).value||new Date().toISOString().slice(0,10);
-    const type=(document.getElementById('ce-type')||{}).value||'Appointment';
-    const start=(document.getElementById('ce-start')||{}).value||'10:00';
-    const end  =(document.getElementById('ce-end')||{}).value||'11:00';
-    const loc  =(document.getElementById('ce-loc')||{}).value||'';
-    const sISO=date+"T"+start+":00"; const eISO=date+"T"+end+":00";
-    if(!Array.isArray(DATA.calendar)) DATA.calendar=[];
-    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:me.email, ownerName:me.name||me.email, location:loc, type, caseId});
-    saveCal(); App.set({}); return;
-  }
-); return;
+    App.set({}); return;
   }
   if(act==='deleteEvent'){
     DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
-    saveCal(); App.set({}); return;
+    App.set({}); return;
   }
   if(act==='openEvent'){
     const ev=(DATA.calendar||[]).find(x=>x.id===arg);
@@ -678,58 +658,125 @@ document.addEventListener('change', e=>{
 
 })();
 
-/* === Calendar Event Modal === */
-function renderEventModal(ev, opts){
-  const isNew = !ev;
-  const me = DATA.me || {email:"admin@synergy.com", name:"Admin", role:"Admin"};
-  const isAdmin = (me.role==="Admin");
-  const el=document.createElement('div'); el.className='modal-mask';
-  const dateISO = ev ? (ev.startISO||'').slice(0,10) : (opts && opts.date) || new Date().toISOString().slice(0,10);
-  const startT = ev ? (ev.startISO||'').slice(11,16) : '09:00';
-  const endT   = ev ? (ev.endISO||'').slice(11,16) : '10:00';
-  const ownerSel = isAdmin ? `<div><label>Owner</label><select class="input" id="md-owner">${
-    (DATA.users||[]).map(u=>`<option value="${u.email}" ${(ev&&ev.ownerEmail===u.email)||(!ev&&u.email===me.email)?'selected':''}>${u.name}</option>`).join('')
-  }</select></div>` : '';
-  const caseSel = `<div><label>Attach to case</label><select class="input" id="md-case"><option value="">— None —</option>${
-    (DATA.cases||[]).map(c=>`<option value="${c.id}" ${(ev&&ev.caseId===c.id)?'selected':''}>${c.fileNumber} — ${(c.title||'').replace(/</g,'&lt;')}</option>`).join('')
-  }</select></div>`;
-  el.innerHTML = `
-  <div class="modal">
-    <header><div><strong>${isNew?'New Event':'Event'}</strong></div><button class="btn light" data-close>Close</button></header>
-    <div class="body">
-      <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label>Title</label><input class="input" id="md-title" value="${ev?String(ev.title||'').replace(/</g,'&lt;'):''}"></div>
-        <div><label>Date</label><input class="input" id="md-date" type="date" value="${dateISO}"></div>
-        <div><label>Type</label><select class="input" id="md-type"><option ${!ev||ev.type==='Appointment'?'selected':''}>Appointment</option><option ${ev&&ev.type==='Note'?'selected':''}>Note</option></select></div>
-        <div><label>Start</label><input class="input" id="md-start" type="time" value="${startT}"></div>
-        <div><label>End</label><input class="input" id="md-end" type="time" value="${endT}"></div>
-        <div><label>Location</label><input class="input" id="md-loc" value="${ev?String(ev.location||'').replace(/</g,'&lt;'):''}"></div>
-        ${caseSel}${ownerSel}
+/* === Synergy Calendar Enhancements v2125.final === */
+(function(){
+  if (window.__SY_CAL_PATCH__) return; window.__SY_CAL_PATCH__ = "v2125.final";
+  const LS_KEY = 'synergy_calendar_v1';
+  const AppRef = (typeof App!=="undefined" ? App : null);
+  const DATAREF = (typeof DATA!=="undefined" ? DATA : (window.DATA = (window.DATA||{})));
+
+  function saveCal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DATAREF.calendar||[])); }catch(_){ } }
+  function loadCal(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const arr=JSON.parse(raw); if(Array.isArray(arr)){ DATAREF.calendar = arr; } } }catch(_){ DATAREF.calendar = DATAREF.calendar||[]; } }
+
+  function fmtDate(d){ const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const da=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+  function esc(s){ return (s||"").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;", '"':"&quot;","'":"&#39;" }[m]||m)); }
+
+  // Ensure DATA structures exist
+  DATAREF.users = DATAREF.users || [{name:"Admin",email:"admin@synergy.com",role:"Admin"}];
+  DATAREF.cases = DATAREF.cases || [];
+  DATAREF.calendar = DATAREF.calendar || [];
+
+  // Load persisted events
+  loadCal();
+
+  // Modal renderer
+  function renderEventModal(ev, opts){
+    const me = DATAREF.me || {email:"admin@synergy.com", name:"Admin", role:"Admin"};
+    const isAdmin = (me.role==="Admin");
+    const el=document.createElement('div'); el.className='modal-mask';
+    const dateISO = (ev && ev.startISO ? ev.startISO.slice(0,10) : (opts && opts.date ? opts.date : fmtDate(new Date())));
+    const startT  = ev && ev.startISO ? ev.startISO.slice(11,16) : '09:00';
+    const endT    = ev && ev.endISO   ? ev.endISO.slice(11,16)   : '10:00';
+    const ownerSelect = isAdmin ? `<div><label>Owner</label><select class="input" id="md-owner">${
+      (DATAREF.users||[]).map(u=>`<option value="${u.email}" ${(ev&&ev.ownerEmail===u.email)||(!ev&&u.email===me.email)?'selected':''}>${esc(u.name)}</option>`).join("")
+    }</select></div>` : "";
+    const caseSelect = `<div><label>Attach to case</label><select class="input" id="md-case"><option value="">— None —</option>${
+      (DATAREF.cases||[]).map(c=>`<option value="${c.id}" ${(ev&&ev.caseId===c.id)?'selected':''}>${esc(c.fileNumber||'CASE')} — ${esc(c.title||'')}</option>`).join("")
+    }</select></div>`;
+
+    el.innerHTML=`<div class="modal">
+      <header><div><strong>${ev?'Event':'New Event'}</strong></div><button class="btn light" data-close>Close</button></header>
+      <div class="body">
+        <div class="grid">
+          <div><label>Title</label><input class="input" id="md-title" value="${ev?esc(ev.title):''}"></div>
+          <div><label>Date</label><input class="input" id="md-date" type="date" value="${dateISO}"></div>
+          <div><label>Type</label><select class="input" id="md-type"><option ${( !ev || ev.type==='Appointment') ? 'selected':''}>Appointment</option><option ${(ev&&ev.type==='Note')?'selected':''}>Note</option></select></div>
+          <div><label>Start</label><input class="input" id="md-start" type="time" value="${startT}"></div>
+          <div><label>End</label><input class="input" id="md-end" type="time" value="${endT}"></div>
+          <div><label>Location</label><input class="input" id="md-loc" value="${ev?esc(ev.location||''):''}"></div>
+          ${caseSelect}${ownerSelect}
+        </div>
       </div>
-    </div>
-    <footer>${!isNew?'<button class="btn danger" data-del>Delete</button>':''}<button class="btn" data-save>${isNew?'Create':'Save'}</button></footer>
-  </div>`;
-  function close(){ document.body.removeChild(el); }
-  el.addEventListener('click', e=>{ if(e.target.matches('[data-close]') || e.target===el) close(); });
-  el.querySelector('[data-save]').addEventListener('click', ()=>{
-    const title=(document.getElementById('md-title')||{}).value||'Untitled';
-    const date =(document.getElementById('md-date') ||{}).value||new Date().toISOString().slice(0,10);
-    const type =(document.getElementById('md-type') ||{}).value||'Appointment';
-    const s    =(document.getElementById('md-start')||{}).value||'09:00';
-    const en   =(document.getElementById('md-end')  ||{}).value||'10:00';
-    const loc  =(document.getElementById('md-loc')  ||{}).value||'';
-    const caseId=(document.getElementById('md-case')||{}).value||'';
-    const owner = isAdmin ? ((document.getElementById('md-owner')||{}).value || me.email) : (ev?ev.ownerEmail:me.email);
-    const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
-    const sISO = date+"T"+s+":00"; const eISO = date+"T"+en+":00";
-    if(isNew){
-      if(!Array.isArray(DATA.calendar)) DATA.calendar=[];
-      DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId||undefined});
-    }else{
-      ev.title=title; ev.type=type; ev.startISO=sISO; ev.endISO=eISO; ev.location=loc; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId||undefined;
-    }
-    saveCal(); close(); App.set({});
-  });
-  const del=el.querySelector('[data-del]'); if(del){ del.addEventListener('click', ()=>{ DATA.calendar=(DATA.calendar||[]).filter(x=>x.id!==ev.id); saveCal(); close(); App.set({}); }); }
-  document.body.appendChild(el);
-}
+      <footer>${ev?'<button class="btn danger" data-del>Delete</button>':''}<button class="btn" data-save>${ev?'Save':'Create'}</button></footer>
+    </div>`;
+
+    function close(){ document.body.removeChild(el); }
+    el.addEventListener('click', e=>{ if(e.target.matches('[data-close]')||e.target===el) close(); });
+
+    el.querySelector('[data-save]').addEventListener('click', ()=>{
+      const title=(document.getElementById('md-title')||{}).value||'Untitled';
+      const date =(document.getElementById('md-date') ||{}).value;
+      const type =(document.getElementById('md-type') ||{}).value||'Appointment';
+      const s    =(document.getElementById('md-start')||{}).value||'09:00';
+      const en   =(document.getElementById('md-end')  ||{}).value||'10:00';
+      const loc  =(document.getElementById('md-loc')  ||{}).value||'';
+      const caseId=(document.getElementById('md-case')||{}).value||'';
+      const owner = isAdmin ? ((document.getElementById('md-owner')||{}).value || me.email) : (ev?ev.ownerEmail:me.email);
+      const ownerName = ((DATAREF.users||[]).find(u=>u.email===owner)||{}).name || owner;
+      const sISO = date+"T"+s+":00", eISO=date+"T"+en+":00";
+      if(ev){
+        ev.title=title; ev.type=type; ev.location=loc; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId||undefined; ev.startISO=sISO; ev.endISO=eISO;
+      }else{
+        (DATAREF.calendar=DATAREF.calendar||[]).push({id:"id-"+Math.random().toString(36).slice(2,10), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId||undefined});
+      }
+      saveCal(); if(AppRef&&AppRef.set) AppRef.set({}); close();
+    });
+
+    const del=el.querySelector('[data-del]');
+    if(del){ del.addEventListener('click', ()=>{ DATAREF.calendar=(DATAREF.calendar||[]).filter(x=>x!==ev && x.id!==ev.id); saveCal(); if(AppRef&&AppRef.set) AppRef.set({}); close(); }); }
+    document.body.appendChild(el);
+  }
+
+  // 1) Click day → open composer (broad selectors)
+  document.addEventListener('click', function(e){
+    const t=e.target.closest('[data-act="pickDay"], [data-act="newEventOnDay"], .cal-day, [data-day], [data-date]');
+    if(!t) return;
+    const d = t.getAttribute('data-arg') || t.getAttribute('data-day') || t.getAttribute('data-date');
+    const iso = d || (function(){ const c=document.querySelector('#ev-date'); return c&&c.value?c.value:fmtDate(new Date()); })();
+    renderEventModal(null,{isNew:true,date:iso});
+  }, true);
+
+  // 2) Click event chip → open editor (requires event id in data-arg)
+  document.addEventListener('click', function(e){
+    const t=e.target.closest('[data-act="openEvent"]'); if(!t) return;
+    const id=t.getAttribute('data-arg'); if(!id) return;
+    const ev=(DATAREF.calendar||[]).find(x=>x.id===id); if(ev) renderEventModal(ev);
+  }, true);
+
+  // 3) Delete chip (inline X)
+  document.addEventListener('click', function(e){
+    const t=e.target.closest('[data-act="deleteEvent"]'); if(!t) return;
+    const id=t.getAttribute('data-arg'); if(!id) return;
+    DATAREF.calendar=(DATAREF.calendar||[]).filter(x=>x.id!==id); saveCal(); if(AppRef&&AppRef.set) AppRef.set({});
+  }, true);
+
+  // 4) Case tab "Add"
+  document.addEventListener('click', function(e){
+    const t=e.target.closest('[data-act="createCaseEvent"]'); if(!t) return;
+    const caseId = t.getAttribute('data-arg') || '';
+    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
+    const date =(document.getElementById('ce-date') ||{}).value||fmtDate(new Date());
+    const type =(document.getElementById('ce-type') ||{}).value||'Appointment';
+    const start=(document.getElementById('ce-start')||{}).value||'10:00';
+    const end  =(document.getElementById('ce-end')  ||{}).value||'11:00';
+    const loc  =(document.getElementById('ce-loc')  ||{}).value||'';
+    const me=(DATAREF.me)||{email:"admin@synergy.com",name:"Admin"};
+    const sISO=date+"T"+start+":00", eISO=date+"T"+end+":00";
+    (DATAREF.calendar=DATAREF.calendar||[]).push({id:"id-"+Math.random().toString(36).slice(2,10), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:me.email, ownerName:me.name, location:loc, type, caseId});
+    saveCal(); if(AppRef&&AppRef.set) AppRef.set({});
+  }, true);
+
+  // expose modal for quick tests
+  window.renderEventModal = window.renderEventModal || renderEventModal;
+})(); 
+/* === /Synergy Calendar Enhancements === */
