@@ -638,6 +638,26 @@ document.addEventListener('click', e=>{
     alert('Event added');
     App.set({}); return;
   }
+  if(act==='createCaseEvent'){
+    const caseId = arg;
+    const me=DATA.me||{email:""};
+    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
+    const date=(document.getElementById('ce-date')||{}).value||new Date().toISOString().slice(0,10);
+    const type=(document.getElementById('ce-type')||{}).value||'Appointment';
+    const start=(document.getElementById('ce-start')||{}).value||'10:00';
+    const end=(document.getElementById('ce-end')||{}).value||'11:00';
+    const loc=(document.getElementById('ce-loc')||{}).value||'';
+    const owner = (DATA.me.role==="Admin" && document.getElementById('ce-owner'))
+      ? document.getElementById('ce-owner').value
+      : me.email;
+    const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
+    const sISO = date+"T"+start+":00";
+    const eISO = date+"T"+end+":00";
+    DATA.calendar.push({id:uid(), caseId, title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
+    alert('Case event added');
+    App.set({}); return;
+  }
+
   if(act==='deleteEvent'){
     DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
     App.set({}); return;
@@ -654,6 +674,231 @@ document.addEventListener('change', e=>{
     const S=App.state.calendar||{}; S.filterUsers=e.target.value||"ALL"; App.set({calendar:S});
   }
 });
+
+/* ===== Event Modal (shared across Calendar & Case views) ===== */
+(function(){
+  // Create modal root if not present
+  function ensureModalRoot(){
+    var root=document.getElementById('modal-root');
+    if(!root){
+      root=document.createElement('div');
+      root.id='modal-root';
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+  function closeModal(){
+    var root=document.getElementById('modal-root');
+    if(root) root.innerHTML='';
+  }
+  // Expose globally
+  window.closeEventModal = closeModal;
+
+  window.renderEventModal = function(ev, opts){
+    opts = opts || {};
+    var me = (DATA.me||{role:"",email:""});
+    var isAdmin = (me.role==="Admin");
+    var isNew = !ev || !ev.id;
+    var nowISO = new Date().toISOString();
+    var seedDate = (App.state && App.state.calendar && App.state.calendar.selectedDate) || nowISO.slice(0,10);
+    var ownerEmail = (ev && ev.ownerEmail) || (isAdmin ? (opts.ownerEmail||me.email) : me.email);
+    var owner = (DATA.users||[]).find(u=>u.email===ownerEmail) || {name: ownerEmail, email: ownerEmail};
+    var dateISO = (ev?ev.startISO:seedDate+"T09:00:00");
+    var endISO  = (ev?ev.endISO:seedDate+"T10:00:00");
+    var d = new Date(dateISO), e = new Date(endISO);
+
+    var ownerSelect = isAdmin ? ('<div class="col"><label>Owner</label><select class="input" id="em-owner">'+
+      (DATA.users||[]).map(u=>'<option value="'+u.email+'" '+(u.email===ownerEmail?'selected':'')+'>'+u.name+'</option>').join('')
+      +'</select></div>') : '';
+
+    var caseId = (ev && ev.caseId) || opts.caseId || '';
+    var caseOptions = (DATA.cases||[]).map(c=>'<option value="'+c.id+'" '+(c.id===caseId?'selected':'')+'>'+c.fileNumber+' — '+(c.title||'')+'</option>').join('');
+    var caseSelect = '<div class="col"><label>Link to case</label><select class="input" id="em-case"><option value="">(none)</option>'+caseOptions+'</select></div>';
+
+    var html = ''
+      + '<div class="modal-backdrop" data-act="closeEventModal"></div>'
+      + '<div class="modal-card">'
+      + '  <div class="modal-head"><div class="modal-title">'+(isNew?'New':'Edit')+' Event</div>'
+      + '  <button class="btn light" data-act="closeEventModal">Close</button></div>'
+      + '  <div class="modal-body">'
+      + '    <div class="grid cols-3">'
+      + '      <div class="col"><label>Title</label><input class="input" id="em-title" value="'+(ev?esc(ev.title):'')+'" placeholder="Appointment or note"></div>'
+      + '      <div class="col"><label>Date</label><input class="input" id="em-date" type="date" value="'+(d.toISOString().slice(0,10))+'"></div>'
+      + '      <div class="col"><label>Type</label><select class="input" id="em-type"><option'+((ev&&ev.type)==='Appointment'?' selected':'')+'>Appointment</option><option'+((ev&&ev.type)==='Note'?' selected':'')+'>Note</option></select></div>'
+      + '      <div class="col"><label>Start</label><input class="input" id="em-start" type="time" value="'+d.toTimeString().slice(0,5)+'"></div>'
+      + '      <div class="col"><label>End</label><input class="input" id="em-end" type="time" value="'+e.toTimeString().slice(0,5)+'"></div>'
+      + '      <div class="col"><label>Location</label><input class="input" id="em-loc" value="'+(ev?(esc(ev.location||"")):"")+'" placeholder="Room/Zoom/etc."></div>'
+      +        ownerSelect
+      +        caseSelect
+      + '    </div>'
+      + '    <textarea class="input" id="em-desc" placeholder="Description (optional)">'+(ev?esc(ev.description||''):'')+'</textarea>'
+      + '  </div>'
+      + '  <div class="modal-foot">'
+      + (isNew? '' : '<button class="btn danger" data-act="emDelete" data-arg="'+ev.id+'">Delete</button>')
+      + '    <div class="sp"></div>'
+      + '    <button class="btn light" data-act="closeEventModal">Cancel</button>'
+      + '    <button class="btn" data-act="emSave" data-arg="'+(isNew?'':ev.id)+'">'+(isNew?'Create':'Save')+'</button>'
+      + '  </div>'
+      + '</div>';
+
+    var root = ensureModalRoot();
+    root.innerHTML = '<div class="modal">'+html+'</div>';
+    // Stash context for save
+    root.dataset.isNew = isNew ? '1' : '0';
+    root.dataset.editId = isNew ? '' : ev.id;
+  };
+
+  // Global click handlers for modal controls
+  document.addEventListener('click', function(e){
+    var t=e.target.closest('[data-act]'); if(!t) return;
+    var act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||"";
+    if(act==='closeEventModal'){ closeModal(); }
+
+    if(act==='emDelete'){
+      var id = arg;
+      DATA.calendar = (DATA.calendar||[]).filter(function(ev){ return ev.id!==id; });
+      closeModal();
+      App.set({}); // re-render
+    }
+
+    if(act==='emSave'){
+      var root=document.getElementById('modal-root'); if(!root) return;
+      var isNew = root.dataset.isNew==='1';
+      var editId = root.dataset.editId || '';
+
+      function gv(id){ var el=document.getElementById(id); return el?el.value:''; }
+
+      var title = gv('em-title') || 'Untitled';
+      var date = gv('em-date') || new Date().toISOString().slice(0,10);
+      var st = gv('em-start') || '09:00';
+      var en = gv('em-end') || '10:00';
+      var type = gv('em-type') || 'Appointment';
+      var loc = gv('em-loc') || '';
+      var desc = gv('em-desc') || '';
+      var owner = document.getElementById('em-owner') ? document.getElementById('em-owner').value : ((DATA.me||{}).email||'');
+      var ownerName = ((DATA.users||[]).find(u=>u.email===owner)||{}).name || owner;
+      var caseId = gv('em-case') || '';
+
+      var sISO = date+'T'+st+':00';
+      var eISO = date+'T'+en+':00';
+
+      if(isNew){
+        DATA.calendar.push({id:uid(), title:title, description:desc, startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName:ownerName, location:loc, type:type, caseId: caseId||undefined});
+      }else{
+        var ev = (DATA.calendar||[]).find(function(x){ return x.id===editId; });
+        if(ev){
+          ev.title=title; ev.description=desc;
+          ev.startISO=sISO; ev.endISO=eISO;
+          ev.ownerEmail=owner; ev.ownerName=ownerName;
+          ev.location=loc; ev.type=type;
+          if(caseId){ ev.caseId=caseId; } else { delete ev.caseId; }
+        }
+      }
+      closeModal();
+      App.set({});
+    }
+  });
+
+  // Convenience: allow creating a new event from calendar toolbar (if we add a button later)
+  document.addEventListener('click', function(e){
+    var t=e.target.closest('[data-act]'); if(!t) return;
+    var act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||"";
+    if(act==='openNewEvent'){
+      renderEventModal(null, {});
+    }
+  });
+})();
+
+
+/* ===== Shared Event Modal ===== */
+function ensureModalRoot(){
+  let root=document.getElementById('event-modal-root');
+  if(!root){
+    root=document.createElement('div');
+    root.id='event-modal-root';
+    document.body.appendChild(root);
+  }
+  return root;
+}
+function renderEventModal(ev){
+  if(!ev){ ev={title:'', type:'Appointment', startISO:(new Date().toISOString().slice(0,10)+'T09:00:00'), endISO:(new Date().toISOString().slice(0,10)+'T10:00:00'), location:'', description:'', ownerEmail:(DATA.me||{}).email||'', ownerName:(DATA.me||{}).name||''}; }
+  const isAdmin = ((DATA.me||{}).role||'') === 'Admin';
+  const owners = DATA.users||[];
+  const ownerSelect = isAdmin ? `<div><label>Owner</label><select class="input" id="em-owner">
+    ${owners.map(u=>`<option value="${u.email}" ${u.email===(ev.ownerEmail||'')?'selected':''}>${u.name}</option>`).join('')}
+  </select></div>` : '';
+
+  const d=new Date(ev.startISO), e=new Date(ev.endISO);
+  const html = `
+    <div class="modal-backdrop" data-act="closeEventModal"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="section-title" style="margin:0">Edit Event</h3>
+        <div class="sp"></div>
+        <button class="modal-x" data-act="closeEventModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid cols-3">
+          <div><label>Title</label><input class="input" id="em-title" value="${esc(ev.title||'')}"></div>
+          <div><label>Date</label><input class="input" id="em-date" type="date" value="${d.toISOString().slice(0,10)}"></div>
+          <div><label>Type</label><select class="input" id="em-type"><option ${ev.type==='Appointment'?'selected':''}>Appointment</option><option ${ev.type==='Note'?'selected':''}>Note</option></select></div>
+          <div><label>Start</label><input class="input" id="em-start" type="time" value="${d.toTimeString().slice(0,5)}"></div>
+          <div><label>End</label><input class="input" id="em-end" type="time" value="${e.toTimeString().slice(0,5)}"></div>
+          <div><label>Location</label><input class="input" id="em-loc" value="${esc(ev.location||'')}"></div>
+          ${ownerSelect}
+          ${ev.caseId ? `<div><label>Linked Case</label><input class="input" value="${ev.caseId}" disabled></div>` : '<div></div>'}
+        </div>
+        <div style="margin-top:8px"><label>Description</label><textarea class="input" id="em-desc">${esc(ev.description||'')}</textarea></div>
+      </div>
+      <div class="modal-footer">
+        ${ev.id?`<button class="btn danger" data-act="emDelete" data-arg="${ev.id}">Delete</button>`:''}
+        <div class="sp"></div>
+        <button class="btn light" data-act="closeEventModal">Cancel</button>
+        <button class="btn" data-act="emSave" data-arg="${ev.id||''}">${ev.id?'Save':'Create'}</button>
+      </div>
+    </div>`;
+
+  const host=ensureModalRoot();
+  host.innerHTML = html;
+  host.style.display='block';
+}
+function closeEventModal(){
+  const host=document.getElementById('event-modal-root');
+  if(host){ host.style.display='none'; host.innerHTML=''; }
+}
+document.addEventListener('click', function(e){
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
+  if(act==='closeEventModal'){ closeEventModal(); }
+  if(act==='emDelete'){
+    DATA.calendar=(DATA.calendar||[]).filter(x=>x.id!==arg);
+    closeEventModal(); App.set({}); return;
+  }
+  if(act==='emSave'){
+    const isCreate = !arg;
+    const v=(id)=>{ const el=document.getElementById(id); return el?el.value:''; };
+    const title=v('em-title')||'Untitled';
+    const date=v('em-date')||new Date().toISOString().slice(0,10);
+    const start=v('em-start')||'09:00';
+    const end=v('em-end')||'10:00';
+    const type=v('em-type')||'Appointment';
+    const loc=v('em-loc')||'';
+    const desc=v('em-desc')||'';
+    let ownerEmail = (DATA.me||{}).email||''; let ownerName = (DATA.me||{}).name||ownerEmail;
+    const ownSel=document.getElementById('em-owner');
+    if(ownSel){ ownerEmail=ownSel.value; ownerName=(DATA.users.find(u=>u.email===ownerEmail)||{}).name||ownerEmail; }
+    const sISO=date+'T'+start+':00', eISO=date+'T'+end+':00';
+    if(isCreate){
+      DATA.calendar.push({id:uid(), title, description:desc, startISO:sISO, endISO:eISO, ownerEmail, ownerName, location:loc, type});
+    }else{
+      const ev=(DATA.calendar||[]).find(x=>x.id===arg); if(!ev){ alert('Event not found'); return; }
+      ev.title=title; ev.description=desc; ev.startISO=sISO; ev.endISO=eISO; ev.ownerEmail=ownerEmail; ev.ownerName=ownerName; ev.location=loc; ev.type=type;
+    }
+    closeEventModal(); App.set({}); return;
+  }
+});
+/* ===== End Shared Event Modal ===== */
+
 /* ===== End Calendar Feature ===== */
 
 })();
