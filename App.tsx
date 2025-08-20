@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 
-// --- Tiny UI primitives (Tailwind only; no external deps) ---
 const Badge = ({ children, tone = "neutral" }) => (
   <span
     className={
@@ -83,7 +82,6 @@ const Table = ({ columns, rows, empty = "No data." }) => (
   </div>
 );
 
-// --- Fake data ---
 const USERS = [
   { name: "Admin", email: "admin@synergy.com", role: "Admin" },
   { name: "Alex Ng", email: "alex@synergy.com", role: "Investigator" },
@@ -115,10 +113,8 @@ const DOCS = {
   ],
 };
 
-// --- Page shells ---
-const Shell = ({ children, rightTop }) => (
+const Shell = ({ children }) => (
   <div className="min-h-screen bg-slate-50 text-slate-900">
-    {/* Top bar */}
     <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
@@ -126,12 +122,11 @@ const Shell = ({ children, rightTop }) => (
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-slate-600">You: Admin (Admin)</span>
-          <span><Badge tone="success">Soft Stable baseline-1.0.0</Badge></span>
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">Soft Stable baseline-1.0.0</span>
         </div>
       </div>
     </div>
 
-    {/* Content */}
     <div className="mx-auto grid max-w-7xl grid-cols-12 gap-6 px-4 py-6">
       <aside className="col-span-2">
         <Nav />
@@ -139,7 +134,6 @@ const Shell = ({ children, rightTop }) => (
       <main className="col-span-10">{children}</main>
     </div>
 
-    {/* Floating calendar toast */}
     <div className="pointer-events-none fixed right-6 top-4 z-50">
       <div className="pointer-events-auto flex items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-200">
         <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg border border-slate-200">
@@ -155,24 +149,13 @@ const Shell = ({ children, rightTop }) => (
   </div>
 );
 
-const NAV_ITEMS = [
-  "Dashboard",
-  "Calendar",
-  "Cases",
-  "Contacts",
-  "Companies",
-  "Documents",
-  "Resources",
-  "Admin",
-];
+const NAV_ITEMS = ["Dashboard","Calendar","Cases","Contacts","Companies","Documents","Resources","Admin"];
 
 const Nav = () => {
   const [active, setActive] = useNav();
   return (
     <nav className="sticky top-[68px] rounded-xl border border-slate-200 bg-white p-2 text-sm shadow-sm">
-      <div className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-        Investigations
-      </div>
+      <div className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">Investigations</div>
       <ul className="space-y-1">
         {NAV_ITEMS.map((item) => (
           <li key={item}>
@@ -192,11 +175,10 @@ const Nav = () => {
   );
 };
 
-// global nav state (simple)
-const navStore: { value: string; listeners: Set<(v:string)=>void> } = { value: "Admin", listeners: new Set() };
-const useNav = (): [string, (v:string)=>void] => {
-  const [active, setActiveState] = useState(navStore.value);
-  const setActive = (val: string) => {
+const navStore = { value: "Admin", listeners: new Set() };
+const useNav = () => {
+  const [active, setActiveState] = React.useState(navStore.value);
+  const setActive = (val) => {
     navStore.value = val;
     setActiveState(val);
     navStore.listeners.forEach((l) => l(val));
@@ -204,7 +186,6 @@ const useNav = (): [string, (v:string)=>void] => {
   return [active, setActive];
 };
 
-// --- Screens ---
 const AdminScreen = () => {
   const [tab, setTab] = useState("Users");
   return (
@@ -235,12 +216,12 @@ const AdminUsers = () => (
           <span className="text-slate-600" key={u.email}>{u.email}</span>,
           <span className="text-slate-600" key={u.role}>{u.role}</span>,
           <div className="flex justify-end" key={u.email+"b"}>
-            <Button variant="ghost" size="sm">Impersonate</Button>
+            <button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md transition-all shadow-sm">Impersonate</button>
           </div>,
         ])}
       />
       <div className="mt-4 flex justify-end">
-        <Button size="sm" className="rounded-full">Add User</Button>
+        <button className="bg-sky-600 text-white hover:bg-sky-700 px-4 py-2 text-sm rounded-full transition-all shadow-sm">Add User</button>
       </div>
     </CardBody>
   </Card>
@@ -248,7 +229,7 @@ const AdminUsers = () => (
 
 const AdminSettings = () => (
   <Card>
-    <CardHeader title="Settings" aside={<Button size="sm">Save Settings</Button>} />
+    <CardHeader title="Settings" aside={<button className="bg-sky-600 text-white hover:bg-sky-700 px-4 py-2 text-sm rounded-md transition-all shadow-sm">Save Settings</button>} />
     <CardBody>
       <div className="space-y-3 text-sm">
         <label className="flex items-center gap-3">
@@ -276,9 +257,7 @@ const ResourcesScreen = () => {
             <ul className="space-y-2 text-sky-700">
               {RESOURCES.links.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} className="hover:underline">
-                    {l.label}
-                  </a>
+                  <a href={l.href} className="hover:underline">{l.label}</a>
                 </li>
               ))}
             </ul>
@@ -305,9 +284,7 @@ const ResourcesScreen = () => {
           <CardHeader title="Guides" />
           <CardBody>
             <ul className="list-inside list-disc text-sm text-slate-700">
-              {RESOURCES.guides.map((g) => (
-                <li key={g}>{g}</li>
-              ))}
+              {RESOURCES.guides.map((g) => (<li key={g}>{g}</li>))}
             </ul>
           </CardBody>
         </Card>
@@ -322,32 +299,18 @@ const DocumentsScreen = () => {
     <>
       <Tabs tabs={["Templates", "Procedures"]} tab={tab} setTab={setTab} />
       {tab === "Templates" && (
-        <Card>
-          <CardHeader title="Templates" />
-          <CardBody>
-            <Table
-              columns={["File", ""]}
-              rows={DOCS.templates.map((d) => [
-                d.name,
-                <div key={d.name} className="flex justify-end"><Button variant="ghost" size="sm">Download</Button></div>,
-              ])}
-            />
-          </CardBody>
-        </Card>
+        <Card><CardHeader title="Templates" /><CardBody>
+          <Table columns={["File", ""]} rows={DOCS.templates.map((d) => [
+            d.name, <div key={d.name} className="flex justify-end"><button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Download</button></div>
+          ])} />
+        </CardBody></Card>
       )}
       {tab === "Procedures" && (
-        <Card>
-          <CardHeader title="Procedures" />
-          <CardBody>
-            <Table
-              columns={["File", ""]}
-              rows={DOCS.procedures.map((d) => [
-                d.name,
-                <div key={d.name} className="flex justify-end"><Button variant="ghost" size="sm">Download</Button></div>,
-              ])}
-            />
-          </CardBody>
-        </Card>
+        <Card><CardHeader title="Procedures" /><CardBody>
+          <Table columns={["File", ""]} rows={DOCS.procedures.map((d) => [
+            d.name, <div key={d.name} className="flex justify-end"><button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Download</button></div>
+          ])} />
+        </CardBody></Card>
       )}
     </>
   );
@@ -355,25 +318,18 @@ const DocumentsScreen = () => {
 
 const CompaniesScreen = () => {
   const [view, setView] = useState("list");
-  const company = {
-    name: "Sunrise Mining Pty Ltd",
-    contacts: [
-      { name: "Alex Ng", email: "alex@synergy.com", role: "Investigator", phone: "07 345 5678" },
-    ],
-    documents: [],
-  };
+  const company = { name: "Sunrise Mining Pty Ltd", contacts: [
+    { name: "Alex Ng", email: "alex@synergy.com", role: "Investigator", phone: "07 345 5678" }
+  ], documents: [] };
   return (
     <>
       {view === "list" && (
-        <Card>
-          <CardHeader title="Companies" />
-          <CardBody>
-            <div className="mb-4 flex justify-end">
-              <Button onClick={() => setView("detail")}>Open Sunrise Mining Pty Ltd</Button>
-            </div>
-            <div className="text-sm text-slate-600">(For the prototype, click the button above to open the company detail view.)</div>
-          </CardBody>
-        </Card>
+        <Card><CardHeader title="Companies" /><CardBody>
+          <div className="mb-4 flex justify-end">
+            <button onClick={() => setView("detail")} className="bg-sky-600 text-white hover:bg-sky-700 px-4 py-2 text-sm rounded-md">Open Sunrise Mining Pty Ltd</button>
+          </div>
+          <div className="text-sm text-slate-600">(For the prototype, click the button above to open the company detail view.)</div>
+        </CardBody></Card>
       )}
       {view === "detail" && <CompanyDetail company={company} onBack={() => setView("list")} />}
     </>
@@ -383,97 +339,70 @@ const CompaniesScreen = () => {
 const CompanyDetail = ({ company, onBack }) => {
   const [tab, setTab] = useState("Company Contacts");
   return (
-    <Card>
-      <CardBody>
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">S</div>
-            <div>
-              <div className="text-lg font-semibold">{company.name}</div>
-            </div>
-          </div>
-          <Button variant="ghost" onClick={onBack}>Back</Button>
+    <Card><CardBody>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">S</div>
+          <div><div className="text-lg font-semibold">{company.name}</div></div>
         </div>
-        <div className="mb-4 flex gap-6 border-b border-slate-200 text-sm">
-          {["Summary", "Company Contacts", "Company Documents"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={
-                "-mb-px border-b-2 px-1.5 py-2 " +
-                (tab === t ? "border-sky-600 font-semibold text-sky-700" : "border-transparent text-slate-600 hover:text-slate-800")
-              }
-            >
-              {t}
-            </button>
-          ))}
+        <button onClick={onBack} className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2 text-sm rounded-md">Back</button>
+      </div>
+      <div className="mb-4 flex gap-6 border-b border-slate-200 text-sm">
+        {["Summary", "Company Contacts", "Company Documents"].map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={"-mb-px border-b-2 px-1.5 py-2 " + (tab === t ? "border-sky-600 font-semibold text-sky-700" : "border-transparent text-slate-600 hover:text-slate-800")}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === "Summary" && <div className="text-sm text-slate-600">No summary yet.</div>}
+
+      {tab === "Company Contacts" && (
+        <div>
+          <div className="mb-4 flex gap-3">
+            <input placeholder="Name" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
+            <input placeholder="Email" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
+            <input placeholder="Phone" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
+            <div className="flex-1" />
+            <button className="bg-sky-600 text-white hover:bg-sky-700 px-4 py-2 text-sm rounded-md self-end">Add Contact</button>
+          </div>
+          <Table columns={["Name","Email","Role","Phone","",""]} rows={company.contacts.map((c) => [
+            c.name, c.email, c.role, c.phone,
+            <div key={c.email+"open"} className="flex justify-end"><button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Open</button></div>,
+            <div key={c.email+"view"} className="flex justify-end"><button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">View Portal</button></div>
+          ])} />
         </div>
+      )}
 
-        {tab === "Summary" && <div className="text-sm text-slate-600">No summary yet.</div>}
-
-        {tab === "Company Contacts" && (
-          <div>
-            <div className="mb-4 flex gap-3">
-              <input placeholder="Name" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
-              <input placeholder="Email" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
-              <input placeholder="Phone" className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none" />
-              <div className="flex-1" />
-              <Button size="sm" className="self-end">Add Contact</Button>
-            </div>
-            <Table
-              columns={["Name", "Email", "Role", "Phone", "", ""]}
-              rows={company.contacts.map((c) => [
-                c.name,
-                c.email,
-                c.role,
-                c.phone,
-                <div key={c.email+"open"} className="flex justify-end"><Button variant="ghost" size="sm">Open</Button></div>,
-                <div key={c.email+"view"} className="flex justify-end"><Button variant="ghost" size="sm">View Portal</Button></div>,
-              ])}
-            />
-          </div>
-        )}
-
-        {tab === "Company Documents" && (
-          <div>
-            <div className="mb-3 flex items-center justify-between text-sm font-semibold text-slate-700">
-              <span>Company Documents</span>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">Add folder</Button>
-                <Button variant="ghost" size="sm">Select files</Button>
-              </div>
-            </div>
-            <Table columns={["File", "Size", ""]} rows={[]} empty={"No files"} />
-            <div className="mt-4 flex justify-end">
-              <Button variant="ghost" size="sm">Upload to General</Button>
+      {tab === "Company Documents" && (
+        <div>
+          <div className="mb-3 flex items-center justify-between text-sm font-semibold text-slate-700">
+            <span>Company Documents</span>
+            <div className="flex items-center gap-2">
+              <button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Add folder</button>
+              <button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Select files</button>
             </div>
           </div>
-        )}
-      </CardBody>
-    </Card>
+          <Table columns={["File","Size",""]} rows={[]} empty={"No files"} />
+          <div className="mt-4 flex justify-end">
+            <button className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-sm rounded-md">Upload to General</button>
+          </div>
+        </div>
+      )}
+    </CardBody></Card>
   );
 };
 
 const Placeholder = ({ title }) => (
-  <Card>
-    <CardHeader title={title} />
-    <CardBody>
-      <div className="text-sm text-slate-600">Coming soon…</div>
-    </CardBody>
-  </Card>
+  <Card><CardHeader title={title} /><CardBody><div className="text-sm text-slate-600">Coming soon…</div></CardBody></Card>
 );
 
 const Tabs = ({ tabs, tab, setTab }) => (
   <div className="mb-4 flex gap-6 border-b border-slate-200 text-sm">
     {tabs.map((t) => (
-      <button
-        key={t}
-        onClick={() => setTab(t)}
-        className={
-          "-mb-px border-b-2 px-1.5 py-2 " +
-          (tab === t ? "border-sky-600 font-semibold text-sky-700" : "border-transparent text-slate-600 hover:text-slate-800")
-        }
-      >
+      <button key={t} onClick={() => setTab(t)}
+        className={"-mb-px border-b-2 px-1.5 py-2 " + (tab === t ? "border-sky-600 font-semibold text-sky-700" : "border-transparent text-slate-600 hover:text-slate-800")}>
         {t}
       </button>
     ))}
@@ -482,27 +411,17 @@ const Tabs = ({ tabs, tab, setTab }) => (
 
 export default function App() {
   const [active] = useNav();
-
   const screen = useMemo(() => {
     switch (active) {
-      case "Admin":
-        return <AdminScreen />;
-      case "Resources":
-        return <ResourcesScreen />;
-      case "Documents":
-        return <DocumentsScreen />;
-      case "Companies":
-        return <CompaniesScreen />;
-      case "Cases":
-        return <Placeholder title="Cases" />;
-      case "Contacts":
-        return <Placeholder title="Contacts" />;
-      case "Calendar":
-        return <Placeholder title="Calendar" />;
-      default:
-        return <Placeholder title="Dashboard" />;
+      case "Admin": return <AdminScreen />;
+      case "Resources": return <ResourcesScreen />;
+      case "Documents": return <DocumentsScreen />;
+      case "Companies": return <CompaniesScreen />;
+      case "Cases": return <Placeholder title="Cases" />;
+      case "Contacts": return <Placeholder title="Contacts" />;
+      case "Calendar": return <Placeholder title="Calendar" />;
+      default: return <Placeholder title="Dashboard" />;
     }
   }, [active]);
-
   return <Shell>{screen}</Shell>;
 }

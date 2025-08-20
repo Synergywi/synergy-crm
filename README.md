@@ -1,13 +1,12 @@
-# Synergy CRM — Investigations (Prototype)
+# Synergy CRM — Investigations (Working Build)
 
-This is a Vite + React + TypeScript + Tailwind prototype that mirrors the Synergy CRM Investigations UI.
+Vite + React + TypeScript + Tailwind prototype with SPA routing config for Azure Static Web Apps.
 
 ## Local Dev
 ```bash
 npm install
 npm run dev
 ```
-Visit the printed local URL.
 
 ## Build
 ```bash
@@ -15,14 +14,9 @@ npm run build
 npm run preview
 ```
 
-## Deploy to Azure Static Web Apps via GitHub
-1. Create a new GitHub repo and push this project.
-2. In the Azure Portal, create a **Static Web App** and choose **GitHub** as the source.
-3. For the build inputs, set:
-   - App location: `/`
-   - Api location: *(leave blank)*
-   - Output location: `dist`
-4. Azure will create a GitHub Actions workflow in `.github/workflows/azure-static-web-apps.yml` and deploy on each push to `main`.
+## Azure Static Web Apps
+- App location: `/`
+- Output location: `dist`
+- API location: *(blank)*
 
-If you prefer to configure the workflow now, this repo already includes one. You just need to set the secret
-`AZURE_STATIC_WEB_APPS_API_TOKEN` on your GitHub repository settings (if Azure does not auto-inject).
+This repo intentionally **does not** include `.github/workflows/` so Azure's connected workflow will run.
