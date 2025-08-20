@@ -1,1 +1,2 @@
-/* print styles */
+/* print styles (minimal) */
+@media print{ .sidebar, #boot { display:none } main.main { padding:0 } }
