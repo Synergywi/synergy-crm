@@ -27,3 +27,12 @@
 .cal-ev-del:hover{color:#7a2e0e}
 /* Agenda table tweaks */
 .cal-wrap + .card table td, .cal-wrap + .card table th { font-size: 13px }
+
+
+/* Modal styles for event editor */
+.modal-mask{position:fixed;inset:0;background:rgba(15,27,45,.35);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{width:min(780px,96vw);background:#fff;border:1px solid var(--border,#e6edf5);border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.15)}
+.modal header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border,#e6edf5)}
+.modal .body{padding:14px 16px}
+.modal .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.modal footer{padding:12px 16px;border-top:1px solid var(--border,#e6edf5);display:flex;justify-content:flex-end;gap:8px}

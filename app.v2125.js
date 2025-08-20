@@ -14,7 +14,7 @@ function mkCase(y,seq,p){
     relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
   Object.assign(b,p||{}); return b;
 }
-let DATA={
+const DATA={
   users:[
     {name:"Admin",email:"admin@synergy.com",role:"Admin"},
     {name:"Alex Ng",email:"alex@synergy.com",role:"Investigator"},
@@ -45,123 +45,6 @@ let DATA={
   },
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
-// === demo persistence (localStorage) ===
-const LS_KEY="synergy_demo_data_v1";
-function loadPersisted(){
-  try{
-    const raw=localStorage.getItem(LS_KEY);
-    if(!raw) return;
-    const saved=JSON.parse(raw);
-    if(saved && typeof saved==='object'){
-      // merge shallow pieces we care about
-      if(Array.isArray(saved.calendar)) DATA.calendar=saved.calendar;
-      if(Array.isArray(saved.cases)) DATA.cases=saved.cases;
-      if(Array.isArray(saved.contacts)) DATA.contacts=saved.contacts;
-      if(Array.isArray(saved.companies)) DATA.companies=saved.companies;
-      if(Array.isArray(saved.users)) DATA.users=saved.users;
-      if(saved.me) DATA.me=saved.me;
-    }
-  }catch(e){ console.warn("Load persisted failed", e); }
-}
-function savePersisted(){
-  try{
-    const out={calendar:DATA.calendar, cases:DATA.cases, contacts:DATA.contacts, companies:DATA.companies, users:DATA.users, me:DATA.me};
-    localStorage.setItem(LS_KEY, JSON.stringify(out));
-  }catch(e){ console.warn("Persist failed", e); }
-}
-
-// ---- Persisted storage helpers (calendar & me) ----
-function loadCalendarFromStore(){
-  try{
-    const raw = localStorage.getItem('synergy_calendar_v2125');
-    if(!raw) return null;
-    const arr = JSON.parse(raw);
-    if(Array.isArray(arr)) return arr;
-  }catch(_){}
-  return null;
-}
-function saveCalendarToStore(){
-  try{
-    localStorage.setItem('synergy_calendar_v2125', JSON.stringify(DATA.calendar||[]));
-  }catch(_){}
-}
-// Preload calendar if present (before seeding)
-if(!DATA.calendar){ DATA.calendar=[]; }
-(function preloadCalendar(){
-  const stored = loadCalendarFromStore();
-  if(stored && stored.length){
-    DATA.calendar = stored;
-  }
-/* lightweight modal for event view/edit */
-function renderEventModal(ev){
-  const wrap=document.createElement('div');
-  wrap.id='ev-modal';
-  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
-  const d=new Date(ev.startISO), e=new Date(ev.endISO);
-  function hhmm(x){ return String(x).padStart(2,'0'); }
-  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
-  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
-  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
-      <div class="sp"></div>
-      <button class="btn light" data-act="closeEvModal">Close</button>
-    </div>
-    <div class="grid cols-3" style="gap:10px">
-      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
-      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
-      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
-      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
-      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
-      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
-    </div>
-    <div class="right" style="margin-top:12px">
-      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
-      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
-    </div>
-  </div>`;
-  document.body.appendChild(wrap);
-}
-document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-act]'); if(!t) return;
-  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
-  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
-  if(act==='saveEvent'){
-    const id=arg;
-    const ev=(DATA.calendar||[]).find(x=>x.id===id);
-    if(!ev) return;
-    const title=(document.getElementById('mv-title')||{}).value||ev.title;
-    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
-    const type=(document.getElementById('mv-type')||{}).value||ev.type;
-    const start=(document.getElementById('mv-start')||{}).value||'09:00';
-    const end=(document.getElementById('mv-end')||{}).value||'10:00';
-    const loc=(document.getElementById('mv-loc')||{}).value||'';
-    ev.title=title; ev.type=type; ev.location=loc;
-    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
-    savePersisted();
-    const m=document.getElementById('ev-modal'); if(m) m.remove();
-    App.set({});
-  }
-});
-
-})();
-
-
-/* ===== Persistence helpers ===== */
-function saveCalendarLS(){
-  try{ localStorage.setItem('synergy_calendar_v1', JSON.stringify(DATA.calendar||[])); }catch(_){}
-}
-function loadCalendarLS(){
-  try{
-    const raw = localStorage.getItem('synergy_calendar_v1');
-    if(raw){
-      const arr = JSON.parse(raw)||[];
-      if(Array.isArray(arr)) DATA.calendar = arr;
-    }
-  }catch(_){}
-}
-/* ===== End persistence helpers ===== */
-
 
 /* finders */
 const findCase=id=>DATA.cases.find(c=>c.id===id)||null;
@@ -488,7 +371,7 @@ document.addEventListener('click', e=>{
     const company=document.getElementById('nc-company').value||'C-001';
     const seq=('00'+(DATA.cases.length+1)).slice(-3);
     const cs={id:uid(),fileNumber:'INV-'+YEAR+'-'+seq,title,organisation:org,companyId:company,investigatorEmail:invEmail,investigatorName:inv.name,status:'Planning',priority:'Medium',created:(new Date()).toISOString().slice(0,7),relatedContactIds:[],notes:[],tasks:[],folders:{General:[]}};
-    DATA.cases.unshift(cs); savePersisted(); App.set({currentCaseId:cs.id,route:'case'}); return;
+    DATA.cases.unshift(cs); App.set({currentCaseId:cs.id,route:'case'}); return;
   }
   if(act==='saveCase'){
     const cs=findCase(arg); if(!cs) return;
@@ -499,9 +382,9 @@ document.addEventListener('click', e=>{
     const invEmail=getV('c-inv'); if(invEmail!=null){ cs.investigatorEmail=invEmail; const u=DATA.users.find(x=>x.email===invEmail)||null; cs.investigatorName=u?u.name:''; }
     setIf('status',getV('c-status')); setIf('priority',getV('c-priority'));
     const idEl=document.getElementById('c-id'); if(idEl && idEl.value) cs.fileNumber=idEl.value.trim();
-    alert('Case saved'); savePersisted(); return;
+    alert('Case saved'); return;
   }
-  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); savePersisted(); App.set({route:'cases'});} return; }
+  if(act==='deleteCase'){ const cs=findCase(arg); if(!cs){alert('Case not found'); return;} if(confirm('Delete '+(cs.fileNumber||cs.title)+' ?')){ DATA.cases=DATA.cases.filter(x=>x.id!==cs.id); App.set({route:'cases'});} return; }
   if(act==='addNote'){ const cs=findCase(arg); if(!cs) return; const text=document.getElementById('note-text').value; if(!text){alert('Enter a note');return;} const stamp=(new Date().toISOString().replace('T',' ').slice(0,16)), me=(DATA.me&&DATA.me.email)||'admin@synergy.com'; cs.notes.unshift({time:stamp,by:me,text}); App.set({}); return; }
   if(act==='addStdTasks'){ const cs=findCase(arg); if(!cs) return; ['Gather documents','Interview complainant','Interview respondent','Write report'].forEach(a=>cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:a,assignee:cs.investigatorName||'',due:'',status:'Open'})); App.set({}); return; }
   if(act==='addTask'){ const cs=findCase(arg); if(!cs) return; const sel=document.getElementById('task-assignee'); const who=sel?sel.options[sel.selectedIndex].text:''; cs.tasks.push({id:'T-'+(cs.tasks.length+1),title:document.getElementById('task-title').value,due:document.getElementById('task-due').value,assignee:who,status:'Open'}); App.set({}); return; }
@@ -511,12 +394,12 @@ document.addEventListener('click', e=>{
   if(act==='viewPortal'){ App.set({currentContactId:arg,route:'contact'}); App.state.tabs.contact='portal'; App.set({}); return; }
 
   if(act==='openContact'){ App.set({currentContactId:arg,route:'contact'}); return; }
-  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); savePersisted(); App.set({route:'contacts'}); return; }
-  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); savePersisted(); App.set({route:'contacts'}); return; }
+  if(act==='createContact'){ const c={id:uid(),name:document.getElementById('ncx-name').value||'New',email:document.getElementById('ncx-email').value||'',role:document.getElementById('ncx-role').value||'',phone:document.getElementById('ncx-phone').value||'',companyId:document.getElementById('ncx-company').value||'C-001',notes:document.getElementById('ncx-notes').value||''}; DATA.contacts.push(c); App.set({route:'contacts'}); return; }
+  if(act==='saveContact'){ let c=findContact(arg); if(!c){c={id:arg,name:"",email:"",companyId:"C-001",role:"",phone:"",notes:""}; DATA.contacts.push(c);} c.name=document.getElementById('ct-name').value||c.name; c.email=document.getElementById('ct-email').value||c.email; c.companyId=document.getElementById('ct-company').value||c.companyId; c.role=document.getElementById('ct-role').value||c.role; c.phone=document.getElementById('ct-phone').value||c.phone; c.notes=document.getElementById('ct-notes').value||c.notes; alert('Contact saved'); App.set({route:'contacts'}); return; }
 
   if(act==='openCompany'){ App.set({currentCompanyId:arg,route:'company'}); return; }
-  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); savePersisted(); App.set({route:'companies'}); return; }
-  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); savePersisted(); App.set({}); return; }
+  if(act==='createCompany'){ const id='C-'+('00'+(DATA.companies.length+1)).slice(-3); const co={id,name:document.getElementById('nco-name').value||'New Company',industry:document.getElementById('nco-industry').value||'',type:document.getElementById('nco-type').value||'',state:document.getElementById('nco-state').value||'',city:document.getElementById('nco-city').value||'',postcode:document.getElementById('nco-postcode').value||'',abn:document.getElementById('nco-abn').value||'',acn:document.getElementById('nco-acn').value||'',website:document.getElementById('nco-website').value||'',folders:{General:[]}}; DATA.companies.push(co); App.set({route:'companies'}); return; }
+  if(act==='createContactForCompany'){ const co=findCompany(arg); if(!co) return; const c={id:uid(),name:document.getElementById('cco-name').value||'New',email:document.getElementById('cco-email').value||'',phone:document.getElementById('cco-phone').value||'',role:'',companyId:co.id,notes:''}; DATA.contacts.push(c); App.set({}); return; }
 
   if(act==='addCompanyFolderPrompt'){ const id=arg; const co=findCompany(id); if(!co) return; const nm=prompt('New folder name'); if(!nm) return; if(!co.folders) co.folders={General:[]}; if(!co.folders[nm]) co.folders[nm]=[]; App.set({}); return; }
   if(act==='deleteCompanyFolder'){ const [id,folder]=arg.split('::'); const co=findCompany(id); if(!co) return; if(confirm('Delete folder '+folder+' ?')){ delete co.folders[folder]; App.set({}); } return; }
@@ -545,7 +428,6 @@ document.addEventListener('change', e=>{
   if(e.target && e.target.id==='flt-q'){ const f=App.state.casesFilter||{q:""}; f.q=e.target.value; App.state.casesFilter=f; try{localStorage.setItem('synergy_filters_cases_v2104', JSON.stringify(f));}catch(_){ } App.set({}); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.getItem('synergy_me'); if(raw){ const me=JSON.parse(raw); if(me&&me.email){ DATA.me=me; } } }catch(_){ }
-  loadPersisted();
   
   // Baseline Integrity Guard
   try{
@@ -554,11 +436,19 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.
     const miss=reqVars.filter(v=>!root.getPropertyValue(v));
     if(miss.length) console.warn("Theme variables missing:", miss);
   }catch(e){}
+  loadCalendar();
   App.set({route:'dashboard'});
 });
+
+// === Calendar persistence helpers ===
+function saveCalendar(){ try{ localStorage.setItem('synergy_calendar_v1', JSON.stringify(DATA.calendar||[])); }catch(_){ } }
+function loadCalendar(){
+  try{ const raw=localStorage.getItem('synergy_calendar_v1'); if(raw){ const arr=JSON.parse(raw); if(Array.isArray(arr)){ DATA.calendar=arr; return; } } }catch(_){ }
+  if(!DATA.calendar) DATA.calendar=[];
+}
 /* ===== Calendar Feature (Outlook-style) ===== */
 const CAL={
-  fmtDate(d){ const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const da=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; },
+  fmtDate(d){ const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,"0"); const da=String(x.getDate()).padStart(2,"0"); return `${y}-${m}-${da}`; },,
   sameDay(a,b){ return CAL.fmtDate(a)===CAL.fmtDate(b); },
   startOfMonth(y,m){ return new Date(y, m, 1); },
   endOfMonth(y,m){ return new Date(y, m+1, 0); },
@@ -578,10 +468,9 @@ const CAL={
 };
 
 // Extend DATA with calendar events (per-user)
-loadCalendarLS();
 if(!DATA.calendar){ DATA.calendar=[]; }
 (function seedCalendar(){
-  try{ if((DATA.calendar&&DATA.calendar.length)|| (loadCalendarFromStore()||[]).length) return; }catch(_){ if(DATA.calendar&&DATA.calendar.length) return; }
+  if(DATA.calendar && DATA.calendar.length) return;
   const today=new Date();
   const y=today.getFullYear(), m=today.getMonth();
   const u = DATA.users;
@@ -598,58 +487,6 @@ if(!DATA.calendar){ DATA.calendar=[]; }
     ev(21,13,14, u[2], "Draft report sync", "Zoom", "Appointment"),
     ev(26, 9,10, u[0], "Admin all-hands", "Boardroom", "Appointment")
   );
-/* lightweight modal for event view/edit */
-function renderEventModal(ev){
-  const wrap=document.createElement('div');
-  wrap.id='ev-modal';
-  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
-  const d=new Date(ev.startISO), e=new Date(ev.endISO);
-  function hhmm(x){ return String(x).padStart(2,'0'); }
-  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
-  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
-  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
-      <div class="sp"></div>
-      <button class="btn light" data-act="closeEvModal">Close</button>
-    </div>
-    <div class="grid cols-3" style="gap:10px">
-      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
-      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
-      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
-      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
-      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
-      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
-    </div>
-    <div class="right" style="margin-top:12px">
-      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
-      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
-    </div>
-  </div>`;
-  document.body.appendChild(wrap);
-}
-document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-act]'); if(!t) return;
-  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
-  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
-  if(act==='saveEvent'){
-    const id=arg;
-    const ev=(DATA.calendar||[]).find(x=>x.id===id);
-    if(!ev) return;
-    const title=(document.getElementById('mv-title')||{}).value||ev.title;
-    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
-    const type=(document.getElementById('mv-type')||{}).value||ev.type;
-    const start=(document.getElementById('mv-start')||{}).value||'09:00';
-    const end=(document.getElementById('mv-end')||{}).value||'10:00';
-    const loc=(document.getElementById('mv-loc')||{}).value||'';
-    ev.title=title; ev.type=type; ev.location=loc;
-    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
-    savePersisted();
-    const m=document.getElementById('ev-modal'); if(m) m.remove();
-    App.set({});
-  }
-});
-
 })();
 
 // App state for calendar
@@ -693,7 +530,7 @@ function Calendar(){
         <span class="cal-ev-title" data-act="openEvent" data-arg="${e.id}">${e.title}</span>
         <button class="cal-ev-del" data-act="deleteEvent" data-arg="${e.id}" title="Delete">×</button>
       </div>`).join("");
-      return `<div class="cal-day ${inMonth?'':'cal-other'} ${today?'cal-today':''}" data-act="pickDay" data-arg="${CAL.fmtDate(d)}">
+      return `<div class="cal-day ${inMonth?'':'cal-other'} ${today?'cal-today':''}" data-act="pickDay" data-arg="${d.toISOString().slice(0,10)}">
           <div class="cal-date">${d.getDate()}</div>
           <div class="cal-evs">${chips||""}</div>
         </div>`;
@@ -777,34 +614,61 @@ function Calendar(){
   return Shell(content, 'calendar');
 }
 
+
+function renderEventModal(ev, opts){
+  const isNew = !!(opts && opts.isNew);
+  const me=DATA.me||{email:""};
+  const isAdmin=(me.role==="Admin");
+  const el=document.createElement('div'); el.className='modal-mask';
+  const dateISO = (ev && ev.startISO ? ev.startISO.slice(0,10) : (opts && opts.date ? opts.date : CAL.fmtDate(new Date())));
+  const startT = ev && ev.startISO ? ev.startISO.slice(11,16) : '09:00';
+  const endT   = ev && ev.endISO   ? ev.endISO.slice(11,16)   : '10:00';
+  const ownerSelect = isAdmin ? `<div><label>Owner</label><select class="input" id="md-owner">${(DATA.users||[]).map(u=>`<option value="${u.email}" ${(ev&&ev.ownerEmail===u.email)||(!ev&&u.email===me.email)?'selected':''}>${u.name}</option>`).join("")}</select></div>` : "";
+  const caseSelect = `<div><label>Attach to case</label><select class="input" id="md-case"><option value="">— None —</option>${(DATA.cases||[]).map(c=>`<option value="${c.id}" ${(ev&&ev.caseId===c.id)?'selected':''}>${c.fileNumber} — ${(c.title||'').replace(/</g,'&lt;')}</option>`).join("")}</select></div>`;
+  el.innerHTML = `<div class="modal">
+    <header><div><strong>${isNew?'New Event':'Event'}</strong></div><button class="btn light" data-close>Close</button></header>
+    <div class="body">
+      <div class="grid cols-3">
+        <div><label>Title</label><input class="input" id="md-title" value="${ev? (ev.title||'').replace(/</g,'&lt;') : ''}"></div>
+        <div><label>Date</label><input class="input" id="md-date" type="date" value="${dateISO}"></div>
+        <div><label>Type</label><select class="input" id="md-type"><option ${!ev||ev.type==='Appointment'?'selected':''}>Appointment</option><option ${ev&&ev.type==='Note'?'selected':''}>Note</option></select></div>
+        <div><label>Start</label><input class="input" id="md-start" type="time" value="${startT}"></div>
+        <div><label>End</label><input class="input" id="md-end" type="time" value="${endT}"></div>
+        <div><label>Location</label><input class="input" id="md-loc" value="${ev? (ev.location||'').replace(/</g,'&lt;') : ''}"></div>
+        ${caseSelect}${ownerSelect}
+      </div>
+    </div>
+    <footer>${!isNew?'<button class="btn danger" data-del>Delete</button>':''}<button class="btn" data-save>${isNew?'Create':'Save'}</button></footer>
+  </div>`;
+  function close(){ document.body.removeChild(el); }
+  el.addEventListener('click', e=>{ if(e.target.matches('[data-close]') || e.target===el) close(); });
+  el.querySelector('[data-save]').addEventListener('click', ()=>{
+    const title=(document.getElementById('md-title')||{}).value||'Untitled';
+    const date =(document.getElementById('md-date') ||{}).value||CAL.fmtDate(new Date());
+    const type =(document.getElementById('md-type') ||{}).value||'Appointment';
+    const s    =(document.getElementById('md-start')||{}).value||'09:00';
+    const en   =(document.getElementById('md-end')  ||{}).value||'10:00';
+    const loc  =(document.getElementById('md-loc')  ||{}).value||'';
+    const caseId=(document.getElementById('md-case')||{}).value||'';
+    const owner = isAdmin ? ((document.getElementById('md-owner')||{}).value || me.email) : (ev?ev.ownerEmail:me.email);
+    const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner;
+    const sISO = date+"T"+s+":00", eISO=date+"T"+en+":00";
+    if(isNew){
+      DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId||undefined});
+    }else{
+      ev.title=title; ev.type=type; ev.startISO=sISO; ev.endISO=eISO; ev.location=loc; ev.ownerEmail=owner; ev.ownerName=ownerName; ev.caseId=caseId||undefined;
+    }
+    saveCalendar(); close(); App.set({});
+  });
+  const del=el.querySelector('[data-del]'); if(del){ del.addEventListener('click', ()=>{ DATA.calendar=(DATA.calendar||[]).filter(x=>x.id!==ev.id); saveCalendar(); close(); App.set({}); }); }
+  document.body.appendChild(el);
+}
+
 /* Calendar actions */
 document.addEventListener('click', e=>{
   const t=e.target.closest('[data-act]'); if(!t) return;
   const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||"";
   const S=App.state.calendar||{view:"month"};
-
-  // Create event scoped to a Case (from Case → Calendar tab)
-  if(act==='createCaseEvent'){
-    const me = DATA.me||{email:"",name:""};
-    const caseId = arg || null;
-    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
-    const date=(document.getElementById('ce-date')||{}).value||new Date().toISOString().slice(0,10);
-    const type=(document.getElementById('ce-type')||{}).value||'Appointment';
-    const start=(document.getElementById('ce-start')||{}).value||'10:00';
-    const end=(document.getElementById('ce-end')||{}).value||'11:00';
-    const loc=(document.getElementById('ce-loc')||{}).value||'';
-    const owner = ((DATA.me||{}).role==='Admin' ? (document.getElementById('ce-owner')||{}).value || me.email : me.email);
-    const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
-    const sISO = date+"T"+start+":00";
-    const eISO = date+"T"+end+":00";
-    DATA.calendar = DATA.calendar || [];
-    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId:caseId});
-    saveCalendarLS();
-    alert('Case event added');
-    App.set({});
-    return;
-  }
-
 
   if(act==='calView'){ S.view=arg; App.set({calendar:S}); return; }
   if(act==='calToday'){ const today=new Date(); const ym=today.toISOString().slice(0,7); S.ym=ym; S.selectedDate=today.toISOString().slice(0,10); App.set({calendar:S}); return; }
@@ -816,13 +680,7 @@ document.addEventListener('click', e=>{
     S.ym= `${y}-${String(m+1).padStart(2,'0')}`;
     App.set({calendar:S}); return;
   }
-  if(act==='pickDay'){ S.selectedDate=arg; App.set({calendar:S});
-    // Quick-add: open modal prefilled for this date
-    const me=DATA.me||{email:"",name:""};
-    const startISO = arg+"T09:00:00";
-    const endISO   = arg+"T10:00:00";
-    renderEventModal({startISO, endISO, ownerEmail:me.email, ownerName:(DATA.users.find(u=>u.email===me.email)||{}).name||me.email, title:"", location:"", type:"Appointment"});
-    return; }
+  if(act==='pickDay'){ S.selectedDate=arg; App.set({calendar:S}); renderEventModal(null,{isNew:true,date:arg}); return; }
   if(act==='createEvent'){
     const me=DATA.me||{email:""};
     const title=(document.getElementById('ev-title')||{}).value||'Untitled';
@@ -835,17 +693,36 @@ document.addEventListener('click', e=>{
     const ownerName = (DATA.users.find(u=>u.email===owner)||{}).name || owner;
     const sISO = date+"T"+start+":00";
     const eISO = date+"T"+end+":00";
-    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
-    saveCalendarToStore();
+    const caseId=(document.getElementById('ev-case')||{}).value||'';
+    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId});
+    saveCalendar();
     alert('Event added');
-    savePersisted();
     App.set({}); return;
   }
-  if(act==='deleteEvent'){ DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg); saveCalendarLS(); App.set({}); return; }
+  if(act==='deleteEvent'){
+    DATA.calendar = (DATA.calendar||[]).filter(ev=>ev.id!==arg);
+    saveCalendar();
+    App.set({}); return;
+  }
   if(act==='openEvent'){
     const ev=(DATA.calendar||[]).find(x=>x.id===arg);
     if(ev && typeof renderEventModal==='function') renderEventModal(ev);
     return;
+  }
+
+  if(act==='createCaseEvent'){
+    const caseId=arg;
+    const me=DATA.me||{email:""};
+    const title=(document.getElementById('ce-title')||{}).value||'Untitled';
+    const date =(document.getElementById('ce-date') ||{}).value||CAL.fmtDate(new Date());
+    const type =(document.getElementById('ce-type') ||{}).value||'Appointment';
+    const start=(document.getElementById('ce-start')||{}).value||'10:00';
+    const end  =(document.getElementById('ce-end')  ||{}).value||'11:00';
+    const loc  =(document.getElementById('ce-loc')  ||{}).value||'';
+    const owner=me.email; const ownerName=(DATA.users.find(u=>u.email===owner)||{}).name||owner;
+    const sISO = date+"T"+start+":00"; const eISO=date+"T"+end+":00";
+    DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type, caseId});
+    saveCalendar(); App.set({}); return;
   }
 });
 
@@ -854,129 +731,6 @@ document.addEventListener('change', e=>{
     const S=App.state.calendar||{}; S.filterUsers=e.target.value||"ALL"; App.set({calendar:S});
   }
 });
-
-/* ===== Event Modal (create/edit) ===== */
-function renderEventModal(ev){
-  // ev may be an existing event or a "template" for a new one
-  const me = DATA.me||{email:""};
-  const isNew = !ev || !ev.id;
-  const eid = ev && ev.id ? ev.id : uid();
-  const s = ev && ev.startISO ? new Date(ev.startISO) : new Date();
-  const e = ev && ev.endISO ? new Date(ev.endISO) : new Date(new Date(s).getTime()+60*60*1000);
-  const date = (new Date(s)).toISOString().slice(0,10);
-  const start = String(s).slice(16,21) || "09:00";
-  const end   = String(e).slice(16,21) || "10:00";
-  const owner = ev && ev.ownerEmail ? ev.ownerEmail : me.email;
-  const title = ev && ev.title ? ev.title : "";
-  const loc   = ev && ev.location ? ev.location : "";
-  const type  = ev && ev.type ? ev.type : "Appointment";
-  const caseId= ev && ev.caseId ? ev.caseId : (App.state.currentCaseId||"");
-
-  const caseOpts = (DATA.cases||[]).map(c=>`<option value="${c.id}" ${c.id===caseId?'selected':''}>${c.fileNumber} — ${esc(c.title||'')}</option>`).join("");
-  const ownerOpts = (DATA.users||[]).map(u=>`<option value="${u.email}" ${u.email===owner?'selected':''}>${u.name}</option>`).join("");
-
-  const html = `
-  <div class="modal-mask" data-act="closeEventModal"></div>
-  <div class="modal-card">
-    <div class="modal-head"><div>${isNew?'New Event':'Edit Event'}</div><button class="modal-x" data-act="closeEventModal">×</button></div>
-    <div class="modal-body">
-      <div class="grid cols-3">
-        <div><label>Title</label><input class="input" id="em-title" value="${esc(title)}" placeholder="Appointment or note"></div>
-        <div><label>Date</label><input class="input" id="em-date" type="date" value="${date}"></div>
-        <div><label>Type</label><select class="input" id="em-type"><option ${type==='Appointment'?'selected':''}>Appointment</option><option ${type==='Note'?'selected':''}>Note</option></select></div>
-        <div><label>Start</label><input class="input" id="em-start" type="time" value="${start.slice(0,5)}"></div>
-        <div><label>End</label><input class="input" id="em-end" type="time" value="${end.slice(0,5)}"></div>
-        <div><label>Location</label><input class="input" id="em-loc" value="${esc(loc)}" placeholder="Room/Zoom/etc."></div>
-        <div><label>Attach to case</label><select class="input" id="em-case"><option value="">— None —</option>${caseOpts}</select></div>
-        <div><label>Owner</label><select class="input" id="em-owner">${ownerOpts}</select></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      ${isNew?'<button class="btn success" data-act="saveEvent" data-arg="'+eid+'">Create</button>':'<button class="btn" data-act="saveEvent" data-arg="'+eid+'">Save</button>'}
-      ${!isNew?'<button class="btn danger" data-act="deleteEventHard" data-arg="'+eid+'">Delete</button>':''}
-      <div class="sp"></div>
-      <button class="btn light" data-act="closeEventModal">Close</button>
-    </div>
-  </div>`;
-
-  let host=document.getElementById('modal-host');
-  if(!host){ host=document.createElement('div'); host.id='modal-host'; document.body.appendChild(host); }
-  host.innerHTML = html;
-  setTimeout(()=>{
-    const inp = document.getElementById('em-title');
-    if(inp) inp.focus();
-  }, 0);
-
-  // Stash the current event id on the host for save/delete handlers
-  host.dataset.eid = eid;
-  if(isNew){
-    // temp store in memory so save can find it; we won't add to DATA until Save
-    host.dataset.isNew = "1";
-  }else{
-    host.dataset.isNew = "0";
-  }
-  // Also keep a copy of original or template
-  host.dataset.template = JSON.stringify(ev||{});
-}
-
-function closeEventModal(){
-  const host=document.getElementById('modal-host');
-  if(host) host.innerHTML='';
-}
-/* ===== End Event Modal ===== */
-
 /* ===== End Calendar Feature ===== */
-
-/* lightweight modal for event view/edit */
-function renderEventModal(ev){
-  const wrap=document.createElement('div');
-  wrap.id='ev-modal';
-  wrap.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
-  const d=new Date(ev.startISO), e=new Date(ev.endISO);
-  function hhmm(x){ return String(x).padStart(2,'0'); }
-  const sTime=hhmm(d.getHours())+':'+hhmm(d.getMinutes());
-  const eTime=hhmm(e.getHours())+':'+hhmm(e.getMinutes());
-  wrap.innerHTML=`<div style="background:#fff;border-radius:14px;min-width:720px;max-width:90vw;padding:16px;border:1px solid #e5e7eb;box-shadow:0 10px 30px rgba(0,0,0,.1)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <h3 style="margin:0;font-size:18px;font-weight:800">Event</h3>
-      <div class="sp"></div>
-      <button class="btn light" data-act="closeEvModal">Close</button>
-    </div>
-    <div class="grid cols-3" style="gap:10px">
-      <div><label>Title</label><input class="input" id="mv-title" value="${ev.title||''}"></div>
-      <div><label>Date</label><input class="input" id="mv-date" type="date" value="${ev.startISO.slice(0,10)}"></div>
-      <div><label>Type</label><select class="input" id="mv-type"><option${ev.type==='Appointment'?' selected':''}>Appointment</option><option${ev.type==='Note'?' selected':''}>Note</option></select></div>
-      <div><label>Start</label><input class="input" id="mv-start" type="time" value="${sTime}"></div>
-      <div><label>End</label><input class="input" id="mv-end" type="time" value="${eTime}"></div>
-      <div><label>Location</label><input class="input" id="mv-loc" value="${ev.location||''}"></div>
-    </div>
-    <div class="right" style="margin-top:12px">
-      <button class="btn light" data-act="deleteEvent" data-arg="${ev.id}">Delete</button>
-      <button class="btn" data-act="saveEvent" data-arg="${ev.id}">Save</button>
-    </div>
-  </div>`;
-  document.body.appendChild(wrap);
-}
-document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-act]'); if(!t) return;
-  const act=t.getAttribute('data-act'), arg=t.getAttribute('data-arg')||'';
-  if(act==='closeEvModal'){ const m=document.getElementById('ev-modal'); if(m) m.remove(); }
-  if(act==='saveEvent'){
-    const id=arg;
-    const ev=(DATA.calendar||[]).find(x=>x.id===id);
-    if(!ev) return;
-    const title=(document.getElementById('mv-title')||{}).value||ev.title;
-    const date=(document.getElementById('mv-date')||{}).value||ev.startISO.slice(0,10);
-    const type=(document.getElementById('mv-type')||{}).value||ev.type;
-    const start=(document.getElementById('mv-start')||{}).value||'09:00';
-    const end=(document.getElementById('mv-end')||{}).value||'10:00';
-    const loc=(document.getElementById('mv-loc')||{}).value||'';
-    ev.title=title; ev.type=type; ev.location=loc;
-    ev.startISO=date+'T'+start+':00'; ev.endISO=date+'T'+end+':00';
-    savePersisted();
-    const m=document.getElementById('ev-modal'); if(m) m.remove();
-    App.set({});
-  }
-});
 
 })();
