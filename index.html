@@ -1,15 +1,46 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Synergy CRM — HubSpot Theme</title>
-    <link rel="stylesheet" href="theme-hubspot.css">
-    <link rel="stylesheet" href="print.css">
-  </head>
-  <body>
-    <div id="boot">Booting…</div>
-    <div id="app"></div>
-    <script src="app.js"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synergy CRM — HubSpot</title>
+  <link rel="stylesheet" href="theme-hubspot.css">
+  <link rel="stylesheet" href="print.css" media="print">
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Event Modal -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-title">Event</h3>
+        <button class="btn light" data-act="closeModal">✕</button>
+      </div>
+      <div class="modal-body grid cols-2">
+        <div><label>Title</label><input id="md-title" class="input"></div>
+        <div><label>Date</label><input id="md-date" type="date" class="input"></div>
+        <div><label>Start</label><input id="md-start" type="time" class="input" value="09:00"></div>
+        <div><label>End</label><input id="md-end" type="time" class="input" value="10:00"></div>
+        <div><label>Owner</label><select id="md-owner" class="input"></select></div>
+        <div><label>Type</label><select id="md-type" class="input">
+          <option>Appointment</option><option>Interview</option>
+          <option>Evidence review</option><option>Admin</option><option>Risk</option>
+        </select></div>
+        <div class="span-2"><label>Link to Case (optional)</label><select id="md-case" class="input"></select></div>
+      </div>
+      <div class="modal-foot">
+        <div class="sp"></div>
+        <button class="btn danger" data-act="deleteEvent">Delete</button>
+        <button class="btn" data-act="saveEvent">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="boot">Booting…</div>
+  <script>window.__STAMP__="2025-08-20T00:28:23.015734";</script>
+  <script src="app.js"></script>
+  <script src="toolbar.js"></script>
+  <script src="settings-addon.js"></script>
+</body>
 </html>
