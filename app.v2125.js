@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ const raw=localStorage.
 });
 /* ===== Calendar Feature (Outlook-style) ===== */
 const CAL={
-  fmtDate(d){ const x=new Date(d); return x.toISOString().slice(0,10); },
+  fmtDate(d){ const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const da=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; },
   sameDay(a,b){ return CAL.fmtDate(a)===CAL.fmtDate(b); },
   startOfMonth(y,m){ return new Date(y, m, 1); },
   endOfMonth(y,m){ return new Date(y, m+1, 0); },
@@ -693,7 +693,7 @@ function Calendar(){
         <span class="cal-ev-title" data-act="openEvent" data-arg="${e.id}">${e.title}</span>
         <button class="cal-ev-del" data-act="deleteEvent" data-arg="${e.id}" title="Delete">×</button>
       </div>`).join("");
-      return `<div class="cal-day ${inMonth?'':'cal-other'} ${today?'cal-today':''}" data-act="pickDay" data-arg="${d.toISOString().slice(0,10)}">
+      return `<div class="cal-day ${inMonth?'':'cal-other'} ${today?'cal-today':''}" data-act="pickDay" data-arg="${CAL.fmtDate(d)}">
           <div class="cal-date">${d.getDate()}</div>
           <div class="cal-evs">${chips||""}</div>
         </div>`;
@@ -757,6 +757,7 @@ function Calendar(){
         <div><label>Start</label><input class="input" id="ev-start" type="time" value="09:00"></div>
         <div><label>End</label><input class="input" id="ev-end" type="time" value="10:00"></div>
         <div><label>Location</label><input class="input" id="ev-loc" placeholder="Room/Zoom/etc."></div>
+        <div><label>Attach to case</label><select class="input" id="ev-case"><option value="">— None —</option>${(DATA.cases||[]).map(cs=>`<option value="${cs.id}">${cs.fileNumber} — ${cs.title}</option>`).join("")}</select></div>
         ${isAdminOwner}
       </div>
       <div class="right" style="margin-top:8px">
