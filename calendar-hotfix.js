@@ -1,8 +1,8 @@
 
-/*! Synergy CRM Calendar Hotfix (standalone) v1.0 */
+/*! Synergy CRM Calendar Hotfix (standalone) v1.1 */
 (function(){
-  if(window.__CAL_HOTFIX__) return;
-  window.__CAL_HOTFIX__ = "v1.0";
+  if(window.__CAL_HOTFIX__ && window.__CAL_HOTFIX__ >= "v1.1") return;
+  window.__CAL_HOTFIX__ = "v1.1";
   console.log("[Calendar] Hotfix", window.__CAL_HOTFIX__, "loaded");
 
   const LS_KEY = 'synergy_calendar_v1';
@@ -67,13 +67,20 @@
   }
   window.renderEventModal = window.renderEventModal || renderEventModal;
 
+  // BROAD day click hook
   document.addEventListener('click', function(e){
-    const t=e.target.closest('[data-act="pickDay"]'); if(!t) return;
-    const d=t.getAttribute('data-arg') || fmtDateLocal(new Date());
-    try{ const S=(window.App&&App.state&&App.state.calendar)||{}; if(window.App&&App.set){ S.selectedDate=d; App.set({calendar:S}); } }catch(_){}
+    const t=e.target.closest('[data-act="pickDay"], [data-act="newEventOnDay"], .cal-day, [data-day], [data-date]'); 
+    if(!t) return;
+    let d = t.getAttribute('data-arg') || t.getAttribute('data-day') || t.getAttribute('data-date');
+    if(!d){
+      const candidate = document.querySelector('#ev-date') || document.querySelector('input[type="date"]#ev-date');
+      if(candidate && candidate.value) d = candidate.value;
+    }
+    if(!d) d = fmtDateLocal(new Date());
     renderEventModal(null,{isNew:true,date:d});
   }, true);
 
+  // Case-add handler
   document.addEventListener('click', function(e){
     const t=e.target.closest('[data-act="createCaseEvent"]'); if(!t) return;
     const caseId = t.getAttribute('data-arg') || '';
@@ -90,4 +97,7 @@
     window.DATA.calendar.push({id:"id-"+Math.random().toString(36).slice(2,10), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:me.email, ownerName:me.name, location:loc, type, caseId});
     try{ saveCal(); if(window.App&&App.set) App.set({}); }catch(_){}
   }, true);
+
+  // Manual test helper
+  window.openNewEventNow = function(date){ renderEventModal(null,{isNew:true,date: date || fmtDateLocal(new Date())}); };
 })();
