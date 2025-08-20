@@ -1,1 +1,1 @@
-@media print{ .sidebar, #boot { display:none } main.main { padding:0 } }
+@media print{ .sidebar,#boot,.cal-head,.section header .btn { display:none } main.main{padding:0} }
