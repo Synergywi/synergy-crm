@@ -27,14 +27,3 @@
 .cal-ev-del:hover{color:#7a2e0e}
 /* Agenda table tweaks */
 .cal-wrap + .card table td, .cal-wrap + .card table th { font-size: 13px }
-
-
-/* ===== Modal styles ===== */
-#modal-host{position:fixed;inset:0;z-index:9999;pointer-events:none}
-#modal-host .modal-mask{position:absolute;inset:0;background:rgba(2,6,23,.45);backdrop-filter:blur(2px);pointer-events:auto}
-#modal-host .modal-card{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:min(820px,calc(100% - 24px));background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.18);pointer-events:auto;display:flex;flex-direction:column}
-#modal-host .modal-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);font-weight:800}
-#modal-host .modal-x{margin-left:auto;border:none;background:transparent;font-size:20px;cursor:pointer;line-height:1}
-#modal-host .modal-body{padding:12px 14px}
-#modal-host .modal-foot{display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
-#modal-host .modal-foot .sp{flex:1}

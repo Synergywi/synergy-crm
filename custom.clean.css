@@ -27,9 +27,3 @@
 .cal-ev-del:hover{color:#7a2e0e}
 /* Agenda table tweaks */
 .cal-wrap + .card table td, .cal-wrap + .card table th { font-size: 13px }
-
-
-/* === Calendar plus tweaks === */
-.cal-quick{ display:flex; gap:6px; align-items:center; margin-left:8px }
-#event-editor .grid > div { min-width: 0 }
-

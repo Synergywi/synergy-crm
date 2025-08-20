@@ -45,6 +45,30 @@ const DATA={
   },
   me:{name:"Admin",email:"admin@synergy.com",role:"Admin"}
 };
+// ---- Persisted storage helpers (calendar & me) ----
+function loadCalendarFromStore(){
+  try{
+    const raw = localStorage.getItem('synergy_calendar_v2125');
+    if(!raw) return null;
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return arr;
+  }catch(_){}
+  return null;
+}
+function saveCalendarToStore(){
+  try{
+    localStorage.setItem('synergy_calendar_v2125', JSON.stringify(DATA.calendar||[]));
+  }catch(_){}
+}
+// Preload calendar if present (before seeding)
+if(!DATA.calendar){ DATA.calendar=[]; }
+(function preloadCalendar(){
+  const stored = loadCalendarFromStore();
+  if(stored && stored.length){
+    DATA.calendar = stored;
+  }
+})();
+
 
 /* ===== Persistence helpers ===== */
 function saveCalendarLS(){
@@ -479,7 +503,7 @@ const CAL={
 loadCalendarLS();
 if(!DATA.calendar){ DATA.calendar=[]; }
 (function seedCalendar(){
-  if(DATA.calendar && DATA.calendar.length) return;
+  try{ if((DATA.calendar&&DATA.calendar.length)|| (loadCalendarFromStore()||[]).length) return; }catch(_){ if(DATA.calendar&&DATA.calendar.length) return; }
   const today=new Date();
   const y=today.getFullYear(), m=today.getMonth();
   const u = DATA.users;
@@ -681,6 +705,7 @@ document.addEventListener('click', e=>{
     const sISO = date+"T"+start+":00";
     const eISO = date+"T"+end+":00";
     DATA.calendar.push({id:uid(), title, description:"", startISO:sISO, endISO:eISO, ownerEmail:owner, ownerName, location:loc, type});
+    saveCalendarToStore();
     alert('Event added');
     App.set({}); return;
   }
