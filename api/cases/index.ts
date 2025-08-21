@@ -1,13 +1,10 @@
 import type { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { getContainer, http } from "../shared/cosmos";
-
 const PK = "/companyId";
-
 const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
   const c = await getContainer("cases", PK);
   const id = context.bindingData.id as string | undefined;
   const method = (req.method || "GET").toUpperCase();
-
   try {
     if (method === "GET") {
       if (id) {
@@ -23,7 +20,6 @@ const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
       }
       return;
     }
-
     if (method === "POST") {
       const body = req.body;
       if (!body?.id || !body?.title || !body?.companyId) { context.res = http.bad("id, title, companyId required"); return; }
@@ -31,7 +27,6 @@ const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
       context.res = http.created(resource);
       return;
     }
-
     if (method === "PATCH") {
       if (!id) { context.res = http.bad("id required"); return; }
       const pk = (req.body && req.body.companyId) || (req.query && req.query.companyId);
@@ -42,7 +37,6 @@ const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
       context.res = http.ok(saved);
       return;
     }
-
     if (method === "DELETE") {
       if (!id) { context.res = http.bad("id required"); return; }
       const pk = (req.body && req.body.companyId) || (req.query && req.query.companyId);
@@ -50,12 +44,10 @@ const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
       context.res = http.ok({ id });
       return;
     }
-
     context.res = http.bad("Unsupported method");
   } catch (e: any) {
     context.log.error(e);
     context.res = { status: 500, body: { error: e.message } };
   }
 };
-
 export default handler;

@@ -20,7 +20,6 @@ const httpTrigger: AzureFunction = async (context: Context, req: HttpRequest) =>
     getContainer("users", "/email")
   ]);
 
-  // Upsert data
   await Promise.all([
     ...companies.map((d: any) => co.items.upsert(d)),
     ...contacts.map((d: any) => ct.items.upsert(d)),
