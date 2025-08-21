@@ -1,7 +1,7 @@
 {
   "bindings": [
     { "authLevel": "anonymous", "type": "httpTrigger", "direction": "in", "name": "req",
-      "methods": ["get","post","patch","delete"], "route": "companies/{id?}" },
+      "methods": ["get","post","patch","delete"], "route": "users/{email?}" },
     { "type": "http", "direction": "out", "name": "res" }
   ],
   "scriptFile": "index.js"
