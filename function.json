@@ -6,13 +6,9 @@
       "direction": "in",
       "name": "req",
       "methods": [
-        "get",
-        "post",
-        "put",
-        "delete",
-        "options"
+        "post"
       ],
-      "route": "contacts/{id?}"
+      "route": "seed"
     },
     {
       "type": "http",
