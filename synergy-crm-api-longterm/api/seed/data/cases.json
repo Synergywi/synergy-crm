@@ -1,0 +1,14 @@
+[
+  {
+    "id": "INV-2024-101",
+    "companyId": "C-001",
+    "title": "Safety complaint \u2013 workshop",
+    "status": "Closed"
+  },
+  {
+    "id": "INV-2025-001",
+    "companyId": "C-001",
+    "title": "Bullying complaint in Finance",
+    "status": "Investigation"
+  }
+]

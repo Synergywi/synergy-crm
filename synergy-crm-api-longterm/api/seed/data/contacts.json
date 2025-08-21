@@ -1,0 +1,25 @@
+[
+  {
+    "id": "P-001",
+    "companyId": "C-001",
+    "name": "Alex Ng",
+    "email": "alex@synergy.com",
+    "role": "Investigator",
+    "phone": "07 345 5678",
+    "notes": "Investigator for Sunrise."
+  },
+  {
+    "id": "P-002",
+    "companyId": "C-003",
+    "name": "Priya Menon",
+    "email": "priya@synergy.com",
+    "role": "Investigator"
+  },
+  {
+    "id": "P-003",
+    "companyId": "C-002",
+    "name": "Chris Rice",
+    "email": "chris@synergy.com",
+    "role": "Reviewer"
+  }
+]
