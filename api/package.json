@@ -1,0 +1,15 @@
+{
+  "name": "synergy-crm-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.12.12"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}
