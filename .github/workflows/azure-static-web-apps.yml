@@ -25,7 +25,7 @@ jobs:
           node-version: '20'
 
       # --- Build the API and package node_modules into dist/ ---
-      -       - name: Build API
+      -             - name: Build API
         working-directory: api
         run: |
           npm install --no-audit --no-fund
@@ -36,6 +36,7 @@ jobs:
           rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
           # copy host.json if you have one
           if [ -f host.json ]; then cp host.json dist/; fi
+
 
 
       - name: Deploy to Azure Static Web Apps
