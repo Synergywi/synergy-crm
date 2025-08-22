@@ -9,7 +9,8 @@ on:
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    # Build/deploy on push, and on PRs except when the PR is closed
+    if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed') }}
     runs-on: ubuntu-latest
     name: Build and Deploy
     steps:
@@ -24,38 +25,38 @@ jobs:
         with:
           node-version: '20'
 
-      # --- Build the API and package node_modules into dist/ ---
-      -             - name: Build API
+      - name: Build API
         working-directory: api
         run: |
+          set -e
           npm install --no-audit --no-fund
           npm run build
-          # include runtime deps inside the compiled output
-          cp -R node_modules dist/
-          # copy any function.json files if your build doesn't
+          mkdir -p dist
+          # bring along node_modules (if any)
+          if [ -d node_modules ]; then rsync -a node_modules/ dist/node_modules/; fi
+          # copy only the function.json files (one per function) + host.json (if present)
           rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
-          # copy host.json if you have one
           if [ -f host.json ]; then cp host.json dist/; fi
-
-
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          app_location: "/"         # SPA root
-          api_location: "api/dist"  # deploy the compiled API
+          action: upload
+          app_location: "/"
+          output_location: ""
+          api_location: "api/dist"
           skip_app_build: true
           skip_api_build: true
 
   close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     runs-on: ubuntu-latest
     name: Close Pull Request
     steps:
-      - name: Close
+      - name: Close PR
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: 'close'
+          action: close
