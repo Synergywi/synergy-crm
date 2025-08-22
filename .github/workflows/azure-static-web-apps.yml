@@ -4,57 +4,60 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
     branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+# Avoid piling up concurrent deploys on the same branch
+concurrency:
+  group: swa-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build_and_deploy_job:
+  build_and_deploy:
+    # Only deploy on push, or on an open/sync PR (not when a PR is closed)
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Build and Deploy
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: false
-          fetch-depth: 1
 
-      # --- Build the API (TypeScript -> dist) ---
       - name: Setup Node (for API build)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Build API
+      # Build the Functions API (TypeScript → JS in api/dist)
+      - name: Build API (TypeScript → dist)
         working-directory: api
         run: |
           npm install --no-audit --no-fund
-          npm run build
-          # Copy function.json files (required so SWA recognizes the Functions app)
-          rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
-          # Copy host/proxies if present
-          if [ -f "host.json" ]; then cp host.json dist/host.json; fi
-          if [ -f "proxies.json" ]; then cp proxies.json dist/proxies.json; fi
+          # If you have "build": "tsc -p tsconfig.json" this will run it,
+          # otherwise fallback to a direct tsc call.
+          npm run build || npx tsc -p tsconfig.json
+          # Ensure function.json files are included next to compiled JS
+          rsync -a --include="*/" --include="function.json" --exclude="*" ./ ./dist/
 
-      # --- Deploy ---
       - name: Deploy to Azure Static Web Apps
-        uses: azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}  # for PR comments
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # needed for PR comments
           action: "upload"
-          app_location: "/"          # path to your app code
-          api_location: "api/dist"   # compiled Functions code (with function.json + host.json)
-          output_location: ""        # set to "dist" if your app builds a front-end bundle
+          app_location: "web"       # your static site root
+          api_location: "api/dist"  # the prebuilt Functions app
+          output_location: ""       # no frontend build output folder (raw files in web/)
 
-  close_pull_request_job:
+  close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
-    name: Close PR Environment
     steps:
-      - name: Close Static Web App PR
-        uses: azure/static-web-apps-deploy@v1
+      - name: Close PR environment
+        uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: "close"
