@@ -15,39 +15,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 1
 
       - name: Setup Node (for API build)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install & build API
+      # --- Build the API and package node_modules into dist/ ---
+      - name: Build API
+        working-directory: api
         run: |
-          cd api
-          npm install --no-audit --no-fund
+          npm ci
           npm run build
-
-      - name: Copy function.json to dist
-        run: |
-          rsync -a --include='*/' --include='function.json' --exclude='*' api/ api/dist/
+          # include runtime deps inside the compiled output
+          cp -R node_modules dist/
+          # copy any function.json files if your build doesn't
+          rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
+          # copy host.json if you have one
+          if [ -f host.json ]; then cp host.json dist/; fi
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          app_location: '/'
+          app_location: "/"         # SPA root
+          api_location: "api/dist"  # deploy the compiled API
           skip_app_build: true
-          api_location: 'api/dist'
+          skip_api_build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
-    name: Close PR Environments
+    name: Close Pull Request
     steps:
-      - name: Close PR
+      - name: Close
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: close
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'close'
