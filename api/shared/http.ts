@@ -1,33 +1,45 @@
 // api/shared/http.ts
 
-// Minimal response shape the SWA Functions runtime understands
+// A tiny framework-agnostic response helper that works in SWA Functions.
+// We keep legacy method names so older routes compile unchanged.
+
 export type ResponseLike = {
-  status?: number;
-  headers?: Record<string, string>;
-  jsonBody?: any;
-  body?: any;
+  json: (body: any, status?: number) => any;
+  ok: (body: any) => any;
+  created: (body: any) => any;
+  badRequest: (msg: string) => any;
+  notFound: (msg?: string) => any;
+  serverError: (msg?: string) => any;
+
+  // --- legacy aliases (keep routes compiling) ---
+  bad: (msg: string) => any;            // alias of badRequest
+  notfound: (msg?: string) => any;      // alias of notFound
+  servererror: (msg?: string) => any;   // alias of serverError
 };
 
-// Overloads: json(body) or json(status, body)
-export function json(body: any): ResponseLike;
-export function json(status: number, body: any): ResponseLike;
-export function json(a: any, b?: any): ResponseLike {
-  if (b === undefined) {
-    return { status: 200, headers: { "content-type": "application/json" }, jsonBody: a };
-  }
-  return { status: a, headers: { "content-type": "application/json" }, jsonBody: b };
-}
+// internal helpers
+const asJson = (status: number, body: any) => ({
+  status,
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify(body),
+});
 
-export const http = {
-  json,
-  ok: (body: any = { ok: true }): ResponseLike =>
-    ({ status: 200, headers: { "content-type": "application/json" }, jsonBody: body }),
-  created: (body: any = {}): ResponseLike =>
-    ({ status: 201, headers: { "content-type": "application/json" }, jsonBody: body }),
-  badRequest: (msg: string): ResponseLike =>
-    ({ status: 400, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
-  notFound: (msg = "Not found"): ResponseLike =>
-    ({ status: 404, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
-  serverError: (msg = "Internal Server Error"): ResponseLike =>
-    ({ status: 500, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
+const makeOk = (body: any) => asJson(200, body);
+const makeCreated = (body: any) => asJson(201, body);
+const makeBadReq = (msg: string) => asJson(400, { error: msg });
+const makeNotFound = (msg = "Not found") => asJson(404, { error: msg });
+const makeServerErr = (msg = "Server error") => asJson(500, { error: msg });
+
+export const http: ResponseLike = {
+  json: (body, status = 200) => asJson(status, body),
+  ok: makeOk,
+  created: makeCreated,
+  badRequest: makeBadReq,
+  notFound: makeNotFound,
+  serverError: makeServerErr,
+
+  // legacy aliases
+  bad: makeBadReq,
+  notfound: makeNotFound,
+  servererror: makeServerErr,
 };
