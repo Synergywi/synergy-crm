@@ -1,16 +1,10 @@
 {
-  "name": "synergy-crm-api",
+  "name": "swa-functions",
   "version": "1.0.0",
   "private": true,
-  "dependencies": {
-    "@azure/cosmos": "4.2.0"
-  },
-  "devDependencies": {
-    "typescript": "5.5.4",
-    "@types/node": "20.12.12",
-    "@azure/functions": "3.5.1"
-  },
+  "engines": { "node": ">=18" },
   "scripts": {
     "build": "tsc -p tsconfig.json"
-  }
+  },
+  "dependencies": {}
 }
