@@ -1,29 +1,33 @@
-import type { HttpResponseInit } from "@azure/functions";
+// api/shared/http.ts
 
-type Json =
-  | null
-  | string
-  | number
-  | boolean
-  | Record<string, any>
-  | Array<any>;
+// Minimal response shape the SWA Functions runtime understands
+export type ResponseLike = {
+  status?: number;
+  headers?: Record<string, string>;
+  jsonBody?: any;
+  body?: any;
+};
 
-const json = (
-  status: number,
-  body: Json,
-  headers: Record<string, string> = {}
-): HttpResponseInit => ({
-  status,
-  headers: { "content-type": "application/json; charset=utf-8", ...headers },
-  jsonBody: body,
-});
+// Overloads: json(body) or json(status, body)
+export function json(body: any): ResponseLike;
+export function json(status: number, body: any): ResponseLike;
+export function json(a: any, b?: any): ResponseLike {
+  if (b === undefined) {
+    return { status: 200, headers: { "content-type": "application/json" }, jsonBody: a };
+  }
+  return { status: a, headers: { "content-type": "application/json" }, jsonBody: b };
+}
 
-const ok = (body: Json = { ok: true }): HttpResponseInit => json(200, body);
-const created = (body: Json = {}): HttpResponseInit => json(201, body);
-const badRequest = (msg: string): HttpResponseInit => json(400, { error: msg });
-const notFound = (msg = "Not found"): HttpResponseInit => json(404, { error: msg });
-const serverError = (msg = "Internal Server Error"): HttpResponseInit =>
-  json(500, { error: msg });
-
-export const http = { json, ok, created, badRequest, notFound, serverError };
-export type { HttpResponseInit };
+export const http = {
+  json,
+  ok: (body: any = { ok: true }): ResponseLike =>
+    ({ status: 200, headers: { "content-type": "application/json" }, jsonBody: body }),
+  created: (body: any = {}): ResponseLike =>
+    ({ status: 201, headers: { "content-type": "application/json" }, jsonBody: body }),
+  badRequest: (msg: string): ResponseLike =>
+    ({ status: 400, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
+  notFound: (msg = "Not found"): ResponseLike =>
+    ({ status: 404, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
+  serverError: (msg = "Internal Server Error"): ResponseLike =>
+    ({ status: 500, headers: { "content-type": "application/json" }, jsonBody: { error: msg } }),
+};
