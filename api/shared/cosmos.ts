@@ -8,6 +8,8 @@ if (!conn) throw new Error('Missing COSMOS_CONNECTION_STRING');
 if (!dbName) throw new Error('Missing COSMOS_DB_NAME');
 
 const client = new CosmosClient(conn);
+
+// cache the Database object after first creation
 let dbPromise: Promise<Database> | undefined;
 
 async function getDb(): Promise<Database> {
@@ -22,7 +24,7 @@ export async function getContainer(id: string): Promise<Container> {
   const db = await getDb();
   const { container } = await db.containers.createIfNotExists({
     id,
-    // IMPORTANT: no "kind" here in v4 types
+    // NOTE: v4 types do NOT use { kind: 'Hash' } — just paths
     partitionKey: { paths: [PARTITION_KEY] }
   });
   return container;
