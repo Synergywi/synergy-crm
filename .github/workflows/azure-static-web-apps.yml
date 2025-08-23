@@ -23,27 +23,31 @@ jobs:
       - name: Setup Node (for API build)
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Functions v4 uses Node 18 on Linux
+          node-version: '18'
 
       - name: Build API
         working-directory: api
         run: |
-          # Install all deps (incl. dev) to compile TypeScript
-          npm ci
+          set -euxo pipefail
 
-          # Compile TS -> JS (outputs to ./dist per your tsconfig)
+          # Install deps: prefer npm ci when a lockfile exists; otherwise create one
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+          # Compile TS -> JS (expects tsconfig to output to ./dist)
           npm run build
 
-          # Ensure every function.json is present in dist
+          # Ensure function.json files are present in dist
           rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
 
-          # Host config must be at the root of the function app
+          # Host config at the root of the function app
           cp -f host.json ./dist/host.json
 
-          # Prepare runtime-only dependencies for deployment
+          # Keep only runtime deps in the artifact
           npm prune --omit=dev
-
-          # Copy runtime deps + package.json into dist
           cp -f package.json ./dist/package.json
           cp -R node_modules ./dist/node_modules
 
@@ -54,10 +58,10 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          app_location: "web"          # your static site root (already has index.html)
-          api_location: "api/dist"      # prebuilt Functions artifact
-          skip_app_build: true          # don't rebuild the static app
-          skip_api_build: true          # <-- crucial: do NOT try to build in dist again
+          app_location: "web"
+          api_location: "api/dist"
+          skip_app_build: true
+          skip_api_build: true
           production_branch: "main"
 
   close_pull_request_job:
