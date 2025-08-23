@@ -1,0 +1,49 @@
+# --- exclude source & build cruft ---
+**/*.ts
+**/*.tsx
+**/*.map
+**/*.md
+**/*.markdown
+**/*.log
+**/*.bak
+**/*.orig
+**/*.test.*
+**/*.spec.*
+**/__tests__/**
+**/test/**
+**/tests/**
+
+# IDE / tooling
+.vscode/
+.idea/
+.eslintignore
+.eslintrc*
+.prettier*
+tsconfig.json
+tsconfig.*.json
+jest.config.*
+vitest.config.*
+babel.config.*
+rollup.config.*
+webpack*.*
+.*/        # any dot-directories inside functions (except .well-known if you ever add one)
+
+# CI & repo stuff
+.github/
+.gitattributes
+.gitignore
+
+# seed & sample data (keeps the package small)
+seed/data/**
+seed/**/sample/**
+
+# front-end or unrelated folders (defensive)
+web/**
+dist/**
+build/**
+
+# node_modules caches that aren’t needed at runtime
+node_modules/.cache/**
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
