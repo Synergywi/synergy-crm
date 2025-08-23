@@ -25,7 +25,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       # Build ONLY the API from its source folder.
-      # (Use npm install, since there is no api/package-lock.json)
+      # Using npm install (no package-lock in api/).
       - name: Install API deps
         run: npm install --no-audit --no-fund
         working-directory: api
@@ -43,10 +43,13 @@ jobs:
           # Frontend: serve /web as-is (no build)
           app_location: web
           skip_app_build: true
-          config_file_location: web/staticwebapp.config.json
 
-          # API: point to source folder (language detected from package.json),
-          # but we already built above, so skip the action's own build.
+          # IMPORTANT: point to the **folder** that contains staticwebapp.config.json
+          # (or remove this line entirely—SWA will look in app_location by default)
+          config_file_location: web
+
+          # API: deploy from 'api' (language detected from package.json)
+          # We already built above, so skip the action’s internal build.
           api_location: api
           skip_api_build: true
 
