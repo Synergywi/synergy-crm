@@ -24,32 +24,33 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # We build ONLY the API. Web is a plain folder we serve as-is.
+      # Build ONLY the API from its source folder.
+      # (Use npm install, since there is no api/package-lock.json)
+      - name: Install API deps
+        run: npm install --no-audit --no-fund
+        working-directory: api
+
       - name: Build API (TypeScript)
-        shell: bash
-        run: |
-          set -euxo pipefail
-          npm ci --no-audit --no-fund --prefix api
-          npm run build --prefix api
+        run: npm run build
+        working-directory: api
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: "upload"
+          action: upload
 
-          # Frontend (no build)
-          app_location: "web"
+          # Frontend: serve /web as-is (no build)
+          app_location: web
           skip_app_build: true
-          config_file_location: "web/staticwebapp.config.json"
+          config_file_location: web/staticwebapp.config.json
 
-          # API: build from source (language is detected from api/package.json)
-          api_location: "api"
-          # We already built above, so let the action skip its own Oryx build step.
-          # However, for reliable language detection, we still point to 'api' (source).
+          # API: point to source folder (language detected from package.json),
+          # but we already built above, so skip the action's own build.
+          api_location: api
           skip_api_build: true
 
-          production_branch: "main"
+          production_branch: main
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -59,5 +60,5 @@ jobs:
       - name: Close Azure Static Web Apps PR Environment
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: "close"
+          action: close
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
