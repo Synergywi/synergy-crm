@@ -12,33 +12,27 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build and Deploy
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- Build the API (TypeScript -> JavaScript into api/dist) ---
-      - name: Setup Node (for API build)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-
-      - name: Build API
-        working-directory: api
-        run: |
-          npm install --no-audit --no-fund
-          npm run build
-
-      # --- Deploy web/ (no build) and api/dist/ (already built) ---
+      # Deploy web (no build) and build API from "api" (not api/dist)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: "upload"  # required by the action
+          action: "upload"
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          app_location: "web"       # contains index.html and staticwebapp.config.json
-          api_location: "api/dist"  # compiled JS output
+
+          # Frontend (static)
+          app_location: "web"
           skip_app_build: true
-          skip_api_build: true
+
+          # API (Node Functions)
+          api_location: "api"
+          # Use npm install to avoid lockfile requirement, then your build script
+          api_build_command: "npm install --no-audit --no-fund && npm run build"
+          # (Do NOT set skip_api_build: true)
+
           production_branch: "main"
 
   close_pull_request_job:
