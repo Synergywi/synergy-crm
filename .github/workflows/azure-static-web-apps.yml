@@ -2,48 +2,41 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build_and_deploy_job:
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+  build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build and Deploy
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Build API with Node 18 (Functions v4 runtime + @azure/functions v3 typings in code)
+      - name: Use Node 18 for API
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: Build API (TypeScript -> dist) and keep only prod deps
+        working-directory: api
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npm prune --omit=dev
+          ls -la
+          ls -la dist
+
+      # We already built the web and api; tell SWA to just package & ship what’s there
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: upload
-
-          # Frontend: serve /web exactly as-is
           app_location: web
-          skip_app_build: true
-          # Point to the FOLDER that contains staticwebapp.config.json
-          config_file_location: web
-
-          # API: let Oryx build it so the Functions language is detected
           api_location: api
-          api_build_command: |
-            npm ci
-            npm run build
-
-          production_branch: main
-
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close PR Environment
-    steps:
-      - name: Close Azure Static Web Apps PR Environment
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          action: close
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          skip_app_build: true
+          skip_api_build: true
