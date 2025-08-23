@@ -12,26 +12,61 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build and Deploy
+    env:
+      NODE_VERSION: '18'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Deploy web (no build) and build API from "api" (not api/dist)
+      - name: Setup Node (for API build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # ---- Build and STAGE the API artifact in api/dist ----
+      - name: Build API (TypeScript) and stage for Functions
+        working-directory: api
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          # Install deps (dev included for TypeScript build)
+          npm install --no-audit --no-fund
+
+          # Compile TS -> dist (expects "outDir": "dist" in tsconfig.json)
+          npm run build
+
+          # Ensure function.json files sit next to compiled JS in dist
+          rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
+
+          # Host config is required at the root of the functions app
+          cp -f host.json ./dist/
+
+          # Ship package.json too (useful for runtime/hooks/tools)
+          cp -f package.json ./dist/
+
+          # Keep only production deps in the artifact
+          npm prune --omit=dev
+
+          # Copy production node_modules into dist
+          mkdir -p dist/node_modules
+          rsync -a node_modules/ dist/node_modules/
+
+      # ---- Deploy web (no build) + upload api/dist as the Functions app ----
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           action: "upload"
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
 
-          # Frontend (static)
+          # Frontend (already in web/, no build step needed)
           app_location: "web"
           skip_app_build: true
 
-          # API (Node Functions)
-          api_location: "api"
-          # Use npm install to avoid lockfile requirement, then your build script
-          api_build_command: "npm install --no-audit --no-fund && npm run build"
-          # (Do NOT set skip_api_build: true)
+          # API: upload the staged artifact
+          api_location: "api/dist"
+          skip_api_build: true
 
           production_branch: "main"
 
