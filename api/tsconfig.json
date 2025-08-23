@@ -2,21 +2,15 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": ".",
     "moduleResolution": "node",
-    "esModuleInterop": true,
+    "outDir": "dist",
+    "rootDir": ".",
     "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "shared/**/*.ts",
-    "ping/**/*.ts",
-    "seed/**/*.ts",
-    "companies/**/*.ts",
-    "contacts/**/*.ts",
-    "cases/**/*.ts"
-  ],
-  "exclude": ["dist", "node_modules"]
+  "include": ["**/*.ts", "**/*.json"],
+  "exclude": ["node_modules", "dist", "**/*.d.ts"]
 }
