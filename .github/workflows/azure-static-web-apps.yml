@@ -9,74 +9,64 @@ on:
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || github.event.action != 'closed'
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    concurrency:
-      group: swa-${{ github.ref }}
-      cancel-in-progress: true
+    name: Build and Deploy
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: false
-          fetch-depth: 1
 
+      # -----------------------------
+      # Build API (Azure Functions)
+      # -----------------------------
       - name: Setup Node (for API build)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18' # Functions v4 uses Node 18 on Linux
 
-      # ---- Build the Functions API into api/dist ----
       - name: Build API
         working-directory: api
-        shell: bash
         run: |
-          set -euo pipefail
+          # Install all deps (incl. dev) to compile TypeScript
+          npm ci
 
-          # Use lockfile if present; otherwise fall back to npm install
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-
+          # Compile TS -> JS (outputs to ./dist per your tsconfig)
           npm run build
 
-          # Ensure runtime has what it needs inside dist/
-          cp -f package.json dist/
-          [ -f package-lock.json ] && cp -f package-lock.json dist/ || true
-          [ -f host.json ] && cp -f host.json dist/ || (echo "ERROR: host.json not found in api/"; exit 1)
+          # Ensure every function.json is present in dist
+          rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
 
-          # Copy each function.json to its matching compiled folder in dist/
-          # (keeps same relative path as in source)
-          while IFS= read -r f; do
-            d="$(dirname "$f")"
-            rel="${d#./}"
-            mkdir -p "dist/$rel"
-            cp -f "$f" "dist/$rel/"
-          done < <(find . -mindepth 2 -maxdepth 2 -name function.json -print)
+          # Host config must be at the root of the function app
+          cp -f host.json ./dist/host.json
 
-          echo '--- api/dist content ---'
-          find dist -maxdepth 3 -type f | sort
+          # Prepare runtime-only dependencies for deployment
+          npm prune --omit=dev
 
+          # Copy runtime deps + package.json into dist
+          cp -f package.json ./dist/package.json
+          cp -R node_modules ./dist/node_modules
+
+      # -----------------------------
+      # Deploy app + prebuilt API
+      # -----------------------------
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          app_location: web          # static site root
-          api_location: api/dist     # compiled Functions output
-          output_location: ""        # no separate front-end build
-          skip_app_build: true       # web is already static
+          app_location: "web"          # your static site root (already has index.html)
+          api_location: "api/dist"      # prebuilt Functions artifact
+          skip_app_build: true          # don't rebuild the static app
+          skip_api_build: true          # <-- crucial: do NOT try to build in dist again
+          production_branch: "main"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
+    name: Close PR Environment
     steps:
       - name: Close PR Environment
         uses: Azure/static-web-apps-deploy@v1
         with:
+          action: "close"
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: close
