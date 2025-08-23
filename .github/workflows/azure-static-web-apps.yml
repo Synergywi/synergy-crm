@@ -24,48 +24,29 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # ---- Build and STAGE the API artifact in api/dist ----
-      - name: Build API (TypeScript) and stage for Functions
-        working-directory: api
+      # We build ONLY the API. Web is a plain folder we serve as-is.
+      - name: Build API (TypeScript)
         shell: bash
         run: |
           set -euxo pipefail
+          npm ci --no-audit --no-fund --prefix api
+          npm run build --prefix api
 
-          # Install deps (dev included for TypeScript build)
-          npm install --no-audit --no-fund
-
-          # Compile TS -> dist (expects "outDir": "dist" in tsconfig.json)
-          npm run build
-
-          # Ensure function.json files sit next to compiled JS in dist
-          rsync -a --include='*/' --include='function.json' --exclude='*' ./ ./dist/
-
-          # Host config is required at the root of the functions app
-          cp -f host.json ./dist/
-
-          # Ship package.json too (useful for runtime/hooks/tools)
-          cp -f package.json ./dist/
-
-          # Keep only production deps in the artifact
-          npm prune --omit=dev
-
-          # Copy production node_modules into dist
-          mkdir -p dist/node_modules
-          rsync -a node_modules/ dist/node_modules/
-
-      # ---- Deploy web (no build) + upload api/dist as the Functions app ----
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: "upload"
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "upload"
 
-          # Frontend (already in web/, no build step needed)
+          # Frontend (no build)
           app_location: "web"
           skip_app_build: true
+          config_file_location: "web/staticwebapp.config.json"
 
-          # API: upload the staged artifact
-          api_location: "api/dist"
+          # API: build from source (language is detected from api/package.json)
+          api_location: "api"
+          # We already built above, so let the action skip its own Oryx build step.
+          # However, for reliable language detection, we still point to 'api' (source).
           skip_api_build: true
 
           production_branch: "main"
