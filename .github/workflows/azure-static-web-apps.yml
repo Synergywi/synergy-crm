@@ -25,15 +25,44 @@ jobs:
           npm run build
           npm prune --omit=dev
 
-      # 🔎 Debug: show exactly what we’re about to deploy for the API
+      # 🔎 Show exactly what we’re about to deploy
       - name: Show API payload
         run: |
           echo "== api root =="
           ls -la api
-          echo "== dist (compiled JS) =="
-          find api/dist -maxdepth 2 -type f | sort || true
-          echo "== sample function.json locations =="
+          echo "== host.json =="
+          test -f api/host.json && cat api/host.json || (echo "MISSING: api/host.json"; exit 1)
+          echo "== function.json files =="
           find api -maxdepth 2 -name function.json | sort
+          echo "== compiled JS (dist) =="
+          find api/dist -type f | sort | head -n 200
+
+      # ✅ Hard validation: every function.json must resolve to a real compiled JS file
+      - name: Validate function.json scriptFile targets
+        run: |
+          set -e
+          command -v jq >/dev/null 2>&1 || { echo "Installing jq..."; sudo apt-get update -y && sudo apt-get install -y jq; }
+          missing=0
+          for f in $(find api -maxdepth 2 -name function.json | sort); do
+            sf=$(jq -r '.scriptFile // empty' "$f")
+            if [ -z "$sf" ]; then
+              echo "ERROR: $f has no scriptFile"
+              missing=1
+              continue
+            fi
+            base=$(dirname "$f")
+            target="$base/$sf"
+            if [ ! -f "$target" ]; then
+              echo "ERROR: $f -> scriptFile '$sf' not found at '$target'"
+              # show nearby files for context
+              echo "Nearby files in $(dirname "$target"):"
+              ls -la "$(dirname "$target")" || true
+              missing=1
+            else
+              echo "OK: $f -> $target"
+            fi
+          done
+          exit $missing
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
