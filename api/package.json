@@ -2,15 +2,19 @@
   "name": "swa-functions",
   "version": "1.0.0",
   "private": true,
+  "description": "Azure Functions for Synergy CRM",
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json && npm prune --omit=dev"
   },
   "dependencies": {
-    "@azure/functions": "^3.5.1",
+    "@azure/functions": "^4.4.0",
     "@azure/cosmos": "^4.2.0"
   },
   "devDependencies": {
     "typescript": "^5.4.5",
     "@types/node": "^20.11.30"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }
