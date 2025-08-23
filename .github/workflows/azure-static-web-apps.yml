@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [ opened, synchronize, reopened, closed ]
+    types: [opened, synchronize, reopened, closed]
     branches: [ main ]
 
 jobs:
@@ -12,27 +12,10 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build and Deploy
-    env:
-      NODE_VERSION: '18'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node (for API build)
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # Build ONLY the API from its source folder.
-      # Using npm install (no package-lock in api/).
-      - name: Install API deps
-        run: npm install --no-audit --no-fund
-        working-directory: api
-
-      - name: Build API (TypeScript)
-        run: npm run build
-        working-directory: api
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -40,18 +23,17 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
 
-          # Frontend: serve /web as-is (no build)
+          # Frontend: serve /web exactly as-is
           app_location: web
           skip_app_build: true
-
-          # IMPORTANT: point to the **folder** that contains staticwebapp.config.json
-          # (or remove this line entirely—SWA will look in app_location by default)
+          # Point to the FOLDER that contains staticwebapp.config.json
           config_file_location: web
 
-          # API: deploy from 'api' (language detected from package.json)
-          # We already built above, so skip the action’s internal build.
+          # API: let Oryx build it so the Functions language is detected
           api_location: api
-          skip_api_build: true
+          api_build_command: |
+            npm ci
+            npm run build
 
           production_branch: main
 
