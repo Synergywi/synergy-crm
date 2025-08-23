@@ -2,24 +2,21 @@
   "name": "swa-functions",
   "version": "1.0.0",
   "private": true,
-
-  // Build TypeScript -> dist, then stage everything Functions needs inside dist
+  "description": "Azure Functions (TypeScript) for SWA",
+  "type": "commonjs",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && npm run stage",
-    "stage": "cp host.json dist/ && find . -name function.json -exec cp --parents {} dist \\; && npm i --omit=dev --no-audit --no-fund && cp -R node_modules dist/node_modules",
-    "clean": "rm -rf dist node_modules"
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
   },
-
   "dependencies": {
-    "@azure/functions": "4.4.0",
+    "@azure/functions": "3.5.1",
     "@azure/cosmos": "4.2.0"
   },
-
   "devDependencies": {
     "typescript": "5.4.5",
     "@types/node": "20.11.30"
   },
-
   "engines": {
     "node": ">=18 <20"
   }
