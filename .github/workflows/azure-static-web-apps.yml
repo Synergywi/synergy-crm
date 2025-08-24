@@ -13,72 +13,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node 18 for API
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      # 1) Compile TypeScript into api/dist
-      - name: Build API (ts -> dist) and keep only prod deps
-        working-directory: api
-        run: |
-          set -e
-          npm install --no-audit --no-fund
-          npx tsc -p tsconfig.json
-
-          # Install production deps in root (fast), then copy to dist
-          npm ci --omit=dev --no-audit --no-fund
-          mkdir -p dist/node_modules
-          cp -R node_modules/. dist/node_modules/
-
-          # Stage host.json and ALL function.json into dist, preserving structure
-          install -D host.json dist/host.json
-          find . -maxdepth 2 -name function.json -exec bash -lc 'install -D "{}" "dist/{}"' \;
-
-          # Stage seed JSON files (if present) so the seed function can load them
-          if [ -d seed/data ]; then
-            find seed/data -type f -name "*.json" -exec bash -lc 'install -D "{}" "dist/{}"' \;
-          fi
-
-      # 2) Show what we are about to deploy
-      - name: Show API payload (dist)
-        run: |
-          echo "=== api/dist tree (first 200 files) ==="
-          find api/dist -type f | sort | head -n 200
-
-      # 3) Validate that every function.json in dist points to a real JS file
-      - name: Validate function.json scriptFile targets (dist)
-        run: |
-          set -e
-          sudo apt-get update -y && sudo apt-get install -y jq >/dev/null
-          missing=0
-          for f in $(find api/dist -maxdepth 2 -name function.json | sort); do
-            sf=$(jq -r '.scriptFile // empty' "$f")
-            if [ -z "$sf" ]; then
-              echo "ERROR: $f has no scriptFile"
-              missing=1
-              continue
-            fi
-            base=$(dirname "$f")
-            target="$base/$sf"
-            if [ ! -f "$target" ]; then
-              echo "ERROR: $f -> scriptFile '$sf' not found at '$target'"
-              echo "Nearby files in $(dirname "$target"):"
-              ls -la "$(dirname "$target")" || true
-              missing=1
-            else
-              echo "OK: $f -> $target"
-            fi
-          done
-          exit $missing
-
-      # 4) Deploy: web is already static; API comes from api/dist and we skip Oryx
-      - name: Deploy to Azure Static Web Apps
+      - name: Build Azure/static-web-apps-deploy@v1
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
+
+          # Web: you already have a simple index.html so don't rebuild it
           app_location: web
           skip_app_build: true
-          api_location: api/dist
-          skip_api_build: true
+
+          # API: point to api (the source); let Oryx detect Node and run the build command
+          api_location: api
+          skip_api_build: false
+          api_build_command: >
+            npm ci --omit=dev --no-audit --no-fund
+            && npx tsc -p tsconfig.json
