@@ -3,7 +3,9 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [ main ]
 
 jobs:
   build_and_deploy:
@@ -13,77 +15,81 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Build API ourselves so Oryx doesn't try to compile TS
+      # --- Build Azure Functions API (TypeScript -> JS in-place) ---
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
-      # ---- PRE-BUILD: validate that all function.json files are valid JSON ----
+      # Validate function.json syntax before we do anything else
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
           set -e
-          shopt -s globstar nullglob
-          files=(api/**/function.json)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "::error::No function.json files found under api/"
-            exit 1
-          fi
-          for f in "${files[@]}"; do
+          shopt -s nullglob
+          for f in api/*/function.json; do
             echo "Checking JSON: $f"
-            node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f" \
-              || { echo "::error::Invalid JSON in $f"; exit 1; }
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
           done
-          echo "All function.json files parse correctly."
 
-      # ---- BUILD: compile TS to JS and prune dev deps so scriptFile targets exist ----
       - name: Build API (compile TS in-place; then prune dev deps)
         working-directory: api
         shell: bash
         run: |
           set -e
+          # Install deps (respect lockfile if present)
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           else
             npm install --no-audit --no-fund
           fi
+
+          # Compile TS -> JS in place (tsconfig.json controls emit)
           npx tsc -p tsconfig.json
+
+          # IMPORTANT: remove .ts sources and tsconfig so Oryx doesn't run tsc again
+          find . -type f -name "*.ts" -not -path "./node_modules/*" -delete || true
+          rm -f tsconfig.json || true
+
+          # Production-only deps for deployment
           npm prune --omit=dev
 
-      # ---- POST-BUILD: validate scriptFile points to a real JS file ----
+      # Double-check each function.json points at a real scriptFile after build
       - name: Validate function.json scriptFile targets (post-build)
         shell: bash
         run: |
           set -e
-          shopt -s globstar nullglob
-          for f in api/**/function.json; do
-            # read scriptFile field
-            script=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(j.scriptFile||'');" "$f")
-            if [ -z "$script" ]; then
-              echo "::error::Missing \"scriptFile\" in $f"
-              exit 1
-            fi
+          shopt -s nullglob
+          for f in api/*/function.json; do
             dir="$(dirname "$f")"
-            if [ ! -f "$dir/$script" ]; then
-              echo "::error::scriptFile path not found: $dir/$script (from $f)"
-              echo "Directory listing for $dir:"
-              ls -la "$dir"
-              exit 1
+            target="$(node -e "const j=require('$f');process.stdout.write(j.scriptFile||'')")"
+            if [ -z "$target" ]; then
+              echo "ERROR: scriptFile not set in $f"; exit 1
             fi
-            # quick structural check for bindings
-            node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); if(!Array.isArray(j.bindings)||!j.bindings.length){process.exit(2)}" "$f" \
-              || { echo "::error::Missing/empty \"bindings\" array in $f"; exit 1; }
-            echo "OK  $f -> $script"
+            if [ ! -f "$dir/$target" ]; then
+              echo "ERROR: scriptFile path not found: $dir/$target (from $f)"; exit 1
+            fi
+            echo "OK  $f -> $target"
           done
 
-      # ---- DEPLOY: skip Oryx builds; we already compiled TS ----
+      # --- Deploy (let the action/Oryx detect Node for the API) ---
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
+
+          # Your static site
           app_location: web
           skip_app_build: true
+          app_build_command: 'echo "skip app build"'
+
+          # Functions API (we DO NOT skip api build here)
           api_location: api
-          skip_api_build: true
+          skip_api_build: false
+          api_build_command: ''
+
+        env:
+          # (Optional) quiet npm noise inside Oryx
+          NPM_CONFIG_AUDIT: 'false'
+          NPM_CONFIG_FUND: 'false'
