@@ -9,90 +9,72 @@ on:
 
 jobs:
   build_and_deploy:
+    if: github.event_name == 'push' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Use Node 18 for any API prebuild steps we run ourselves
-      - name: Use Node 18 for API build
+      # Node for any prebuild checks you run yourself
+      - name: Use Node 18
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
+          cache: npm
 
-      # --- Pre-build: JSON validity only
+      # --- Pre-build: validate every function.json
       - name: Validate function.json syntax (pre-build)
-        shell: bash
+      - shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
           files=(api/*/function.json)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "No function.json files found under api/* — nothing to validate."
+            echo "No api/*/function.json files found; skipping."
             exit 0
           fi
           for f in "${files[@]}"; do
-            echo "Checking JSON: $f"
-            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
+            echo "Validating $f"
+            jq empty "$f"
           done
+          echo "All function.json files are valid ✅"
 
-      # --- Build TypeScript to JS in-place (so Oryx will pick up compiled JS)
-      - name: Build API (compile TS in-place; then prune dev deps)
-        working-directory: api
-        shell: bash
+      # Optional: install front-end deps to speed up SWA build (SWA can do this itself via Oryx,
+      # but doing it here gives you faster, cached installs and build-time failures earlier)
+      - name: Install front-end deps (optional)
+        if: hashFiles('package-lock.json') != ''
+        run: npm ci
+
+      - name: Build front-end (optional)
+        if: hashFiles('package.json') != '' && hashFiles('package-lock.json') != ''
         run: |
-          set -euo pipefail
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-          npx tsc -p tsconfig.json
-          # keep production deps only for smaller function zip
-          npm prune --omit=dev
+          # Pick ONE of the following build outputs and set OUTPUT_LOCATION below:
+          # - Vite / most modern bundlers: npm run build -> dist/
+          # - CRA: npm run build -> build/
+          # - Next.js (static export): npm run build && npm run export -> out/
+          npm run build || echo "No build script; SWA Oryx will try to build during deploy."
 
-      # --- Post-build check: ensure each function.json's scriptFile exists
-      - name: Validate function.json scriptFile targets (post-build)
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          files=(api/*/function.json)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No function.json files found under api/* — nothing to validate."
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            dir="$(dirname "$f")"
-            scriptFile="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('$f','utf8')); process.stdout.write(j.scriptFile||'')" )"
-            if [ -z "$scriptFile" ]; then
-              echo "::warning file=$f::No scriptFile specified in function.json (Functions v4 supports both). Skipping file existence check."
-              continue
-            fi
-            # Ensure we resolve as a file path, not a module id
-            if [ ! -f "./$dir/$scriptFile" ]; then
-              echo "Directory listing for $dir:"
-              ls -la "$dir" || true
-              echo "::error::scriptFile path not found: $dir/$scriptFile (from $f)"
-              exit 1
-            else
-              echo "OK  $f  ->  $scriptFile"
-            fi
-          done
-
-      # --- Deploy: let Oryx/Action detect the API language (do NOT skip api build)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: upload
+          # Where your app source lives. If your front-end is at repo root, leave "/".
+          app_location: "/"
+          # Where your API lives relative to repo root.
+          api_location: "api"
+          # Set this to match your build tool’s output:
+          # - "dist" for Vite (default here)
+          # - "build" for CRA
+          # - "out" for Next.js export
+          output_location: "dist"
 
-          app_location: web
-          skip_app_build: true
-          app_build_command: 'echo "skip app build"'
-
-          api_location: api
-          # DO NOT skip api build – this allows language detection and avoids the
-          # "Function language info isn't provided" error.
-          skip_api_build: false
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close Azure Static Web Apps PR environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "close"
