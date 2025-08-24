@@ -3,21 +3,31 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+    paths-ignore: [ '**/*.md' ]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [ main ]
+
+concurrency:
+  group: swa-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build_and_deploy:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Build API ourselves so Oryx doesn't try to run tsc
+      # Build the API ourselves so Oryx doesn't try to run tsc
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
 
       - name: Validate function.json syntax (pre-build)
         shell: bash
@@ -29,11 +39,11 @@ jobs:
             node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"
           done
 
-      - name: Build API (compile TS in-place; then prune dev deps)
+      - name: Build API (ts -> js) and keep only prod deps
         working-directory: api
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           else
@@ -46,69 +56,75 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          while IFS= read -r -d '' F; do
-            DIR=$(dirname "$F")
-            TARGET=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).scriptFile||'')" "$F")
-            if [ -z "$TARGET" ]; then
-              echo "Error: no scriptFile in $F"; exit 1
+          shopt -s globstar nullglob
+          bad=0
+          for f in api/**/function.json; do
+            dir="$(dirname "$f")"
+            script="$(
+              node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); let s=j.scriptFile||'index.js'; s=s.replace(/^\.\//,''); process.stdout.write(s);" "$f"
+            )"
+            target="$dir/$script"
+            if [ -f "$target" ]; then
+              echo "OK  $f -> $(basename "$script")"
+            else
+              echo "ERROR: scriptFile path not found: $script (from $f)"
+              bad=$((bad+1))
             fi
-            if [ ! -f "$DIR/$TARGET" ]; then
-              echo "Error: scriptFile path not found: $DIR/$TARGET (from $F)"; exit 1
-            fi
-            echo "OK  $F -> $TARGET"
-          done < <(find api -name function.json -print0)
+          done
+          [ $bad -eq 0 ]
 
-      # Deploy (we skip builds because we've already compiled/pruned the API)
       - name: Deploy to Azure Static Web Apps
-        id: deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
           app_location: web
           skip_app_build: true
+          app_build_command: 'echo "skip app build"'
           api_location: api
           skip_api_build: true
+          api_build_command: 'echo "skip api build"'
 
-      # ---- Smoke Test ----
-      # Tries /api/ping until we get HTTP 200 with {ok:true} (retries while Functions warm up)
-      - name: Smoke test /api/ping (retry until warm)
-        if: ${{ steps.deploy.outcome == 'success' }}
-        env:
-          DEPLOYMENT_ENV_URL: ${{ steps.deploy.outputs.deployment_environment_url }}
-          STATIC_URL: ${{ steps.deploy.outputs.static_web_app_url }}
-          # Fallback: put your app URL in a repo variable if the action outputs are blank
-          # Settings → Variables → Actions → New variable: SWA_URL = https://<your-app>.azurestaticapps.net
-          SWA_URL: ${{ vars.SWA_URL }}
+      # ---- Smoke tests (requires repo variable SWA_URL) ----
+      - name: Smoke test API (/api/ping)
+        if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
+        env:
+          BASE: ${{ vars.SWA_URL }}
         run: |
           set -euo pipefail
-
-          URL="${DEPLOYMENT_ENV_URL:-}"
-          [ -z "$URL" ] && URL="${STATIC_URL:-}"
-          [ -z "$URL" ] && URL="${SWA_URL:-}"
-
-          if [ -z "$URL" ]; then
-            echo "Could not determine SWA URL."
-            echo "If the deploy action doesn't expose outputs in your setup, create a repo variable SWA_URL"
-            echo "and set it to your site, e.g. https://<your-app>.azurestaticapps.net"
-            exit 1
-          fi
-
-          echo "Pinging $URL/api/ping ..."
-          for i in {1..12}; do
-            code=$(curl -sS -o /tmp/ping.json -w '%{http_code}' "$URL/api/ping" || true)
-            if [ "$code" = "200" ]; then
-              echo "200 from /api/ping:"
-              cat /tmp/ping.json
-              node -e "const fs=require('fs');const o=JSON.parse(fs.readFileSync('/tmp/ping.json','utf8')); if(!o.ok){throw new Error('ok=false')}"
-              echo "Smoke test passed ✅"
-              exit 0
-            fi
-            echo "Attempt $i: HTTP $code. Retrying in 5s..."
+          echo "Waiting for $BASE/api/ping ..."
+          for i in {1..30}; do
+            code=$(curl -sS -o /tmp/ping.json -w "%{http_code}" "$BASE/api/ping" || true)
+            test "$code" = "200" && break
             sleep 5
           done
+          if [ "${code:-}" != "200" ]; then
+            echo "Ping failed, HTTP $code"
+            exit 1
+          fi
+          node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('/tmp/ping.json','utf8')); if(!j.ok){console.error('ok!=true');process.exit(1)}"
 
-          echo "Smoke test failed ❌ — no 200 from $URL/api/ping"
-          exit 1
+      - name: Smoke test web (home page)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        shell: bash
+        env:
+          BASE: ${{ vars.SWA_URL }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE")
+          if [ "$code" != "200" ] && [ "$code" != "304" ]; then
+            echo "Unexpected home status $code"
+            exit 1
+          fi
+          echo "Home page OK ($code)"
+
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close PR Environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
