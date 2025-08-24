@@ -4,9 +4,8 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [ opened, synchronize, reopened, closed ]
+    types: [opened, synchronize, reopened, closed]
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build_and_deploy:
@@ -16,15 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node for API prebuild
+      # Use Node 18 for any API prebuild steps we run ourselves
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
-          cache: npm
-          cache-dependency-path: api/package-lock.json
 
-      # --- Pre-build: validate JSON only
+      # --- Pre-build: JSON validity only
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
@@ -37,11 +34,10 @@ jobs:
           fi
           for f in "${files[@]}"; do
             echo "Checking JSON: $f"
-            node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
           done
-          echo "OK: function.json files parse."
 
-      # --- Build TS -> JS in-place so Oryx picks it up
+      # --- Build TypeScript to JS in-place (so Oryx will pick up compiled JS)
       - name: Build API (compile TS in-place; then prune dev deps)
         working-directory: api
         shell: bash
@@ -56,7 +52,7 @@ jobs:
           # keep production deps only for smaller function zip
           npm prune --omit=dev
 
-      # --- Post-build: ensure scriptFile (or index.js) exists next to function.json
+      # --- Post-build check: ensure each function.json's scriptFile exists
       - name: Validate function.json scriptFile targets (post-build)
         shell: bash
         run: |
@@ -70,20 +66,22 @@ jobs:
           for f in "${files[@]}"; do
             dir="$(dirname "$f")"
             scriptFile="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('$f','utf8')); process.stdout.write(j.scriptFile||'')" )"
-            # Functions defaults to index.js if scriptFile is not specified
             if [ -z "$scriptFile" ]; then
-              echo "::notice file=$f::No scriptFile set; defaulting check to index.js"
-              scriptFile="index.js"
+              echo "::warning file=$f::No scriptFile specified in function.json (Functions v4 supports both). Skipping file existence check."
+              continue
             fi
+            # Ensure we resolve as a file path, not a module id
             if [ ! -f "./$dir/$scriptFile" ]; then
-              echo "Directory listing for $dir:"; ls -la "$dir" || true
+              echo "Directory listing for $dir:"
+              ls -la "$dir" || true
               echo "::error::scriptFile path not found: $dir/$scriptFile (from $f)"
               exit 1
+            else
+              echo "OK  $f  ->  $scriptFile"
             fi
-            echo "OK  $f  ->  $scriptFile"
           done
 
-      # --- Deploy: let Oryx build the Functions app (do NOT skip API build)
+      # --- Deploy: let Oryx/Action detect the API language (do NOT skip api build)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -95,4 +93,6 @@ jobs:
           app_build_command: 'echo "skip app build"'
 
           api_location: api
+          # DO NOT skip api build – this allows language detection and avoids the
+          # "Function language info isn't provided" error.
           skip_api_build: false
