@@ -4,9 +4,7 @@
   "private": true,
   "description": "Azure Functions (v3 model) used by Synergy CRM",
   "type": "commonjs",
-  "engines": {
-    "node": "18.x"
-  },
+  "engines": { "node": "18.x" },
   "dependencies": {
     "@azure/functions": "3.5.1",
     "@azure/cosmos": "4.2.0"
