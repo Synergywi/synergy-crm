@@ -4,5 +4,5 @@
       "methods": ["get","post","patch","delete"], "route": "contacts/{id?}" },
     { "type": "http", "direction": "out", "name": "res" }
   ],
-  "scriptFile": "../dist/contacts/index.js"
+  "scriptFile": "index.js"
 }
