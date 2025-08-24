@@ -18,32 +18,41 @@ jobs:
         with:
           node-version: '18'
 
+      # 1) Compile TypeScript into api/dist
       - name: Build API (ts -> dist) and keep only prod deps
         working-directory: api
         run: |
+          set -e
           npm install --no-audit --no-fund
-          npm run build
-          npm prune --omit=dev
+          npx tsc -p tsconfig.json
 
-      # 🔎 Show exactly what we’re about to deploy
-      - name: Show API payload
+          # Install production deps in root (fast), then copy to dist
+          npm ci --omit=dev --no-audit --no-fund
+          mkdir -p dist/node_modules
+          cp -R node_modules/. dist/node_modules/
+
+          # Stage host.json and ALL function.json into dist, preserving structure
+          install -D host.json dist/host.json
+          find . -maxdepth 2 -name function.json -exec bash -lc 'install -D "{}" "dist/{}"' \;
+
+          # Stage seed JSON files (if present) so the seed function can load them
+          if [ -d seed/data ]; then
+            find seed/data -type f -name "*.json" -exec bash -lc 'install -D "{}" "dist/{}"' \;
+          fi
+
+      # 2) Show what we are about to deploy
+      - name: Show API payload (dist)
         run: |
-          echo "== api root =="
-          ls -la api
-          echo "== host.json =="
-          test -f api/host.json && cat api/host.json || (echo "MISSING: api/host.json"; exit 1)
-          echo "== function.json files =="
-          find api -maxdepth 2 -name function.json | sort
-          echo "== compiled JS (dist) =="
+          echo "=== api/dist tree (first 200 files) ==="
           find api/dist -type f | sort | head -n 200
 
-      # ✅ Hard validation: every function.json must resolve to a real compiled JS file
-      - name: Validate function.json scriptFile targets
+      # 3) Validate that every function.json in dist points to a real JS file
+      - name: Validate function.json scriptFile targets (dist)
         run: |
           set -e
-          command -v jq >/dev/null 2>&1 || { echo "Installing jq..."; sudo apt-get update -y && sudo apt-get install -y jq; }
+          sudo apt-get update -y && sudo apt-get install -y jq >/dev/null
           missing=0
-          for f in $(find api -maxdepth 2 -name function.json | sort); do
+          for f in $(find api/dist -maxdepth 2 -name function.json | sort); do
             sf=$(jq -r '.scriptFile // empty' "$f")
             if [ -z "$sf" ]; then
               echo "ERROR: $f has no scriptFile"
@@ -54,7 +63,6 @@ jobs:
             target="$base/$sf"
             if [ ! -f "$target" ]; then
               echo "ERROR: $f -> scriptFile '$sf' not found at '$target'"
-              # show nearby files for context
               echo "Nearby files in $(dirname "$target"):"
               ls -la "$(dirname "$target")" || true
               missing=1
@@ -64,6 +72,7 @@ jobs:
           done
           exit $missing
 
+      # 4) Deploy: web is already static; API comes from api/dist and we skip Oryx
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -71,5 +80,5 @@ jobs:
           action: upload
           app_location: web
           skip_app_build: true
-          api_location: api
+          api_location: api/dist
           skip_api_build: true
