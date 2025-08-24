@@ -1,5 +1,5 @@
 {
-  "scriptFile": "index.js",
+  "scriptFile": "../dist/seed/index.js"
   "bindings": [
     {
       "authLevel": "function",
