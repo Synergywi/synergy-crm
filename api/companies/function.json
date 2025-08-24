@@ -4,5 +4,6 @@
       "methods": ["get","post","patch","delete"], "route": "companies/{id?}" },
     { "type": "http", "direction": "out", "name": "res" }
   ],
-  "scriptFile": "index.js"
+  "scriptFile": "../dist/companies/index.js"
+
 }
