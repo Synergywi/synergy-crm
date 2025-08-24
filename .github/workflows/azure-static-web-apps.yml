@@ -13,38 +13,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Build API ourselves so Oryx doesn't try to run tsc
+      # Use Node 18 for API build
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
-      - name: Build API (compile TS in-place; then prune dev deps)
+      # Build API (compile TS in-place; then prune dev deps)
+      - name: Build API (ts -> js)
         working-directory: api
         shell: bash
         run: |
           set -e
-          # If lockfile exists use ci, else install
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           else
-            npm install --no-audit --no-fund
+            npm i --no-audit --no-fund
           fi
           npx tsc -p tsconfig.json
-          # remove devDeps before deploy
+          # ensure function.json files will load compiled js
+          for f in $(find . -maxdepth 2 -name function.json); do
+            grep -q '"scriptFile": *"index.js"' "$f" || echo "::warning file=$f::scriptFile is not index.js"
+          done
           npm prune --omit=dev
 
-      # Deploy and explicitly skip any builds (no Oryx tsc)
+      # Deploy (let the action/Oryx detect Node for API; skip web build)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
 
+          # Web
           app_location: web
           skip_app_build: true
           app_build_command: 'echo "skip app build"'
 
+          # API: DO NOT skip build here; we already compiled, but Oryx still
+          # inspects package.json and supplies the language metadata.
           api_location: api
-          skip_api_build: true
-          api_build_command: 'echo "skip api build"'
