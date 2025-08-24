@@ -1,8 +1,13 @@
-# Ignore TypeScript sources & configs (we deploy compiled JS in /dist)
+# keep host.json and function.json
+local.settings.json
+test
+tests
+__tests__
+coverage
+.git
+.gitignore
+.vscode
+# ignore sources & maps in the zip (compiled JS in dist is what runs)
 **/*.ts
-tsconfig.json
-
-# Ignore source maps & test files
 **/*.map
-**/*.spec.ts
-**/__tests__/**
+# never exclude dist or node_modules
