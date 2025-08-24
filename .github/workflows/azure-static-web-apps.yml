@@ -16,7 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node for any prebuild checks you run yourself
       - name: Use Node 18
         uses: actions/setup-node@v4
         with:
@@ -25,7 +24,7 @@ jobs:
 
       # --- Pre-build: validate every function.json
       - name: Validate function.json syntax (pre-build)
-      - shell: bash
+        shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -40,8 +39,6 @@ jobs:
           done
           echo "All function.json files are valid ✅"
 
-      # Optional: install front-end deps to speed up SWA build (SWA can do this itself via Oryx,
-      # but doing it here gives you faster, cached installs and build-time failures earlier)
       - name: Install front-end deps (optional)
         if: hashFiles('package-lock.json') != ''
         run: npm ci
@@ -49,25 +46,15 @@ jobs:
       - name: Build front-end (optional)
         if: hashFiles('package.json') != '' && hashFiles('package-lock.json') != ''
         run: |
-          # Pick ONE of the following build outputs and set OUTPUT_LOCATION below:
-          # - Vite / most modern bundlers: npm run build -> dist/
-          # - CRA: npm run build -> build/
-          # - Next.js (static export): npm run build && npm run export -> out/
           npm run build || echo "No build script; SWA Oryx will try to build during deploy."
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          # Where your app source lives. If your front-end is at repo root, leave "/".
-          app_location: "/"
-          # Where your API lives relative to repo root.
-          api_location: "api"
-          # Set this to match your build tool’s output:
-          # - "dist" for Vite (default here)
-          # - "build" for CRA
-          # - "out" for Next.js export
-          output_location: "dist"
+          app_location: "/"          # adjust if your app is in a subfolder
+          api_location: "api"        # your Functions folder
+          output_location: "dist"    # change to build/ or out/ if needed
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
