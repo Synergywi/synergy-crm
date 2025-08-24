@@ -4,5 +4,7 @@
       "methods": ["get","post","patch","delete"], "route": "users/{email?}" },
     { "type": "http", "direction": "out", "name": "res" }
   ],
-  "scriptFile": "index.js"
+{
+  "scriptFile": "index.js",
+  "bindings": [ /* your existing bindings unchanged */ ]
 }
