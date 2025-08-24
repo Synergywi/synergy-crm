@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- Build the API ourselves (emit index.js next to index.ts) ---
+      # Build API ourselves so Oryx doesn't try to run tsc
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
@@ -21,12 +21,20 @@ jobs:
 
       - name: Build API (compile TS in-place; then prune dev deps)
         working-directory: api
+        shell: bash
         run: |
-          npm ci --no-audit --no-fund
+          set -e
+          # If lockfile exists use ci, else install
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
           npx tsc -p tsconfig.json
+          # remove devDeps before deploy
           npm prune --omit=dev
 
-      # --- Deploy: explicitly skip both app & api builds so Oryx doesn't run tsc ---
+      # Deploy and explicitly skip any builds (no Oryx tsc)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
