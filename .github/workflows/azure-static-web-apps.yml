@@ -1,21 +1,79 @@
-      - name: Validate function.json scriptFile targets (post-build)
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node is only used for the tiny JSON validation helpers below.
+      - name: Use Node 18 for helpers
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      # Quick sanity check so bad JSON fails fast before deploy.
+      - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
           set -e
           shopt -s globstar nullglob
           for f in api/**/function.json; do
-            dir="$(dirname "$f")"
-            # Read the JSON file as a path, not a module id
-            sf="$(node -e "const fs=require('fs');const p=process.argv[1];const j=JSON.parse(fs.readFileSync(p,'utf8'));process.stdout.write((j.scriptFile||'').trim());" "$f")"
-            if [ -z "$sf" ]; then
-              echo "Error: scriptFile missing in $f"
-              exit 1
-            fi
-            if [ ! -f "$dir/$sf" ]; then
-              echo "Error: scriptFile path not found: $dir/$sf (from $f)"
-              echo "Directory listing for $dir:"
-              ls -la "$dir"
-              exit 1
-            fi
-            echo "OK $f -> $sf"
+            node -e "const fs=require('fs');try{JSON.parse(fs.readFileSync(process.argv[1],'utf8'));}catch(e){console.error('Invalid JSON in',process.argv[1]);console.error(e.message);process.exit(1)}" "$f"
+            echo "OK $f"
           done
+
+      # Let the SWA action/Oryx do the API build (this is what worked for us).
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: web
+          api_location: api
+          # Do NOT skip the API build; Oryx must build the Functions app
+          skip_app_build: false
+          skip_api_build: false
+
+      # Optional smoke tests (run only if you set a repo variable SWA_URL to your site URL)
+      - name: Smoke test API (/api/ping)
+        if: ${{ success() && vars.SWA_URL != '' }}
+        shell: bash
+        run: |
+          set -e
+          url="${{ vars.SWA_URL }}/api/ping"
+          echo "GET $url"
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
+          echo "HTTP $code"
+          if [[ "$code" -lt 200 || "$code" -ge 300 ]]; then
+            echo "API ping failed with HTTP $code"
+            exit 1
+          fi
+
+      - name: Smoke test web (home page)
+        if: ${{ success() && vars.SWA_URL != '' }}
+        shell: bash
+        run: |
+          set -e
+          url="${{ vars.SWA_URL }}/"
+          echo "GET $url"
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
+          echo "HTTP $code"
+          if [[ "$code" -lt 200 || "$code" -ge 300 ]]; then
+            echo "Home page check failed with HTTP $code"
+            exit 1
+          fi
