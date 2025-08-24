@@ -8,9 +8,9 @@
     "clean": "rimraf \"**/*.js\" \"**/*.js.map\""
   },
   "dependencies": {
-    "@azure/functions": "^4.4.0",
-    "@azure/cosmos": "^4.2.0"
-  },
+  "@azure/functions": "3.5.1",
+  "@azure/cosmos": "4.2.0"
+}
   "devDependencies": {
     "typescript": "5.4.5",
     "@types/node": "20.11.30",
