@@ -1,47 +1,62 @@
 
-const store = require('../shared/store');
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
 
 module.exports = async function (context, req) {
-  const id = (req.params && req.params.id) ? String(req.params.id) : null;
-  const method = (req.method || 'GET').toUpperCase();
-  context.log('contacts API', method, id || '');
+  const method = (req.method || "GET").toUpperCase();
+  const id = (context.bindingData && context.bindingData.id) || null;
 
-  // CORS for Static Web Apps
-  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' };
-  if(method === 'OPTIONS') {
-    context.res = { status: 204, headers: cors };
-    return;
+  if (method === "OPTIONS") {
+    return { status: 204, headers: corsHeaders };
   }
 
   try {
-    if(method === 'GET') {
-      if(id) {
-        const item = store.get('contacts', id);
-        context.res = { status: item?200:404, headers: cors, body: item || {error:'not found'} };
+    if (method === "GET") {
+      if (id) {
+        const item = fakeCompanies().find(c => String(c.id) === String(id));
+        if (!item) return json(404, { error: "Company not found" });
+        return json(200, item);
       } else {
-        const list = store.list('contacts');
-        context.res = { status: 200, headers: cors, body: list };
+        return json(200, fakeCompanies());
       }
-      return;
-    }
-    if(method === 'POST' || method === 'PUT') {
-      const body = req.body || {};
-      // if PUT with id, enforce it
-      if(method === 'PUT' && id) body.id = id;
-      const saved = store.save('contacts', body);
-      context.res = { status: 200, headers: cors, body: saved };
-      return;
-    }
-    if(method === 'DELETE') {
-      if(!id) { context.res = { status: 400, headers: cors, body: {error:'missing id'} }; return; }
-      const ok = store.remove('contacts', id);
-      context.res = { status: ok?204:404, headers: cors };
-      return;
     }
 
-    context.res = { status: 405, headers: cors, body: {error:'method not allowed'} };
-  } catch (e) {
-    context.log.error(e);
-    context.res = { status: 500, headers: cors, body: {error: String(e.message || e)} };
+    if (method === "POST") {
+      const body = req.body || {};
+      if (!body.name || typeof body.name !== "string") {
+        return json(400, { error: "Field 'name' is required (string)" });
+      }
+      const created = {
+        id: Date.now(),
+        name: body.name.trim(),
+        website: body.website || null,
+        createdAt: new Date().toISOString()
+      };
+      return json(201, created);
+    }
+
+    return json(405, { error: "Method not allowed" }, { Allow: "GET, POST, OPTIONS" });
+  } catch (err) {
+    context.log.error("companies error", err);
+    return json(500, { error: "Internal Server Error" });
   }
 };
+
+function json(status, data, extraHeaders = {}) {
+  return {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders, ...extraHeaders },
+    body: JSON.stringify(data)
+  };
+}
+
+function fakeCompanies() {
+  return [
+    { id: 1, name: "Synergy Widgets", website: "https://synergywi.com.au", createdAt: new Date().toISOString() },
+    { id: 2, name: "Contoso Pty Ltd", website: "https://contoso.example", createdAt: new Date().toISOString() },
+    { id: 3, name: "Northwind Traders", website: null, createdAt: new Date().toISOString() }
+  ];
+}

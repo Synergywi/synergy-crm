@@ -1,23 +1,23 @@
-# Synergy CRM — Investigations (Working Build)
 
-Vite + React + TypeScript + Tailwind prototype with SPA routing config for Azure Static Web Apps.
+# Synergy CRM (Starter)
 
-## Local Dev
+- Vite + React + TS front-end
+- Azure Functions API (`/api/companies`) with GET/POST
+- SPA routing + fallback via `staticwebapp.config.json`
+
+## Run locally
 ```bash
 npm install
 npm run dev
 ```
+Open the printed URL (e.g., http://localhost:5173).
 
 ## Build
 ```bash
 npm run build
-npm run preview
 ```
+Artifacts go to `dist/` (set your GitHub Action `output_location: "dist"`).
 
-## Azure Static Web Apps
-- App location: `/`
-- Output location: `dist`
-- API location: *(blank)*
-
-This repo intentionally **does not** include `.github/workflows/` so Azure's connected workflow will run.
-
+## API endpoints
+- `GET /api/companies`
+- `POST /api/companies` (body: `{ "name": "Acme", "website": "https://..." }`)
