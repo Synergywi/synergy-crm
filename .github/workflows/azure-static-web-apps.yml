@@ -15,81 +15,84 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- Build Azure Functions API (TypeScript -> JS in-place) ---
+      # Use Node 18 for any API prebuild steps we run ourselves
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
-      # Validate function.json syntax before we do anything else
+      # --- Pre-build: JSON validity only
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           shopt -s nullglob
-          for f in api/*/function.json; do
+          files=(api/*/function.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No function.json files found under api/* — nothing to validate."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
             echo "Checking JSON: $f"
             node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
           done
 
+      # --- Build TypeScript to JS in-place (so Oryx will pick up compiled JS)
       - name: Build API (compile TS in-place; then prune dev deps)
         working-directory: api
         shell: bash
         run: |
-          set -e
-          # Install deps (respect lockfile if present)
+          set -euo pipefail
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           else
             npm install --no-audit --no-fund
           fi
-
-          # Compile TS -> JS in place (tsconfig.json controls emit)
           npx tsc -p tsconfig.json
-
-          # IMPORTANT: remove .ts sources and tsconfig so Oryx doesn't run tsc again
-          find . -type f -name "*.ts" -not -path "./node_modules/*" -delete || true
-          rm -f tsconfig.json || true
-
-          # Production-only deps for deployment
+          # keep production deps only for smaller function zip
           npm prune --omit=dev
 
-      # Double-check each function.json points at a real scriptFile after build
+      # --- Post-build check: ensure each function.json's scriptFile exists
       - name: Validate function.json scriptFile targets (post-build)
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           shopt -s nullglob
-          for f in api/*/function.json; do
+          files=(api/*/function.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No function.json files found under api/* — nothing to validate."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
             dir="$(dirname "$f")"
-            target="$(node -e "const j=require('$f');process.stdout.write(j.scriptFile||'')")"
-            if [ -z "$target" ]; then
-              echo "ERROR: scriptFile not set in $f"; exit 1
+            scriptFile="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('$f','utf8')); process.stdout.write(j.scriptFile||'')" )"
+            if [ -z "$scriptFile" ]; then
+              echo "::warning file=$f::No scriptFile specified in function.json (Functions v4 supports both). Skipping file existence check."
+              continue
             fi
-            if [ ! -f "$dir/$target" ]; then
-              echo "ERROR: scriptFile path not found: $dir/$target (from $f)"; exit 1
+            # Ensure we resolve as a file path, not a module id
+            if [ ! -f "./$dir/$scriptFile" ]; then
+              echo "Directory listing for $dir:"
+              ls -la "$dir" || true
+              echo "::error::scriptFile path not found: $dir/$scriptFile (from $f)"
+              exit 1
+            else
+              echo "OK  $f  ->  $scriptFile"
             fi
-            echo "OK  $f -> $target"
           done
 
-      # --- Deploy (let the action/Oryx detect Node for the API) ---
+      # --- Deploy: let Oryx/Action detect the API language (do NOT skip api build)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
 
-          # Your static site
           app_location: web
           skip_app_build: true
           app_build_command: 'echo "skip app build"'
 
-          # Functions API (we DO NOT skip api build here)
           api_location: api
+          # DO NOT skip api build – this allows language detection and avoids the
+          # "Function language info isn't provided" error.
           skip_api_build: false
-          api_build_command: ''
-
-        env:
-          # (Optional) quiet npm noise inside Oryx
-          NPM_CONFIG_AUDIT: 'false'
-          NPM_CONFIG_FUND: 'false'
