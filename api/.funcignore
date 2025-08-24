@@ -1,13 +1,12 @@
-# keep host.json and function.json
 local.settings.json
+.vscode
+.git
+.gitignore
+
 test
 tests
 __tests__
 coverage
-.git
-.gitignore
-.vscode
-# ignore sources & maps in the zip (compiled JS in dist is what runs)
+
 **/*.ts
 **/*.map
-# never exclude dist or node_modules
