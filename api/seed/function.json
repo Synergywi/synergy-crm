@@ -1,17 +1,18 @@
 {
-  "scriptFile": "../dist/seed/index.js"
   "bindings": [
     {
-      "authLevel": "function",
+      "authLevel": "anonymous",
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": [ "post" ]
+      "methods": [ "post" ],
+      "route": "seed"
     },
     {
       "type": "http",
       "direction": "out",
       "name": "res"
     }
-  ]
+  ],
+  "scriptFile": "index.js"
 }
