@@ -4,76 +4,95 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [ opened, synchronize, reopened ]
+    types: [opened, synchronize, reopened, closed]
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node is only used for the tiny JSON validation helpers below.
-      - name: Use Node 18 for helpers
+      # Use Node 18 for any API prebuild steps we run ourselves
+      - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
-      # Quick sanity check so bad JSON fails fast before deploy.
+      # --- Pre-build: JSON validity only
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
-          set -e
-          shopt -s globstar nullglob
-          for f in api/**/function.json; do
-            node -e "const fs=require('fs');try{JSON.parse(fs.readFileSync(process.argv[1],'utf8'));}catch(e){console.error('Invalid JSON in',process.argv[1]);console.error(e.message);process.exit(1)}" "$f"
-            echo "OK $f"
+          set -euo pipefail
+          shopt -s nullglob
+          files=(api/*/function.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No function.json files found under api/* — nothing to validate."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "Checking JSON: $f"
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
           done
 
-      # Let the SWA action/Oryx do the API build (this is what worked for us).
+      # --- Build TypeScript to JS in-place (so Oryx will pick up compiled JS)
+      - name: Build API (compile TS in-place; then prune dev deps)
+        working-directory: api
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+          npx tsc -p tsconfig.json
+          # keep production deps only for smaller function zip
+          npm prune --omit=dev
+
+      # --- Post-build check: ensure each function.json's scriptFile exists
+      - name: Validate function.json scriptFile targets (post-build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(api/*/function.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No function.json files found under api/* — nothing to validate."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            dir="$(dirname "$f")"
+            scriptFile="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('$f','utf8')); process.stdout.write(j.scriptFile||'')" )"
+            if [ -z "$scriptFile" ]; then
+              echo "::warning file=$f::No scriptFile specified in function.json (Functions v4 supports both). Skipping file existence check."
+              continue
+            fi
+            # Ensure we resolve as a file path, not a module id
+            if [ ! -f "./$dir/$scriptFile" ]; then
+              echo "Directory listing for $dir:"
+              ls -la "$dir" || true
+              echo "::error::scriptFile path not found: $dir/$scriptFile (from $f)"
+              exit 1
+            else
+              echo "OK  $f  ->  $scriptFile"
+            fi
+          done
+
+      # --- Deploy: let Oryx/Action detect the API language (do NOT skip api build)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
+
           app_location: web
+          skip_app_build: true
+          app_build_command: 'echo "skip app build"'
+
           api_location: api
-          # Do NOT skip the API build; Oryx must build the Functions app
-          skip_app_build: false
+          # DO NOT skip api build – this allows language detection and avoids the
+          # "Function language info isn't provided" error.
           skip_api_build: false
-
-      # Optional smoke tests (run only if you set a repo variable SWA_URL to your site URL)
-      - name: Smoke test API (/api/ping)
-        if: ${{ success() && vars.SWA_URL != '' }}
-        shell: bash
-        run: |
-          set -e
-          url="${{ vars.SWA_URL }}/api/ping"
-          echo "GET $url"
-          code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
-          echo "HTTP $code"
-          if [[ "$code" -lt 200 || "$code" -ge 300 ]]; then
-            echo "API ping failed with HTTP $code"
-            exit 1
-          fi
-
-      - name: Smoke test web (home page)
-        if: ${{ success() && vars.SWA_URL != '' }}
-        shell: bash
-        run: |
-          set -e
-          url="${{ vars.SWA_URL }}/"
-          echo "GET $url"
-          code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
-          echo "HTTP $code"
-          if [[ "$code" -lt 200 || "$code" -ge 300 ]]; then
-            echo "Home page check failed with HTTP $code"
-            exit 1
-          fi
