@@ -1,38 +1,82 @@
-const companies: any[] = [
-  { id: "c_001", name: "Acme Pty Ltd",    domain: "acme.example",    ownerId: "u_001" },
-  { id: "c_002", name: "Globex Holdings", domain: "globex.example",  ownerId: "u_002" }
-];
+/** 
+ * Companies HTTP Function
+ * Supports:
+ *  - GET /api/companies            -> list
+ *  - GET /api/companies/{id}       -> single
+ *  - POST /api/companies           -> create (demo)
+ * Also responds to OPTIONS for CORS preflight.
+ */
 
-function json(res: any, status: number, body: any) {
-  res.status = status;
-  res.headers = { "content-type": "application/json" };
-  res.body = JSON.stringify(body);
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+
+module.exports = async function (context, req) {
+  const method = (req.method || "GET").toUpperCase();
+  const id = (context.bindingData && context.bindingData.id) || null;
+
+  // Preflight / CORS
+  if (method === "OPTIONS") {
+    return { status: 204, headers: corsHeaders };
+  }
+
+  try {
+    if (method === "GET") {
+      if (id) {
+        // Demo: pretend to fetch one company
+        const item = fakeCompanies().find(c => String(c.id) === String(id));
+        if (!item) {
+          return json(404, { error: "Company not found" });
+        }
+        return json(200, item);
+      } else {
+        // Demo: pretend to fetch a list
+        return json(200, fakeCompanies());
+      }
+    }
+
+    if (method === "POST") {
+      const body = req.body || {};
+      // Minimal validation
+      if (!body.name || typeof body.name !== "string") {
+        return json(400, { error: "Field 'name' is required (string)" });
+      }
+
+      // Demo: create a new company (normally you'd write to a DB)
+      const created = {
+        id: Date.now(),
+        name: body.name.trim(),
+        website: body.website || null,
+        createdAt: new Date().toISOString()
+      };
+
+      return json(201, created);
+    }
+
+    // Method not allowed
+    return json(405, { error: "Method not allowed" }, { Allow: "GET, POST, OPTIONS" });
+  } catch (err) {
+    context.log.error("companies error", err);
+    return json(500, { error: "Internal Server Error" });
+  }
+};
+
+// ---- helpers
+
+function json(status, data, extraHeaders = {}) {
+  return {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders, ...extraHeaders },
+    body: JSON.stringify(data)
+  };
 }
 
-export default async function (context: any, req: any) {
-  const { method, query, body } = req;
-
-  if (method === "GET") {
-    const q = (query?.q || "").toString().toLowerCase();
-    const data = q ? companies.filter(c => c.name.toLowerCase().includes(q) || (c.domain||"").toLowerCase().includes(q)) : companies;
-    return json(context.res, 200, { ok: true, count: data.length, companies: data });
-  }
-
-  if (method === "POST") {
-    try {
-      const payload = typeof body === "string" ? JSON.parse(body) : body || {};
-      const { name, domain, ownerId } = payload;
-
-      if (!name) return json(context.res, 400, { ok: false, error: "name is required" });
-
-      const id = "c_" + Math.random().toString(36).slice(2, 8);
-      const company = { id, name, domain: domain || null, ownerId: ownerId || null };
-      companies.push(company);
-      return json(context.res, 201, { ok: true, company });
-    } catch {
-      return json(context.res, 400, { ok: false, error: "Invalid JSON body" });
-    }
-  }
-
-  return json(context.res, 405, { ok: false, error: "Method Not Allowed" });
+function fakeCompanies() {
+  return [
+    { id: 1, name: "Synergy Widgets", website: "https://synergywi.com.au" },
+    { id: 2, name: "Contoso Pty Ltd", website: "https://contoso.example" },
+    { id: 3, name: "Northwind Traders", website: null }
+  ];
 }
