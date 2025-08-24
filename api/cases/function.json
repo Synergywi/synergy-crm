@@ -4,5 +4,5 @@
       "methods": ["get","post","patch","delete"], "route": "cases/{id?}" },
     { "type": "http", "direction": "out", "name": "res" }
   ],
-  "scriptFile": "index.js"
+  "scriptFile": "../dist/cases/index.js"
 }
