@@ -9,22 +9,18 @@ on:
 
 jobs:
   build_and_deploy:
-    # Run for normal pushes, and PRs except when they are being closed
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
-      # We build the Functions API ourselves (TypeScript -> JS) so Oryx won't try
       - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
-          # intentionally no caching to avoid “paths not resolved” warnings
 
-      # Quick JSON syntax check for each function.json before we compile
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
@@ -35,7 +31,6 @@ jobs:
             node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"
           done
 
-      # Compile TS -> JS and prune dev deps so the deployed API contains only prod deps
       - name: Build API (ts -> js) and keep only prod deps
         working-directory: api
         shell: bash
@@ -49,7 +44,6 @@ jobs:
           npx tsc -p tsconfig.json
           npm prune --omit=dev
 
-      # Make sure each function.json's scriptFile exists after build (e.g., index.js)
       - name: Validate function.json scriptFile targets (post-build)
         shell: bash
         run: |
@@ -71,7 +65,6 @@ jobs:
             echo "OK $f -> $sf"
           done
 
-      # Deploy: skip app & api builds (we already built), and declare the Functions language
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -81,11 +74,10 @@ jobs:
           skip_app_build: true
           api_location: api
           skip_api_build: true
-          function_language: node
-          # If you have a config file under /web, keep this; otherwise remove the next line
+          function_language: 'node'
+          # Remove the next line if you don't have this file
           config_file_location: web/staticwebapp.config.json
 
-      # Optional smoke tests (only run if SWA_URL repo variable is set)
       - name: Smoke test API (/api/ping)
         if: ${{ vars.SWA_URL != '' }}
         shell: bash
@@ -103,7 +95,6 @@ jobs:
           echo "Fetching ${{ vars.SWA_URL }}/"
           curl -fsS "${{ vars.SWA_URL }}/" | head -c 400 >/dev/null
 
-  # Required by SWA: close PR environments when a PR is closed
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
