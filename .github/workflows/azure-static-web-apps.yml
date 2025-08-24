@@ -9,64 +9,69 @@ on:
 
 jobs:
   build_and_deploy:
+    # Run for normal pushes, and PRs except when they are being closed
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # --- Node setup (cache only if lockfile exists) ---
-      - name: Setup Node 18 + npm cache
-        if: ${{ hashFiles('api/package-lock.json') != '' }}
+      # We build the Functions API ourselves (TypeScript -> JS) so Oryx won't try
+      - name: Use Node 18 for API build
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
-          cache: npm
-          cache-dependency-path: api/package-lock.json
+          # intentionally no caching to avoid “paths not resolved” warnings
 
-      - name: Setup Node 18 (no cache)
-        if: ${{ hashFiles('api/package-lock.json') == '' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-
-      # --- Validate function.json before build ---
+      # Quick JSON syntax check for each function.json before we compile
       - name: Validate function.json syntax (pre-build)
         shell: bash
         run: |
           set -e
-          shopt -s nullglob
+          shopt -s globstar nullglob
           for f in api/**/function.json; do
+            echo "Checking JSON: $f"
             node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"
           done
 
-      # --- Build API (ts -> js) and keep only prod deps ---
+      # Compile TS -> JS and prune dev deps so the deployed API contains only prod deps
       - name: Build API (ts -> js) and keep only prod deps
         working-directory: api
         shell: bash
         run: |
           set -e
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm i --no-audit --no-fund; fi
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
           npx tsc -p tsconfig.json
           npm prune --omit=dev
 
-      # --- Verify scriptFile targets after build ---
+      # Make sure each function.json's scriptFile exists after build (e.g., index.js)
       - name: Validate function.json scriptFile targets (post-build)
         shell: bash
         run: |
           set -e
-          for d in api/*; do
-            [ -d "$d" ] || continue
-            f="$d/function.json"
-            [ -f "$f" ] || continue
-            target=$(node -p "try{require('$f').scriptFile || 'index.js'}catch(e){'index.js'}")
-            if [ ! -f "$d/$target" ]; then
-              echo "scriptFile path not found: $d/$target (from $f)"; exit 1
+          shopt -s globstar nullglob
+          for f in api/**/function.json; do
+            dir="$(dirname "$f")"
+            sf="$(node -e "const j=require(process.argv[1]);process.stdout.write((j.scriptFile||'').trim());" "$f")"
+            if [ -z "$sf" ]; then
+              echo "Error: scriptFile missing in $f"
+              exit 1
             fi
+            if [ ! -f "$dir/$sf" ]; then
+              echo "Error: scriptFile path not found: $dir/$sf (from $f)"
+              echo "Directory listing for $dir:"
+              ls -la "$dir"
+              exit 1
+            fi
+            echo "OK $f -> $sf"
           done
 
-      # --- Deploy (no Oryx build; we already built) ---
+      # Deploy: skip app & api builds (we already built), and declare the Functions language
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -76,31 +81,35 @@ jobs:
           skip_app_build: true
           api_location: api
           skip_api_build: true
+          function_language: node
+          # If you have a config file under /web, keep this; otherwise remove the next line
+          config_file_location: web/staticwebapp.config.json
 
-      # --- Soft smoke tests: NEVER fail the job ---
+      # Optional smoke tests (only run if SWA_URL repo variable is set)
       - name: Smoke test API (/api/ping)
         if: ${{ vars.SWA_URL != '' }}
-        continue-on-error: true
         shell: bash
-        env:
-          SWA_URL: ${{ vars.SWA_URL }}
         run: |
           set -e
-          echo "Hitting $SWA_URL/api/ping"
-          curl -fsS "$SWA_URL/api/ping" | tee /tmp/api_ping.json
-          node -e "try{const j=require('fs').readFileSync('/tmp/api_ping.json','utf8'); const o=JSON.parse(j); if(!o.ok) process.exit(2)}catch(e){process.exit(3)}"
+          echo "Pinging ${{ vars.SWA_URL }}/api/ping"
+          curl -fsSL "${{ vars.SWA_URL }}/api/ping" | tee /tmp/ping.json
+          node -e "JSON.parse(require('fs').readFileSync('/tmp/ping.json','utf8'))"
 
-      - name: Smoke test Web (/)
+      - name: Smoke test web (home page)
         if: ${{ vars.SWA_URL != '' }}
-        continue-on-error: true
         shell: bash
-        env:
-          SWA_URL: ${{ vars.SWA_URL }}
         run: |
           set -e
-          echo "Hitting $SWA_URL/"
-          curl -fsS "$SWA_URL" >/dev/null
+          echo "Fetching ${{ vars.SWA_URL }}/"
+          curl -fsS "${{ vars.SWA_URL }}/" | head -c 400 >/dev/null
 
-      - name: Post Use Node 18 for API build
-        if: always()
-        run: echo "Done."
+  # Required by SWA: close PR environments when a PR is closed
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close PR Environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
