@@ -1,25 +1,9 @@
-// Basic HTTP function compatible with function.json (scriptFile=index.js)
+// Classic Node v3 style handler (matches function.json)
 module.exports = async function (context, req) {
-  const method = (req.method || "GET").toUpperCase();
-  const id = req.params && req.params.id;
-
-  if (method === "GET") {
-    // return an empty list or your real data
-    context.res = {
-      status: 200,
-      jsonBody: { ok: true, users: [], id: id || null }
-    };
-    return;
-  }
-
-  // Echo for non-GET to prove it’s wired
+  const id = (req.params && req.params.id) || null;
   context.res = {
     status: 200,
-    jsonBody: {
-      ok: true,
-      method,
-      id: id || null,
-      body: req.body || null
-    }
+    headers: { "content-type": "application/json" },
+    body: { ok: true, id }
   };
 };
