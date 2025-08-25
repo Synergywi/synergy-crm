@@ -1,3 +1,4 @@
+import "../web/hubspot-theme.css";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import CompaniesPage from "./pages/CompaniesPage";
 import ContactsPage from "./pages/Contacts";   // ✅ fixed import path
