@@ -21,3 +21,4 @@ Artifacts go to `dist/` (set your GitHub Action `output_location: "dist"`).
 ## API endpoints
 - `GET /api/companies`
 - `POST /api/companies` (body: `{ "name": "Acme", "website": "https://..." }`)
+
