@@ -1,8 +1,18 @@
 {
   "bindings": [
-    { "authLevel": "anonymous", "type": "httpTrigger", "direction": "in", "name": "req",
-      "methods": ["get","post","patch","delete"], "route": "contacts/{id?}" },
-    { "type": "http", "direction": "out", "name": "res" }
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [ "get", "post", "options" ],
+      "route": "contacts/{id?}"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    }
   ],
   "scriptFile": "index.js"
 }
