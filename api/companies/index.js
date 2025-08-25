@@ -1,32 +1,36 @@
-const container = require("../shared/cosmos");
+const { container } = require("../shared/cosmos");
 
-function json(status, body) {
-  return {
-    status,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  };
-}
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+
+const json = (status, body) => ({
+  status,
+  headers: { "Content-Type": "application/json", ...CORS },
+  body: JSON.stringify(body)
+});
 
 module.exports = async function (context, req) {
   const method = (req.method || "GET").toUpperCase();
   const id = context.bindingData && context.bindingData.id;
 
-  try {
-    if (method === "OPTIONS") {
-      return { status: 204 };
-    }
+  if (method === "OPTIONS") {
+    return { status: 204, headers: CORS };
+  }
 
+  try {
     if (method === "GET") {
       if (id) {
-        const { resource } = await container.item(id, id).read();
+        const { resource } = await container.item(String(id), String(id)).read();
         if (!resource) return json(404, { error: "Not found" });
         return json(200, resource);
-      } else {
-        const query = { query: "SELECT TOP 100 * FROM c ORDER BY c._ts DESC" };
-        const { resources } = await container.items.query(query).fetchAll();
-        return json(200, resources);
       }
+
+      const query = { query: "SELECT TOP 100 * FROM c ORDER BY c._ts DESC" };
+      const { resources } = await container.items.query(query).fetchAll();
+      return json(200, resources);
     }
 
     if (method === "POST") {
@@ -35,23 +39,20 @@ module.exports = async function (context, req) {
         return json(400, { error: "Field 'name' required" });
       }
 
-      const newItem = {
-        id: b.id || Date.now().toString(), // always give Cosmos an id
+      const item = {
+        id: String(b.id || Date.now()),   // matches partition key /id
         name: b.name.trim(),
         website: b.website || null,
         createdAt: new Date().toISOString()
       };
 
-      const { resource } = await container.items.upsert(newItem, {
-        disableAutomaticIdGeneration: false
-      });
-
+      const { resource } = await container.items.create(item);
       return json(201, resource);
     }
 
     return json(405, { error: "Method not allowed" });
   } catch (err) {
     context.log.error("companies error", err);
-    return json(500, { error: "Internal Server Error", detail: err.message || err });
+    return json(500, { error: "Internal Server Error", detail: String(err.message || err) });
   }
 };
