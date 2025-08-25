@@ -2,7 +2,9 @@
   "name": "swa-api",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "dependencies": {
-    "@azure/functions": "^3.5.0"
+    "@azure/functions": "^3.5.0",
+    "@azure/cosmos": "^4.1.1"
   }
 }

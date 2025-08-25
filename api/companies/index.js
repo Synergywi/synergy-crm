@@ -4,31 +4,47 @@ const cors = {
   "Access-Control-Allow-Headers": "Content-Type"
 };
 
+const { container } = require("../shared/cosmos");
+
+async function json(status, body) {
+  return { status, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify(body) };
+}
+
 module.exports = async function (context, req) {
   const method = (req.method || "GET").toUpperCase();
   const id = context.bindingData && context.bindingData.id;
 
-  if (method === "OPTIONS") {
-    return { status: 204, headers: cors };
-  }
+  if (method === "OPTIONS") return { status: 204, headers: cors };
 
-  if (method === "GET") {
-    const data = [
-      { id: 1, name: "Synergy Test Company", website: "https://synergywi.com.au", createdAt: new Date().toISOString() }
-    ];
-    if (id) {
-      const item = data.find(d => String(d.id) === String(id));
-      if (!item) return { status: 404, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify({ error: "Not found" }) };
-      return { status: 200, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify(item) };
+  try {
+    if (method === "GET") {
+      if (id) {
+        const { resource } = await container.item(String(id), String(id)).read();
+        if (!resource) return json(404, { error: "Not found" });
+        return json(200, resource);
+      }
+      // List all (limited)
+      const query = { query: "SELECT TOP 100 * FROM c ORDER BY c._ts DESC" };
+      const { resources } = await container.items.query(query).fetchAll();
+      return json(200, resources);
     }
-    return { status: 200, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify(data) };
-  }
 
-  if (method === "POST") {
-    const body = req.body || {};
-    const created = { id: Date.now(), name: body.name || "Untitled", website: body.website || null, createdAt: new Date().toISOString() };
-    return { status: 201, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify(created) };
-  }
+    if (method === "POST") {
+      const b = req.body || {};
+      if (!b.name || typeof b.name !== "string") return json(400, { error: "Field 'name' required" });
+      const item = {
+        id: String(b.id || Date.now()),
+        name: b.name.trim(),
+        website: b.website || null,
+        createdAt: new Date().toISOString()
+      };
+      const { resource } = await container.items.upsert(item, { disableAutomaticIdGeneration: true });
+      return json(201, resource);
+    }
 
-  return { status: 405, headers: { "Content-Type": "application/json", ...cors }, body: JSON.stringify({ error: "Method not allowed" }) };
+    return json(405, { error: "Method not allowed" });
+  } catch (err) {
+    context.log.error("companies error", err);
+    return json(500, { error: "Internal Server Error", detail: String(err.message || err) });
+  }
 };
