@@ -1,16 +1,8 @@
 {
-  "name": "swa-functions",
+  "name": "swa-api",
   "version": "1.0.0",
   "private": true,
-  "description": "Azure Functions (v3 model) used by Synergy CRM",
-  "type": "commonjs",
-  "engines": { "node": "18.x" },
   "dependencies": {
-    "@azure/functions": "3.5.1",
-    "@azure/cosmos": "4.2.0"
-  },
-  "devDependencies": {
-    "typescript": "5.4.5",
-    "@types/node": "20.11.30"
+    "@azure/functions": "^3.5.0"
   }
 }
