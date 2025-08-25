@@ -1,53 +1,72 @@
-import type { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import { getContainer, http } from "../shared/cosmos";
-const PK = "/companyId";
-const handler: AzureFunction = async (context: Context, req: HttpRequest) => {
-  const c = await getContainer("contacts", PK);
-  const id = context.bindingData.id as string | undefined;
-  const method = (req.method || "GET").toUpperCase();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* Using CommonJS require to match the shared client */
+const { db } = require("../shared/cosmos"); // must export { db } from shared/cosmos.js
+
+type Contact = {
+  id: string;
+  name: string;
+  email?: string | null;
+  companyId?: string | null;
+  lastSeen?: string | null;
+  createdAt: string;
+};
+
+const CORS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+const json = (status: number, body: unknown) => ({
+  status,
+  headers: { "Content-Type": "application/json", ...CORS },
+  body: JSON.stringify(body),
+});
+
+// If your container has a different name, set CONTACTS_CONTAINER in SWA env vars
+const CONTACTS_CONTAINER = process.env.CONTACTS_CONTAINER || "contacts";
+const container = db.container(CONTACTS_CONTAINER);
+
+module.exports = async function (context: any, req: any) {
+  const method = (req?.method || "GET").toUpperCase();
+  const id = context?.bindingData?.id as string | undefined;
+
+  if (method === "OPTIONS") return { status: 204, headers: CORS };
+
   try {
     if (method === "GET") {
       if (id) {
-        const { resource } = await c.item(id, (req.query.companyId as string | undefined) || undefined).read();
-        context.res = resource ? http.ok(resource) : http.notfound();
-      } else {
-        const companyId = req.query.companyId as string | undefined;
-        const query = companyId
-          ? { query: "SELECT * FROM c WHERE c.companyId = @companyId", parameters: [{ name: "@companyId", value: companyId }] }
-          : { query: "SELECT * FROM c" };
-        const { resources } = await c.items.query(query).fetchAll();
-        context.res = http.ok(resources);
+        const { resource } = await container.item(String(id), String(id)).read();
+        if (!resource) return json(404, { error: "Not found" });
+        return json(200, resource);
       }
-      return;
+      const query = { query: "SELECT TOP 100 * FROM c ORDER BY c._ts DESC" };
+      const { resources } = await container.items.query(query).fetchAll();
+      return json(200, resources);
     }
+
     if (method === "POST") {
-      const body = req.body;
-      if (!body?.id || !body?.email || !body?.companyId) { context.res = http.bad("id, email, companyId required"); return; }
-      const { resource } = await c.items.create(body);
-      context.res = http.created(resource);
-      return;
+      const b = (req?.body ?? {}) as Partial<Contact> & { name?: string };
+      if (!b.name || typeof b.name !== "string") {
+        return json(400, { error: "Field 'name' required" });
+      }
+
+      const item: Contact = {
+        id: String((b as any).id ?? Date.now()), // partition key /id
+        name: b.name.trim(),
+        email: b.email ?? null,
+        companyId: b.companyId ?? null,
+        lastSeen: b.lastSeen ?? new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      const { resource } = await container.items.create(item);
+      return json(201, resource);
     }
-    if (method === "PATCH") {
-      if (!id) { context.res = http.bad("id required"); return; }
-      const pk = (req.body && req.body.companyId) || (req.query && req.query.companyId);
-      const { resource } = await c.item(id, pk).read();
-      if (!resource) { context.res = http.notfound(); return; }
-      const updated = { ...resource, ...req.body };
-      const { resource: saved } = await c.items.upsert(updated);
-      context.res = http.ok(saved);
-      return;
-    }
-    if (method === "DELETE") {
-      if (!id) { context.res = http.bad("id required"); return; }
-      const pk = (req.body && req.body.companyId) || (req.query && req.query.companyId);
-      await c.item(id, pk).delete();
-      context.res = http.ok({ id });
-      return;
-    }
-    context.res = http.bad("Unsupported method");
-  } catch (e: any) {
-    context.log.error(e);
-    context.res = { status: 500, body: { error: e.message } };
+
+    return json(405, { error: "Method not allowed" });
+  } catch (err: any) {
+    context.log.error("contacts error", err);
+    return json(500, { error: "Internal Server Error", detail: String(err?.message ?? err) });
   }
 };
-export default handler;
