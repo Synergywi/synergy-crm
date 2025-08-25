@@ -1,210 +1,224 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-/** ----- Types ----- */
+/** Types */
 type Contact = {
   id: string;
   name: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  role?: string;
-  lastSeenTs?: string; // ISO string
+  email?: string | null;
+  company?: string | null;
+  phone?: string | null;
+  role?: string | null;
+  lastSeenAt?: string | null; // ISO string
 };
 
-type FormState = {
+type UpsertPayload = {
   name: string;
-  company?: string;
   email?: string;
+  company?: string;
   phone?: string;
   role?: string;
 };
 
-/** ----- Small helpers ----- */
-const fmtAgo = (iso?: string) => {
+/** Small helpers */
+const fmtAgo = (iso?: string | null) => {
   if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const d = Math.max(0, now - then);
-  const mins = Math.round(d / 60000);
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
+  const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
+  const days = Math.floor(hrs / 24);
   return `${days}d ago`;
 };
 
-async function api<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText}${text ? `: ${text}` : ""}`);
-  }
-  return res.json() as Promise<T>;
+const dot = (ok = true) => (
+  <span
+    style={{
+      display: "inline-block",
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      marginRight: 6,
+      background: ok ? "#34d399" : "#f59e0b",
+      verticalAlign: "-1px",
+    }}
+  />
+);
+
+/** API layer (talks to api/contacts) */
+async function listContacts(): Promise<Contact[]> {
+  const res = await fetch("/api/contacts");
+  if (!res.ok) throw new Error(`List failed: ${res.status}`);
+  return res.json();
 }
 
-/** GET all contacts */
-async function fetchContacts(): Promise<Contact[]> {
-  const list = await api<Contact[]>("/api/contacts");
-  // normalize lastSeenTs (some seeds may have "lastSeen")
-  return list.map((c) => ({
-    ...c,
-    lastSeenTs: (c as any).lastSeen ?? c.lastSeenTs,
-  }));
-}
-
-/** Create, Update, Delete */
-async function createContact(input: FormState): Promise<Contact> {
-  return api<Contact>("/api/contacts", {
+async function createContact(data: UpsertPayload): Promise<Contact> {
+  const res = await fetch("/api/contacts", {
     method: "POST",
-    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error(`Create failed: ${res.status}`);
+  return res.json();
 }
 
-async function updateContact(id: string, input: FormState): Promise<Contact> {
-  return api<Contact>(`/api/contacts/${encodeURIComponent(id)}`, {
+async function updateContact(id: string, data: UpsertPayload): Promise<Contact> {
+  const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+  return res.json();
 }
 
-async function deleteContact(id: string): Promise<{ ok: true }> {
-  return api<{ ok: true }>(`/api/contacts/${encodeURIComponent(id)}`, {
+async function deleteContact(id: string): Promise<void> {
+  const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 }
 
-/** ----- Reusable Modal (no external libs) ----- */
-function Modal({
-  title,
-  open,
+/** Modal component for Add / Edit */
+function ContactModal({
+  mode,
+  initial,
   onClose,
-  children,
-  footer,
+  onSubmit,
 }: {
-  title: string;
-  open: boolean;
+  mode: "add" | "edit";
+  initial?: Partial<UpsertPayload>;
   onClose: () => void;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
+  onSubmit: (data: UpsertPayload) => Promise<void>;
 }) {
-  if (!open) return null;
+  const [form, setForm] = useState<UpsertPayload>({
+    name: initial?.name ?? "",
+    email: initial?.email ?? "",
+    company: initial?.company ?? "",
+    phone: initial?.phone ?? "",
+    role: initial?.role ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const canSave = form.name.trim().length > 0 && !busy;
+
+  const save = async () => {
+    if (!canSave) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        email: form.email?.trim() || undefined,
+        company: form.company?.trim() || undefined,
+        phone: form.phone?.trim() || undefined,
+        role: form.role?.trim() || undefined,
+      });
+      onClose();
+    } catch (e: any) {
+      setErr(e?.message ?? "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="modal-overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-backdrop">
       <div className="modal">
-        <div className="modal-head">
-          <div className="modal-title">{title}</div>
-          <button className="btn ghost" onClick={onClose}>
+        <div className="modal-header">
+          <div className="modal-title">
+            {mode === "add" ? "Add contact" : "Edit contact"}
+          </div>
+          <button className="btn btn-ghost" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="modal-body">{children}</div>
-        {footer ? <div className="modal-foot">{footer}</div> : null}
+
+        <div className="modal-body">
+          <div className="form-grid">
+            <label className="field">
+              <div className="label">Name *</div>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ada Lovelace"
+              />
+            </label>
+            <label className="field">
+              <div className="label">Email</div>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="ada@lovelace.io"
+              />
+            </label>
+            <label className="field">
+              <div className="label">Company</div>
+              <input
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                placeholder="Analytical Engines Ltd"
+              />
+            </label>
+            <label className="field">
+              <div className="label">Phone</div>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+61 400 000 000"
+              />
+            </label>
+            <label className="field">
+              <div className="label">Role</div>
+              <input
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                placeholder="Investigator"
+              />
+            </label>
+          </div>
+
+          {err && <div className="alert error">{err}</div>}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={save} disabled={!canSave}>
+            {busy ? "Saving…" : "Save"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-/** ----- Form for Add/Edit ----- */
-function ContactForm({
-  initial,
-  onChange,
-}: {
-  initial: FormState;
-  onChange: (next: FormState) => void;
-}) {
-  return (
-    <div className="form-grid">
-      <label>
-        <span>Name *</span>
-        <input
-          value={initial.name}
-          onChange={(e) => onChange({ ...initial, name: e.target.value })}
-          placeholder="Full name"
-        />
-      </label>
-      <label>
-        <span>Company</span>
-        <input
-          value={initial.company ?? ""}
-          onChange={(e) => onChange({ ...initial, company: e.target.value })}
-          placeholder="Company"
-        />
-      </label>
-      <label>
-        <span>Email</span>
-        <input
-          value={initial.email ?? ""}
-          onChange={(e) => onChange({ ...initial, email: e.target.value })}
-          placeholder="name@example.com"
-          type="email"
-        />
-      </label>
-      <label>
-        <span>Phone</span>
-        <input
-          value={initial.phone ?? ""}
-          onChange={(e) => onChange({ ...initial, phone: e.target.value })}
-          placeholder="04 1234 5678"
-        />
-      </label>
-      <label>
-        <span>Role</span>
-        <input
-          value={initial.role ?? ""}
-          onChange={(e) => onChange({ ...initial, role: e.target.value })}
-          placeholder="Investigator / Reviewer / …"
-        />
-      </label>
-    </div>
-  );
-}
-
-/** ----- Page ----- */
+/** Main page */
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Contact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // Add / Edit modal state
-  const [addOpen, setAddOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [addForm, setAddForm] = useState<FormState>({ name: "" });
-  const [editForm, setEditForm] = useState<FormState>({ name: "" });
-
-  const selected = useMemo(
-    () => contacts.find((c) => c.id === selectedId) || null,
-    [contacts, selectedId]
-  );
+  const [showAdd, setShowAdd] = useState(false);
+  const [editRow, setEditRow] = useState<Contact | null>(null);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true);
-      setError(null);
       try {
-        const data = await fetchContacts();
-        if (alive) {
-          setContacts(data);
-          if (data.length && !selectedId) setSelectedId(data[0].id);
-        }
+        setError(null);
+        const data = await listContacts();
+        if (!alive) return;
+        setRows(data);
+        if (data.length && !selectedId) setSelectedId(data[0].id);
       } catch (e: any) {
-        if (alive) setError(e.message || "Failed to load contacts");
-      } finally {
-        if (alive) setLoading(false);
+        if (!alive) return;
+        setRows([]);
+        setError(e?.message ?? "Failed to load");
       }
     })();
     return () => {
@@ -212,86 +226,42 @@ export default function ContactsPage() {
     };
   }, []); // initial load
 
-  /** ----- Handlers ----- */
-  async function handleAdd() {
-    setSaving(true);
-    try {
-      const created = await createContact(addForm);
-      setContacts((prev) => [created, ...prev]);
-      setAddOpen(false);
-      setAddForm({ name: "" });
-      setSelectedId(created.id);
-    } catch (e: any) {
-      alert(e.message || "Failed to add contact");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const selected = useMemo(
+    () => rows?.find((r) => r.id === selectedId) || null,
+    [rows, selectedId]
+  );
 
-  function openEdit(c: Contact) {
-    setEditForm({
-      name: c.name,
-      company: c.company,
-      email: c.email,
-      phone: c.phone,
-      role: c.role,
-    });
-    setSelectedId(c.id);
-    setEditOpen(true);
-  }
+  const doAdd = async (payload: UpsertPayload) => {
+    const created = await createContact(payload);
+    setRows((r) => (r ? [created, ...r] : [created]));
+    setSelectedId(created.id);
+  };
 
-  async function handleEdit() {
-    if (!selectedId) return;
-    setSaving(true);
-    try {
-      const updated = await updateContact(selectedId, editForm);
-      setContacts((prev) =>
-        prev.map((c) => (c.id === selectedId ? { ...c, ...updated } : c))
-      );
-      setEditOpen(false);
-    } catch (e: any) {
-      alert(e.message || "Failed to update contact");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const doEdit = async (payload: UpsertPayload) => {
+    if (!editRow) return;
+    const updated = await updateContact(editRow.id, payload);
+    setRows((r) =>
+      (r ?? []).map((x) => (x.id === updated.id ? { ...x, ...updated } : x))
+    );
+    setSelectedId(updated.id);
+  };
 
-  async function handleDelete(id: string) {
-    const victim = contacts.find((c) => c.id === id);
-    if (!victim) return;
-    const ok = confirm(`Delete contact “${victim.name}”? This cannot be undone.`);
-    if (!ok) return;
+  const doDelete = async (row: Contact) => {
+    if (!confirm(`Delete ${row.name}?`)) return;
+    await deleteContact(row.id);
+    setRows((r) => (r ?? []).filter((x) => x.id !== row.id));
+    setSelectedId((id) => (id === row.id ? null : id));
+  };
 
-    // optimistic
-    const prev = contacts;
-    setContacts((cur) => cur.filter((c) => c.id !== id));
-    if (selectedId === id) setSelectedId(null);
-
-    try {
-      await deleteContact(id);
-    } catch (e: any) {
-      alert(e.message || "Failed to delete contact");
-      setContacts(prev); // rollback
-    }
-  }
-
-  /** ----- UI ----- */
   return (
-    <>
-      <div className="card">
+    <div className="hub-page">
+      {/* List card */}
+      <section className="card">
         <div className="card-head">
-          <div className="card-title">Contacts</div>
-          <div className="card-actions">
-            <button
-              className="btn primary"
-              onClick={() => {
-                setAddForm({ name: "" });
-                setAddOpen(true);
-              }}
-            >
-              + Add contact
-            </button>
-          </div>
+          <h2>Contacts</h2>
+          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+            + Add contact
+          </button>
         </div>
 
         <div className="table">
@@ -299,187 +269,260 @@ export default function ContactsPage() {
             <div>Name</div>
             <div>Company</div>
             <div>Last seen</div>
-            <div style={{ textAlign: "right" }}>Actions</div>
+            <div className="right">Actions</div>
           </div>
 
-          {loading ? (
-            <div className="tbody empty">Loading…</div>
-          ) : error ? (
-            <div className="tbody empty">Error: {error}</div>
-          ) : contacts.length === 0 ? (
-            <div className="tbody empty">No contacts yet.</div>
-          ) : (
-            <div className="tbody">
-              {contacts.map((c) => (
-                <div
-                  className={`tr ${selectedId === c.id ? "selected" : ""}`}
-                  key={c.id}
-                  onClick={() => setSelectedId(c.id)}
-                  role="button"
-                >
-                  <div className="cell">
-                    <div className="name">{c.name}</div>
-                  </div>
-                  <div className="cell">{c.company || "—"}</div>
-                  <div className="cell">
-                    <span className="dot live" /> {fmtAgo(c.lastSeenTs)}
-                  </div>
-                  <div className="cell actions">
-                    <button
-                      className="btn ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(c);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn danger ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(c.id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
+          <div className="tbody">
+            {error && (
+              <div className="row error-row">
+                <div style={{ gridColumn: "1 / -1" }}>Error: {error}</div>
+              </div>
+            )}
+
+            {rows?.length === 0 && !error && (
+              <div className="row empty">
+                <div style={{ gridColumn: "1 / -1" }}>No contacts yet.</div>
+              </div>
+            )}
+
+            {(rows ?? []).map((r) => (
+              <button
+                key={r.id}
+                className={
+                  "row row-button" + (selectedId === r.id ? " selected" : "")
+                }
+                onClick={() => setSelectedId(r.id)}
+              >
+                <div className="cell name">{r.name}</div>
+                <div className="cell">{r.company || "—"}</div>
+                <div className="cell">
+                  {dot(Boolean(r.lastSeenAt))} {fmtAgo(r.lastSeenAt)}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right panel mirrors your current layout */}
-      <div className="card">
-        <div className="card-head">
-          <div className="card-title">
-            {selected ? selected.name : "Contact"}
+                <div className="cell right">
+                  <button
+                    className="btn btn-ghost sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditRow(r);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-danger sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void doDelete(r);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </button>
+            ))}
           </div>
-          {selected ? (
-            <div className="card-actions">
-              <button className="btn ghost">Simulate login</button>
-              <button className="btn ghost">Clear log</button>
-            </div>
-          ) : null}
+        </div>
+      </section>
+
+      {/* Details card */}
+      <section className="card">
+        <div className="card-head">
+          <h2>{selected ? selected.name : "Contact"}</h2>
         </div>
 
         {!selected ? (
-          <div className="pad muted">Select a contact to view details.</div>
+          <div className="empty-state">Select a contact to view details.</div>
         ) : (
-          <div className="pad">
+          <div className="details-grid">
             <div className="kv">
-              <div>Company</div>
-              <div>{selected.company || "—"}</div>
+              <div className="k">Company</div>
+              <div className="v">{selected.company || "—"}</div>
             </div>
             <div className="kv">
-              <div>Email</div>
-              <div>{selected.email || "—"}</div>
+              <div className="k">Email</div>
+              <div className="v">{selected.email || "—"}</div>
             </div>
             <div className="kv">
-              <div>Phone</div>
-              <div>{selected.phone || "—"}</div>
+              <div className="k">Phone</div>
+              <div className="v">{selected.phone || "—"}</div>
             </div>
             <div className="kv">
-              <div>Role</div>
-              <div>{selected.role || "—"}</div>
+              <div className="k">Role</div>
+              <div className="v">{selected.role || "—"}</div>
             </div>
             <div className="kv">
-              <div>Last seen</div>
-              <div>
-                <span className="dot live" /> {fmtAgo(selected.lastSeenTs)}
+              <div className="k">Last seen</div>
+              <div className="v">
+                {dot(Boolean(selected.lastSeenAt))} {fmtAgo(selected.lastSeenAt)}
               </div>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Add modal */}
-      <Modal
-        title="Add contact"
-        open={addOpen}
-        onClose={() => (saving ? null : setAddOpen(false))}
-        footer={
-          <>
-            <button className="btn ghost" disabled={saving} onClick={() => setAddOpen(false)}>
-              Cancel
-            </button>
-            <button
-              className="btn primary"
-              disabled={saving || !addForm.name.trim()}
-              onClick={handleAdd}
-            >
-              {saving ? "Saving…" : "Create"}
-            </button>
-          </>
-        }
-      >
-        <ContactForm initial={addForm} onChange={setAddForm} />
-      </Modal>
+      {/* Modals */}
+      {showAdd && (
+        <ContactModal
+          mode="add"
+          onClose={() => setShowAdd(false)}
+          onSubmit={doAdd}
+        />
+      )}
 
-      {/* Edit modal */}
-      <Modal
-        title="Edit contact"
-        open={editOpen}
-        onClose={() => (saving ? null : setEditOpen(false))}
-        footer={
-          <>
-            <button className="btn ghost" disabled={saving} onClick={() => setEditOpen(false)}>
-              Close
-            </button>
-            <button
-              className="btn primary"
-              disabled={saving || !editForm.name.trim()}
-              onClick={handleEdit}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-          </>
-        }
-      >
-        <ContactForm initial={editForm} onChange={setEditForm} />
-      </Modal>
+      {editRow && (
+        <ContactModal
+          mode="edit"
+          initial={{
+            name: editRow.name,
+            email: editRow.email ?? "",
+            company: editRow.company ?? "",
+            phone: editRow.phone ?? "",
+            role: editRow.role ?? "",
+          }}
+          onClose={() => setEditRow(null)}
+          onSubmit={doEdit}
+        />
+      )}
 
-      {/* Local styles to match your current theme */}
+      {/* Inline styles for HubSpot-like theme (scoped to this page) */}
       <style>{`
-        .card { background:#0f172a; border-radius:12px; border:1px solid #1f2937; margin-bottom:16px; }
-        .card-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #1f2937; }
-        .card-title { font-weight:600; color:#e5e7eb; }
-        .card-actions { display:flex; gap:8px; }
-        .pad { padding:16px; }
-        .pad.muted { color:#94a3b8; }
-        .table { width:100%; }
-        .thead, .tr { display:grid; grid-template-columns: 2fr 2fr 1.2fr 1fr; gap:12px; align-items:center; }
-        .thead { padding:10px 16px; color:#9ca3af; border-bottom:1px solid #1f2937; font-size:12.5px; text-transform:uppercase; letter-spacing:.02em; }
-        .tbody .tr { padding:10px 16px; border-bottom:1px solid #1f2937; cursor:pointer; }
-        .tbody .tr:hover { background:#0b1220; }
-        .tbody .tr.selected { background:#0b1324; }
-        .tbody.empty { padding:16px; color:#94a3b8; }
-        .cell.actions { justify-self:end; display:flex; gap:8px; }
-        .name { color:#e5e7eb; font-weight:500; }
-        .dot { display:inline-block; width:8px; height:8px; border-radius:99px; margin-right:6px; background:#64748b; vertical-align:middle; }
-        .dot.live { background:#34d399; }
-        .btn { font:inherit; padding:6px 10px; border-radius:8px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; cursor:pointer; }
-        .btn:hover { background:#0e1627; }
-        .btn.primary { background:#2563eb; border-color:#2563eb; }
-        .btn.primary:hover { background:#1d4ed8; }
-        .btn.ghost { background:transparent; }
-        .btn.danger { border-color:#ef4444; color:#ef4444; }
-        .kv { display:grid; grid-template-columns: 160px 1fr; gap:12px; padding:8px 0; border-bottom:1px dashed #1f2937; color:#cbd5e1; }
-        .kv:last-child { border-bottom:none; }
+        .hub-page {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        @media (min-width: 1100px) {
+          .hub-page {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        .card {
+          background: #0f172a;
+          border: 1px solid #1f2a44;
+          border-radius: 12px;
+          padding: 16px;
+        }
+        .card-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .card-head h2 {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 600;
+          color: #e5e7eb;
+        }
+        .table {
+          width: 100%;
+        }
+        .thead, .row {
+          display: grid;
+          grid-template-columns: 1.5fr 1.2fr 1fr 150px;
+          gap: 12px;
+          align-items: center;
+        }
+        .thead {
+          color: #9aa4b2;
+          font-size: 12px;
+          border-bottom: 1px solid #1f2a44;
+          padding: 8px 0;
+        }
+        .tbody .row {
+          color: #dbe2ea;
+          padding: 10px 0;
+          border-bottom: 1px solid #111827;
+        }
+        .row-button {
+          background: transparent;
+          border: 0;
+          text-align: left;
+          width: 100%;
+          cursor: pointer;
+        }
+        .row-button:hover {
+          background: rgba(255,255,255,0.02);
+        }
+        .row-button.selected {
+          background: rgba(99,102,241,0.08);
+          outline: 1px solid rgba(99,102,241,0.4);
+          border-radius: 8px;
+        }
+        .right { text-align: right; }
+        .name { font-weight: 600; }
+        .empty, .error-row {
+          color: #9aa4b2;
+          padding: 14px 0;
+        }
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px 24px;
+        }
+        .kv .k { color: #9aa4b2; font-size: 12px; margin-bottom: 2px; }
+        .kv .v { color: #e5e7eb; }
+        .empty-state {
+          color: #9aa4b2;
+          padding: 8px 0;
+        }
 
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:50; }
-        .modal { width:min(720px, 92vw); background:#0b1220; border:1px solid #1f2937; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.6); }
-        .modal-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid #1f2937; }
-        .modal-title { font-weight:600; color:#e5e7eb; }
-        .modal-body { padding:16px; }
-        .modal-foot { padding:12px 14px; border-top:1px solid #1f2937; display:flex; justify-content:flex-end; gap:8px; }
-        .form-grid { display:grid; gap:12px; }
-        .form-grid label { display:grid; gap:6px; color:#cbd5e1; }
-        .form-grid input { background:#0f172a; color:#e5e7eb; border:1px solid #334155; border-radius:8px; padding:8px 10px; }
-        .form-grid input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.25); }
+        .btn {
+          border: 1px solid #29324b;
+          background: #0b1220;
+          color: #e5e7eb;
+          border-radius: 10px;
+          padding: 8px 12px;
+          font-size: 13px;
+          line-height: 1;
+          transition: background .15s, border-color .15s;
+        }
+        .btn:hover { background: #0e1629; border-color: #334166; }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-primary {
+          background: #3b82f6;
+          border-color: #3b82f6;
+          color: white;
+        }
+        .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
+        .btn-danger { background: #ef4444; border-color: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; border-color: #dc2626; }
+        .btn-ghost { background: transparent; border-color: transparent; color: #9aa4b2; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.05); border-color: #29324b; }
+        .sm { padding: 6px 10px; font-size: 12px; }
+
+        /* Modal */
+        .modal-backdrop {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+          display: grid; place-items: center; z-index: 50;
+        }
+        .modal {
+          width: 560px; max-width: calc(100vw - 24px);
+          background: #0f172a; border: 1px solid #1f2a44;
+          border-radius: 12px; overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-header, .modal-footer {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 12px 14px; border-bottom: 1px solid #1f2a44;
+        }
+        .modal-footer { border-top: 1px solid #1f2a44; border-bottom: 0; }
+        .modal-title { color: #e5e7eb; font-weight: 600; }
+        .modal-body { padding: 14px; }
+        .form-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .field .label { font-size: 12px; color: #9aa4b2; margin-bottom: 4px; }
+        input {
+          width: 100%; background: #0b1220; color: #e5e7eb; border: 1px solid #29324b;
+          border-radius: 10px; padding: 8px 10px; outline: none;
+        }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .alert.error {
+          margin-top: 10px; font-size: 13px; color: #fecaca; background: #7f1d1d;
+          border: 1px solid #991b1b; padding: 8px 10px; border-radius: 8px;
+        }
       `}</style>
-    </>
+    </div>
   );
 }
