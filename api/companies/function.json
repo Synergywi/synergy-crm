@@ -5,13 +5,13 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": [ "get", "post", "options" ],
-      "route": "companies/{id?}"
+      "methods": [ "get", "post" ],
+      "route": "companies"
     },
     {
       "type": "http",
       "direction": "out",
-      "name": "$return"
+      "name": "res"
     }
   ],
   "scriptFile": "index.js"
