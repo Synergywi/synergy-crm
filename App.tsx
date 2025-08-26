@@ -1,11 +1,13 @@
+// App.tsx
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
-import CompaniesPage from "./pages/CompaniesPage";
-import ContactsPage from "./pages/Contacts";
-import DashboardPage from "./pages/DashboardPage";
 
-// ✅ Correct Hubspot theme import (file lives in /web/)
+// ✅ Load the HubSpot-like theme (file lives at /web/hubspot-theme.css)
 import "./web/hubspot-theme.css";
 
+import CompaniesPage from "./pages/CompaniesPage";
+import ContactsPage from "./pages/Contacts";
+
+// Layout shell styled by the theme classes
 export default function App() {
   const { pathname } = useLocation();
 
@@ -13,6 +15,7 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="logo">Synergy CRM</div>
+
         <nav className="nav">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             Dashboard
@@ -24,7 +27,8 @@ export default function App() {
             Contacts
           </NavLink>
         </nav>
-        <div style={{ marginTop: 16, fontSize: 12, color: "#7e8aa0" }}>
+
+        <div className="path">
           Path: <span className="kbd">{pathname}</span>
         </div>
       </aside>
@@ -33,14 +37,14 @@ export default function App() {
         <div className="header">
           <div className="title">Synergy CRM 2</div>
           <div className="badge">
-            <span style={{ width: 8, height: 8, borderRadius: 99, background: "#34d399" }} />
+            <span className="dot" />
             Live preview
           </div>
         </div>
 
         <div className="container">
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/" element={<div className="card"><div className="card-body">Welcome</div></div>} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/contacts" element={<ContactsPage />} />
           </Routes>
