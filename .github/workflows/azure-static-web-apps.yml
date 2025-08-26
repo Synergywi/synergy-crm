@@ -1,61 +1,59 @@
-name: Azure Static Web Apps CI/CD
+name: build_and_deploy
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build_and_deploy:
-    if: github.event_name == 'push' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node is used by Oryx during build; keep it simple (no caching needed)
-      - name: Use Node 18
+      # ---------- APP (frontend) ----------
+      - name: Setup Node for app
         uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 18
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
 
-      # Optional sanity check: validate any function.json files
-      - name: Validate function.json syntax (pre-build)
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          files=(api/*/function.json)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No api/*/function.json files found; skipping."
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            echo "Validating $f"
-            jq empty "$f"
-          done
-          echo "All function.json files are valid ✅"
+      - name: Install app deps
+        run: npm ci
 
-      # Deploy app + API
+      - name: Build app
+        run: npm run build
+        # If your build output folder isn't "dist", adjust the next step's app_artifact_location
+
+      # ---------- API (functions) ----------
+      - name: Setup Node for api
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+
+      - name: Install API deps (production)
+        working-directory: api
+        run: npm ci --omit=dev
+
+      # ---------- DEPLOY (skip Oryx builds) ----------
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/"          # your frontend lives at the repo root
-          output_location: "dist"    # Vite build output
-          api_location: "api"        # <-- THIS ENSURES /api/** FUNCTIONS DEPLOY
 
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Close Azure Static Web Apps PR environment
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: "close"
+          # Paths
+          app_location: "/"
+          api_location: "api"
+          app_artifact_location: "dist"   # <— change if your Vite output folder is different
+
+          # Skip Oryx builds (we already built/installed)
+          skip_app_build: true
+          skip_api_build: true
