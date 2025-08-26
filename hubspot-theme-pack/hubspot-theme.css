@@ -85,3 +85,6 @@ main{ min-width:0; }
 .btn:hover{ background:#0e1629; border-color:#334166; }
 .btn-primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
 .btn-primary:hover{ background:#2563eb; border-color:#2563eb; }
+.hub-app {
+  outline: 3px solid #22c55e !important;
+}
