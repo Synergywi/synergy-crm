@@ -1,3 +1,4 @@
+import "./web/hubspot-theme.css";
 // App.tsx
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 
