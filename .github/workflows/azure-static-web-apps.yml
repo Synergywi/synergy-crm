@@ -34,7 +34,7 @@ jobs:
             echo "present=false" >> $GITHUB_OUTPUT
           fi
 
-      # ---------- App: setup Node (cache if lockfile exists) ----------
+      # ---------- App: setup Node ----------
       - name: Setup Node for app (cached)
         if: steps.app_lock.outputs.present == 'true'
         uses: actions/setup-node@v4
@@ -62,51 +62,24 @@ jobs:
         run: npm run build
         # If your build output folder is NOT "dist", update app_artifact_location below to match.
 
-      # ---------- API: detect lockfile ----------
-      - id: api_lock
-        name: Check API lockfile
-        shell: bash
-        run: |
-          if [ -f api/package-lock.json ]; then
-            echo "present=true" >> $GITHUB_OUTPUT
-          else
-            echo "present=false" >> $GITHUB_OUTPUT
-          fi
+      # ---------- API: (OPTION A) Let SWA build the Functions app ----------
+      # Keep your api folder at ./api with:
+      #   - host.json (e.g. { "version": "2.0" })
+      #   - package.json (Node)
+      #   - each function in its own folder with function.json + code
 
-      # ---------- API: setup Node (cache if lockfile exists) ----------
-      - name: Setup Node for api (cached)
-        if: steps.api_lock.outputs.present == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
-          cache-dependency-path: api/package-lock.json
-
-      - name: Setup Node for api (no cache)
-        if: steps.api_lock.outputs.present != 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      # ---------- API: install production deps (no dev) ----------
-      - name: Install API deps (ci, prod)
-        if: steps.api_lock.outputs.present == 'true'
-        working-directory: api
-        run: npm ci --omit=dev
-
-      - name: Install API deps (install, prod)
-        if: steps.api_lock.outputs.present != 'true'
-        working-directory: api
-        run: npm install --omit=dev
-
-      # ---------- Deploy (skip Oryx builds because we built above) ----------
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: "/"            # path to your SPA/static app
-          api_location: "api"          # path to your API folder ("" if none)
-          app_artifact_location: "dist" # <- change if your app build outputs elsewhere
+
+          # Paths in your repo
+          app_location: "/"             # your SPA/static app root
+          api_location: "api"           # Functions folder ("" if you have NO API)
+          app_artifact_location: "dist" # change if your app build outputs elsewhere
+
+          # We built the app above, so skip only the app build.
           skip_app_build: true
-          skip_api_build: true
+          # IMPORTANT: do NOT skip the API build — omit or set to false
+          # skip_api_build: false
