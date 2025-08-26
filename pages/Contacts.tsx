@@ -1,195 +1,186 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-/** Types */
+/** ------------ Types ------------ */
 type Contact = {
   id: string;
   name: string;
-  email?: string | null;
-  company?: string | null;
-  phone?: string | null;
-  role?: string | null;
-  lastSeenAt?: string | null; // ISO string
-};
-
-type UpsertPayload = {
-  name: string;
-  email?: string;
   company?: string;
+  email?: string;
   phone?: string;
   role?: string;
+  lastSeen?: string | number; // ISO string or epoch ms
+  createdAt?: string;
 };
 
-/** Small helpers */
-const fmtAgo = (iso?: string | null) => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  const diff = Date.now() - d.getTime();
-  const mins = Math.floor(diff / 60000);
+/** ------------ Utilities ------------ */
+function fmtRelative(ts?: string | number) {
+  if (!ts) return "—";
+  const t = typeof ts === "string" ? Date.parse(ts) : ts;
+  if (isNaN(t)) return "—";
+  const delta = Date.now() - t;
+  const mins = Math.floor(delta / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
+}
+
+function liveDotColor(ts?: string | number) {
+  if (!ts) return "#97A3B6"; // grey
+  const t = typeof ts === "string" ? Date.parse(ts) : ts;
+  if (isNaN(t)) return "#97A3B6";
+  const mins = Math.floor((Date.now() - t) / 60000);
+  if (mins <= 10) return "#14b8a6"; // teal = recently active
+  if (mins <= 120) return "#f59e0b"; // amber = recently
+  return "#97A3B6"; // grey = stale
+}
+
+/** ------------ API helpers ------------ */
+async function api<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`API ${res.status}: ${detail || res.statusText}`);
+  }
+  return (await res.json()) as T;
+}
+
+async function listContacts() {
+  return api<Contact[]>("/api/contacts");
+}
+async function createContact(payload: Partial<Contact>) {
+  return api<Contact>("/api/contacts", { method: "POST", body: JSON.stringify(payload) });
+}
+async function updateContact(id: string, payload: Partial<Contact>) {
+  return api<Contact>(`/api/contacts/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+async function deleteContact(id: string) {
+  await api<void>(`/api/contacts/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/** ------------ Form Modal (inline, no portal) ------------ */
+type FormState = {
+  id?: string;
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
 };
 
-const dot = (ok = true) => (
-  <span
-    style={{
-      display: "inline-block",
-      width: 8,
-      height: 8,
-      borderRadius: 999,
-      marginRight: 6,
-      background: ok ? "#34d399" : "#f59e0b",
-      verticalAlign: "-1px",
-    }}
-  />
-);
-
-/** API layer (talks to api/contacts) */
-async function listContacts(): Promise<Contact[]> {
-  const res = await fetch("/api/contacts");
-  if (!res.ok) throw new Error(`List failed: ${res.status}`);
-  return res.json();
+function emptyForm(): FormState {
+  return { name: "" };
 }
 
-async function createContact(data: UpsertPayload): Promise<Contact> {
-  const res = await fetch("/api/contacts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`Create failed: ${res.status}`);
-  return res.json();
-}
-
-async function updateContact(id: string, data: UpsertPayload): Promise<Contact> {
-  const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`Update failed: ${res.status}`);
-  return res.json();
-}
-
-async function deleteContact(id: string): Promise<void> {
-  const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
-}
-
-/** Modal component for Add / Edit */
-function ContactModal({
-  mode,
+function ContactFormModal({
+  open,
   initial,
-  onClose,
+  onCancel,
   onSubmit,
+  busy,
+  title,
 }: {
-  mode: "add" | "edit";
-  initial?: Partial<UpsertPayload>;
-  onClose: () => void;
-  onSubmit: (data: UpsertPayload) => Promise<void>;
+  open: boolean;
+  initial: FormState;
+  onCancel: () => void;
+  onSubmit: (values: FormState) => void;
+  busy?: boolean;
+  title: string;
 }) {
-  const [form, setForm] = useState<UpsertPayload>({
-    name: initial?.name ?? "",
-    email: initial?.email ?? "",
-    company: initial?.company ?? "",
-    phone: initial?.phone ?? "",
-    role: initial?.role ?? "",
-  });
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [v, setV] = useState<FormState>(initial);
+  useEffect(() => setV(initial), [initial, open]);
 
-  const canSave = form.name.trim().length > 0 && !busy;
-
-  const save = async () => {
-    if (!canSave) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await onSubmit({
-        name: form.name.trim(),
-        email: form.email?.trim() || undefined,
-        company: form.company?.trim() || undefined,
-        phone: form.phone?.trim() || undefined,
-        role: form.role?.trim() || undefined,
-      });
-      onClose();
-    } catch (e: any) {
-      setErr(e?.message ?? "Something went wrong");
-    } finally {
-      setBusy(false);
-    }
-  };
+  if (!open) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal">
-        <div className="modal-header">
-          <div className="modal-title">
-            {mode === "add" ? "Add contact" : "Edit contact"}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(16, 24, 40, 0.32)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+      }}
+      aria-modal
+      role="dialog"
+    >
+      <div className="card" style={{ width: 520, maxWidth: "90vw" }}>
+        <div style={{ fontWeight: 700, marginBottom: 12 }}>{title}</div>
+
+        <div style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div style={{ fontSize: 12, color: "#51607A", marginBottom: 4 }}>Name *</div>
+            <input
+              value={v.name}
+              onChange={(e) => setV((s) => ({ ...s, name: e.target.value }))}
+              placeholder="e.g. Alex Maxwell"
+              style={inputStyle}
+            />
+          </label>
+
+          <label>
+            <div style={{ fontSize: 12, color: "#51607A", marginBottom: 4 }}>Company</div>
+            <input
+              value={v.company || ""}
+              onChange={(e) => setV((s) => ({ ...s, company: e.target.value }))}
+              placeholder="e.g. Contoso Pty Ltd"
+              style={inputStyle}
+            />
+          </label>
+
+          <label>
+            <div style={{ fontSize: 12, color: "#51607A", marginBottom: 4 }}>Email</div>
+            <input
+              type="email"
+              value={v.email || ""}
+              onChange={(e) => setV((s) => ({ ...s, email: e.target.value }))}
+              placeholder="name@company.com"
+              style={inputStyle}
+            />
+          </label>
+
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+            <label>
+              <div style={{ fontSize: 12, color: "#51607A", marginBottom: 4 }}>Phone</div>
+              <input
+                value={v.phone || ""}
+                onChange={(e) => setV((s) => ({ ...s, phone: e.target.value }))}
+                placeholder="(xxx) xxx-xxxx"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              <div style={{ fontSize: 12, color: "#51607A", marginBottom: 4 }}>Role</div>
+              <input
+                value={v.role || ""}
+                onChange={(e) => setV((s) => ({ ...s, role: e.target.value }))}
+                placeholder="e.g. Investigator"
+                style={inputStyle}
+              />
+            </label>
           </div>
-          <button className="btn btn-ghost" onClick={onClose}>
-            ✕
-          </button>
         </div>
 
-        <div className="modal-body">
-          <div className="form-grid">
-            <label className="field">
-              <div className="label">Name *</div>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ada Lovelace"
-              />
-            </label>
-            <label className="field">
-              <div className="label">Email</div>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="ada@lovelace.io"
-              />
-            </label>
-            <label className="field">
-              <div className="label">Company</div>
-              <input
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
-                placeholder="Analytical Engines Ltd"
-              />
-            </label>
-            <label className="field">
-              <div className="label">Phone</div>
-              <input
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+61 400 000 000"
-              />
-            </label>
-            <label className="field">
-              <div className="label">Role</div>
-              <input
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                placeholder="Investigator"
-              />
-            </label>
-          </div>
-
-          {err && <div className="alert error">{err}</div>}
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+          <button className="btn btn-secondary" onClick={onCancel} disabled={busy}>
             Cancel
           </button>
-          <button className="btn btn-primary" onClick={save} disabled={!canSave}>
+          <button
+            className="btn btn-primary"
+            onClick={() => onSubmit(v)}
+            disabled={busy || !v.name.trim()}
+          >
             {busy ? "Saving…" : "Save"}
           </button>
         </div>
@@ -198,331 +189,253 @@ function ContactModal({
   );
 }
 
-/** Main page */
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 6,
+  border: "1px solid #e6e9f0",
+  outline: "none",
+};
+
+/** ------------ Page ------------ */
 export default function ContactsPage() {
-  const [rows, setRows] = useState<Contact[] | null>(null);
+  const [items, setItems] = useState<Contact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editRow, setEditRow] = useState<Contact | null>(null);
+
+  // form modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formBusy, setFormBusy] = useState(false);
+  const [formInitial, setFormInitial] = useState<FormState>(emptyForm());
+  const [formTitle, setFormTitle] = useState("Add contact");
+
+  const selected = useMemo(
+    () => items?.find((c) => c.id === selectedId) || null,
+    [items, selectedId]
+  );
 
   useEffect(() => {
-    let alive = true;
     (async () => {
       try {
         setError(null);
         const data = await listContacts();
-        if (!alive) return;
-        setRows(data);
+        setItems(data);
         if (data.length && !selectedId) setSelectedId(data[0].id);
       } catch (e: any) {
-        if (!alive) return;
-        setRows([]);
-        setError(e?.message ?? "Failed to load");
+        setError(e.message || "Failed to load contacts");
+        setItems([]);
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, []); // initial load
+  }, []); // load once
 
-  const selected = useMemo(
-    () => rows?.find((r) => r.id === selectedId) || null,
-    [rows, selectedId]
-  );
+  function openCreate() {
+    setFormTitle("Add contact");
+    setFormInitial(emptyForm());
+    setModalOpen(true);
+  }
+  function openEdit(c: Contact) {
+    setFormTitle("Edit contact");
+    setFormInitial({
+      id: c.id,
+      name: c.name ?? "",
+      company: c.company,
+      email: c.email,
+      phone: c.phone,
+      role: c.role,
+    });
+    setModalOpen(true);
+  }
 
-  const doAdd = async (payload: UpsertPayload) => {
-    const created = await createContact(payload);
-    setRows((r) => (r ? [created, ...r] : [created]));
-    setSelectedId(created.id);
-  };
+  async function handleSubmit(values: FormState) {
+    try {
+      setFormBusy(true);
+      if (values.id) {
+        // update
+        const updated = await updateContact(values.id, {
+          name: values.name.trim(),
+          company: values.company?.trim() || undefined,
+          email: values.email?.trim() || undefined,
+          phone: values.phone?.trim() || undefined,
+          role: values.role?.trim() || undefined,
+        });
+        setItems((prev) =>
+          (prev || []).map((c) => (c.id === updated.id ? updated : c))
+        );
+      } else {
+        // create
+        const created = await createContact({
+          name: values.name.trim(),
+          company: values.company?.trim() || undefined,
+          email: values.email?.trim() || undefined,
+          phone: values.phone?.trim() || undefined,
+          role: values.role?.trim() || undefined,
+        });
+        setItems((prev) => [created, ...(prev || [])]);
+        setSelectedId(created.id);
+      }
+      setModalOpen(false);
+    } catch (e: any) {
+      alert(e.message || "Save failed");
+    } finally {
+      setFormBusy(false);
+    }
+  }
 
-  const doEdit = async (payload: UpsertPayload) => {
-    if (!editRow) return;
-    const updated = await updateContact(editRow.id, payload);
-    setRows((r) =>
-      (r ?? []).map((x) => (x.id === updated.id ? { ...x, ...updated } : x))
-    );
-    setSelectedId(updated.id);
-  };
-
-  const doDelete = async (row: Contact) => {
-    if (!confirm(`Delete ${row.name}?`)) return;
-    await deleteContact(row.id);
-    setRows((r) => (r ?? []).filter((x) => x.id !== row.id));
-    setSelectedId((id) => (id === row.id ? null : id));
-  };
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this contact?")) return;
+    try {
+      const prev = items || [];
+      setItems(prev.filter((c) => c.id !== id));
+      if (selectedId === id) setSelectedId(null);
+      await deleteContact(id);
+    } catch (e: any) {
+      alert(e.message || "Delete failed");
+      // (Optional) reload from server to recover exact state
+      try {
+        const data = await listContacts();
+        setItems(data);
+      } catch {}
+    }
+  }
 
   return (
-    <div className="hub-page">
-      {/* List card */}
-      <section className="card">
-        <div className="card-head">
-          <h2>Contacts</h2>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+    <>
+      {/* Top card: list */}
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 700 }}>Contacts</div>
+          <button className="btn btn-primary" onClick={openCreate}>
             + Add contact
           </button>
         </div>
 
-        <div className="table">
-          <div className="thead">
-            <div>Name</div>
-            <div>Company</div>
-            <div>Last seen</div>
-            <div className="right">Actions</div>
-          </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(160px,1.4fr) minmax(160px,1fr) 140px 160px",
+            gap: 8,
+            fontSize: 12,
+            color: "#51607A",
+            marginTop: 12,
+            padding: "0 8px",
+          }}
+        >
+          <div>NAME</div>
+          <div>COMPANY</div>
+          <div>LAST SEEN</div>
+          <div style={{ textAlign: "right" }}>ACTIONS</div>
+        </div>
 
-          <div className="tbody">
-            {error && (
-              <div className="row error-row">
-                <div style={{ gridColumn: "1 / -1" }}>Error: {error}</div>
-              </div>
-            )}
-
-            {rows?.length === 0 && !error && (
-              <div className="row empty">
-                <div style={{ gridColumn: "1 / -1" }}>No contacts yet.</div>
-              </div>
-            )}
-
-            {(rows ?? []).map((r) => (
-              <button
-                key={r.id}
-                className={
-                  "row row-button" + (selectedId === r.id ? " selected" : "")
-                }
-                onClick={() => setSelectedId(r.id)}
+        <div style={{ marginTop: 6 }}>
+          {error ? (
+            <div style={{ padding: 12, color: "#E03137" }}>Error: {error}</div>
+          ) : items === null ? (
+            <div style={{ padding: 12, color: "#51607A" }}>Loading…</div>
+          ) : items.length === 0 ? (
+            <div style={{ padding: 12, color: "#51607A" }}>No contacts yet.</div>
+          ) : (
+            items.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(160px,1.4fr) minmax(160px,1fr) 140px 160px",
+                  gap: 8,
+                  alignItems: "center",
+                  padding: "10px 8px",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  background: selectedId === c.id ? "#eff5ff" : "transparent",
+                }}
               >
-                <div className="cell name">{r.name}</div>
-                <div className="cell">{r.company || "—"}</div>
-                <div className="cell">
-                  {dot(Boolean(r.lastSeenAt))} {fmtAgo(r.lastSeenAt)}
+                <div style={{ fontWeight: 600, color: "#2e3a59" }}>{c.name || "—"}</div>
+                <div>{c.company || "—"}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 99,
+                      background: liveDotColor(c.lastSeen),
+                      display: "inline-block",
+                    }}
+                  />
+                  <span>{fmtRelative(c.lastSeen)}</span>
                 </div>
-                <div className="cell right">
-                  <button
-                    className="btn btn-ghost sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditRow(r);
-                    }}
-                  >
+                <div style={{ textAlign: "right" }}>
+                  <button className="btn btn-secondary" onClick={(e) => (e.stopPropagation(), openEdit(c))}>
                     Edit
-                  </button>
-                  <button
-                    className="btn btn-danger sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void doDelete(r);
-                    }}
-                  >
+                  </button>{" "}
+                  <button className="btn btn-danger" onClick={(e) => (e.stopPropagation(), handleDelete(c.id))}>
                     Delete
                   </button>
                 </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Details card */}
-      <section className="card">
-        <div className="card-head">
-          <h2>{selected ? selected.name : "Contact"}</h2>
-        </div>
-
-        {!selected ? (
-          <div className="empty-state">Select a contact to view details.</div>
-        ) : (
-          <div className="details-grid">
-            <div className="kv">
-              <div className="k">Company</div>
-              <div className="v">{selected.company || "—"}</div>
-            </div>
-            <div className="kv">
-              <div className="k">Email</div>
-              <div className="v">{selected.email || "—"}</div>
-            </div>
-            <div className="kv">
-              <div className="k">Phone</div>
-              <div className="v">{selected.phone || "—"}</div>
-            </div>
-            <div className="kv">
-              <div className="k">Role</div>
-              <div className="v">{selected.role || "—"}</div>
-            </div>
-            <div className="kv">
-              <div className="k">Last seen</div>
-              <div className="v">
-                {dot(Boolean(selected.lastSeenAt))} {fmtAgo(selected.lastSeenAt)}
               </div>
-            </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Detail card */}
+      <div className="card">
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>
+          {selected?.name ?? "Contact"}
+        </div>
+        {selected ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <DetailRow label="Company" value={selected.company} />
+            <DetailRow label="Email" value={selected.email} />
+            <DetailRow label="Phone" value={selected.phone} />
+            <DetailRow label="Role" value={selected.role} />
+            <DetailRow
+              label="Last seen"
+              value={
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 99,
+                      background: liveDotColor(selected.lastSeen),
+                      display: "inline-block",
+                    }}
+                  />
+                  {fmtRelative(selected.lastSeen)}
+                </span>
+              }
+            />
           </div>
+        ) : (
+          <div style={{ color: "#51607A" }}>Select a contact to view details.</div>
         )}
-      </section>
+      </div>
 
-      {/* Modals */}
-      {showAdd && (
-        <ContactModal
-          mode="add"
-          onClose={() => setShowAdd(false)}
-          onSubmit={doAdd}
-        />
-      )}
+      {/* Modal */}
+      <ContactFormModal
+        open={modalOpen}
+        initial={formInitial}
+        title={formTitle}
+        busy={formBusy}
+        onCancel={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+      />
+    </>
+  );
+}
 
-      {editRow && (
-        <ContactModal
-          mode="edit"
-          initial={{
-            name: editRow.name,
-            email: editRow.email ?? "",
-            company: editRow.company ?? "",
-            phone: editRow.phone ?? "",
-            role: editRow.role ?? "",
-          }}
-          onClose={() => setEditRow(null)}
-          onSubmit={doEdit}
-        />
-      )}
-
-      {/* Inline styles for HubSpot-like theme (scoped to this page) */}
-      <style>{`
-        .hub-page {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 16px;
-        }
-        @media (min-width: 1100px) {
-          .hub-page {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-        .card {
-          background: #0f172a;
-          border: 1px solid #1f2a44;
-          border-radius: 12px;
-          padding: 16px;
-        }
-        .card-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 10px;
-        }
-        .card-head h2 {
-          margin: 0;
-          font-size: 15px;
-          font-weight: 600;
-          color: #e5e7eb;
-        }
-        .table {
-          width: 100%;
-        }
-        .thead, .row {
-          display: grid;
-          grid-template-columns: 1.5fr 1.2fr 1fr 150px;
-          gap: 12px;
-          align-items: center;
-        }
-        .thead {
-          color: #9aa4b2;
-          font-size: 12px;
-          border-bottom: 1px solid #1f2a44;
-          padding: 8px 0;
-        }
-        .tbody .row {
-          color: #dbe2ea;
-          padding: 10px 0;
-          border-bottom: 1px solid #111827;
-        }
-        .row-button {
-          background: transparent;
-          border: 0;
-          text-align: left;
-          width: 100%;
-          cursor: pointer;
-        }
-        .row-button:hover {
-          background: rgba(255,255,255,0.02);
-        }
-        .row-button.selected {
-          background: rgba(99,102,241,0.08);
-          outline: 1px solid rgba(99,102,241,0.4);
-          border-radius: 8px;
-        }
-        .right { text-align: right; }
-        .name { font-weight: 600; }
-        .empty, .error-row {
-          color: #9aa4b2;
-          padding: 14px 0;
-        }
-        .details-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px 24px;
-        }
-        .kv .k { color: #9aa4b2; font-size: 12px; margin-bottom: 2px; }
-        .kv .v { color: #e5e7eb; }
-        .empty-state {
-          color: #9aa4b2;
-          padding: 8px 0;
-        }
-
-        .btn {
-          border: 1px solid #29324b;
-          background: #0b1220;
-          color: #e5e7eb;
-          border-radius: 10px;
-          padding: 8px 12px;
-          font-size: 13px;
-          line-height: 1;
-          transition: background .15s, border-color .15s;
-        }
-        .btn:hover { background: #0e1629; border-color: #334166; }
-        .btn:disabled { opacity: .6; cursor: not-allowed; }
-        .btn-primary {
-          background: #3b82f6;
-          border-color: #3b82f6;
-          color: white;
-        }
-        .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
-        .btn-danger { background: #ef4444; border-color: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; border-color: #dc2626; }
-        .btn-ghost { background: transparent; border-color: transparent; color: #9aa4b2; }
-        .btn-ghost:hover { background: rgba(255,255,255,0.05); border-color: #29324b; }
-        .sm { padding: 6px 10px; font-size: 12px; }
-
-        /* Modal */
-        .modal-backdrop {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-          display: grid; place-items: center; z-index: 50;
-        }
-        .modal {
-          width: 560px; max-width: calc(100vw - 24px);
-          background: #0f172a; border: 1px solid #1f2a44;
-          border-radius: 12px; overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .modal-header, .modal-footer {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 12px 14px; border-bottom: 1px solid #1f2a44;
-        }
-        .modal-footer { border-top: 1px solid #1f2a44; border-bottom: 0; }
-        .modal-title { color: #e5e7eb; font-weight: 600; }
-        .modal-body { padding: 14px; }
-        .form-grid {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-        }
-        .field .label { font-size: 12px; color: #9aa4b2; margin-bottom: 4px; }
-        input {
-          width: 100%; background: #0b1220; color: #e5e7eb; border: 1px solid #29324b;
-          border-radius: 10px; padding: 8px 10px; outline: none;
-        }
-        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        .alert.error {
-          margin-top: 10px; font-size: 13px; color: #fecaca; background: #7f1d1d;
-          border: 1px solid #991b1b; padding: 8px 10px; border-radius: 8px;
-        }
-      `}</style>
+/** ------------ Small detail row component ------------ */
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value?: React.ReactNode | string | null;
+}) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", alignItems: "center" }}>
+      <div style={{ color: "#51607A", fontSize: 12 }}>{label}</div>
+      <div>{value ? value : "—"}</div>
     </div>
   );
 }
