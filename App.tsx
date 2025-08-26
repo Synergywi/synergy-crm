@@ -1,3 +1,11 @@
+export default function App() {
+  // ...
+  return (
+    <div className="app hub-app">
+      {/* ...rest of your layout... */}
+    </div>
+  );
+}
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import "./hubspot-theme-pack/hubspot-theme.css"; // <- theme, repo root
 
