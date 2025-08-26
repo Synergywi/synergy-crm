@@ -1,17 +1,15 @@
-name: build_and_deploy
+- name: Deploy to Azure Static Web Apps
+  if: github.ref == 'refs/heads/main'
+  uses: Azure/static-web-apps-deploy@v1
+  with:
+    azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+    action: upload                      # REQUIRED for manual upload
+    app_location: "/"                   # path to your static frontend (root)
+    api_location: "api"                 # your API folder, "" if none
+    app_artifact_location: "dist"       # change if your build output isn’t /dist
+    skip_app_build: true                # skip rebuild here
+    skip_api_build: true                # skip API build here
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
       # ---------- Detect app lockfile ----------
       - id: app_lock
