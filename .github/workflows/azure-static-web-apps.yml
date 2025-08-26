@@ -1,17 +1,29 @@
-- name: Deploy to Azure Static Web Apps
-  if: github.ref == 'refs/heads/main'
-  uses: Azure/static-web-apps-deploy@v1
-  with:
-    azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-    action: upload                      # REQUIRED for manual upload
-    app_location: "/"                   # path to your static frontend (root)
-    api_location: "api"                 # your API folder, "" if none
-    app_artifact_location: "dist"       # change if your build output isn’t /dist
-    skip_app_build: true                # skip rebuild here
-    skip_api_build: true                # skip API build here
+name: Azure Static Web Apps CI/CD
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
-      # ---------- Detect app lockfile ----------
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aswa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- App: detect lockfile (controls caching/ci vs install) ----------
       - id: app_lock
         name: Check app lockfile
         shell: bash
@@ -22,7 +34,7 @@
             echo "present=false" >> $GITHUB_OUTPUT
           fi
 
-      # ---------- Setup Node for app (with cache only if lockfile exists) ----------
+      # ---------- App: setup Node (cache if lockfile exists) ----------
       - name: Setup Node for app (cached)
         if: steps.app_lock.outputs.present == 'true'
         uses: actions/setup-node@v4
@@ -37,7 +49,7 @@
         with:
           node-version: 18
 
-      # ---------- Install & build app ----------
+      # ---------- App: install & build ----------
       - name: Install app deps (ci)
         if: steps.app_lock.outputs.present == 'true'
         run: npm ci
@@ -48,9 +60,9 @@
 
       - name: Build app
         run: npm run build
-        # If your build output is not "dist", change app_artifact_location below to match
+        # If your build output folder is NOT "dist", update app_artifact_location below to match.
 
-      # ---------- Detect api lockfile ----------
+      # ---------- API: detect lockfile ----------
       - id: api_lock
         name: Check API lockfile
         shell: bash
@@ -61,7 +73,7 @@
             echo "present=false" >> $GITHUB_OUTPUT
           fi
 
-      # ---------- Setup Node for api (with cache only if lockfile exists) ----------
+      # ---------- API: setup Node (cache if lockfile exists) ----------
       - name: Setup Node for api (cached)
         if: steps.api_lock.outputs.present == 'true'
         uses: actions/setup-node@v4
@@ -76,7 +88,7 @@
         with:
           node-version: 18
 
-      # ---------- Install API deps ----------
+      # ---------- API: install production deps (no dev) ----------
       - name: Install API deps (ci, prod)
         if: steps.api_lock.outputs.present == 'true'
         working-directory: api
@@ -87,17 +99,14 @@
         working-directory: api
         run: npm install --omit=dev
 
-      # ---------- Deploy (skip Oryx builds) ----------
+      # ---------- Deploy (skip Oryx builds because we built above) ----------
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-
-          # Paths in your repo
-          app_location: "/"
-          api_location: "api"
-          app_artifact_location: "dist"   # <- change if your Vite build outputs elsewhere
-
-          # We already built/installed — don't let Oryx run npm
+          action: upload
+          app_location: "/"            # path to your SPA/static app
+          api_location: "api"          # path to your API folder ("" if none)
+          app_artifact_location: "dist" # <- change if your app build outputs elsewhere
           skip_app_build: true
           skip_api_build: true
