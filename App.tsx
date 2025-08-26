@@ -1,8 +1,10 @@
-import "./hubspot-theme.css";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
 import CompaniesPage from "./pages/CompaniesPage";
-import ContactsPage from "./pages/Contacts";   // ✅ fixed import path
+import ContactsPage from "./pages/Contacts";
 import DashboardPage from "./pages/DashboardPage";
+
+// ✅ Correct Hubspot theme import (file lives in /web/)
+import "./web/hubspot-theme.css";
 
 export default function App() {
   const { pathname } = useLocation();
