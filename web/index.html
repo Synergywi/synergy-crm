@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Synergy CRM</title>
 
-    <!-- Optional: this link is fine to keep, but the theme is already bundled via App.tsx import -->
-    <link rel="stylesheet" href="/web/hubspot-theme.css" />
+    <!-- Served from /public so it’s guaranteed to exist in dist -->
+    <link rel="stylesheet" href="/hubspot-theme.css" />
   </head>
   <body>
     <div id="root"></div>
-    <!-- Your entry stays the same -->
+    <!-- Your app’s entry (keep this path if that’s what you use) -->
     <script type="module" src="/App.tsx"></script>
   </body>
 </html>
