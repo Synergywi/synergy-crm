@@ -2,23 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Synergy CRM</title>
 
-    <!-- HubSpot theme (served from repo folder /hubspot-theme-pack) -->
-    <!-- Use a root-relative href so it works from any route in the SPA -->
-    <link
-      rel="stylesheet"
-      href="/hubspot-theme-pack/hubspot-theme.css?v=1"
-    />
-
-    <!-- Vite will inject its compiled CSS here (keep as-is if it already exists in your template) -->
+    <!-- HubSpot theme: load from /web so it ships with the build -->
+    <link rel="stylesheet" href="/web/hubspot-theme.css" />
   </head>
   <body>
     <div id="root"></div>
 
-    <!-- Your app bundle mount (keep whatever you already had here, e.g. Vite or SWA script) -->
-    <script type="module" src="/app.js"></script>
+    <!-- Keep using your root App as the entry (adjust only if your repo uses a different entry) -->
+    <script type="module" src="/App.tsx"></script>
   </body>
 </html>
