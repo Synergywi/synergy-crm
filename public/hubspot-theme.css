@@ -1,74 +1,235 @@
-/* HubSpot-ish light theme — components + utilities
-   Place at /public/hubspot-theme.css and <link> it in index.html
-*/
+/* ------------------------------------------------------------------
+   HubSpot–like Light Theme (orange / teal / navy text)
+   Drop-in CSS for /public/hubspot-theme.css
+------------------------------------------------------------------- */
 
-/* --- Palette (HubSpot navy + orange + teal) --- */
+/* ---------- Palette ---------- */
 :root{
-  --bg:#f7f9fc;
-  --panel:#fff;
-  --panel-2:#f3f5f9;
-  --ink:#33475b;         /* HubSpot Navy */
-  --ink-muted:#516f90;
-  --border:#e2e8f0;
-  --primary:#ff7a59;     /* HubSpot Orange */
-  --primary-ink:#fff;
-  --accent:#00b3a4;      /* HubSpot Teal */
-  --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 10px rgba(16,24,40,.06);
-  --radius:12px;
-  --radius-sm:8px;
-  --radius-lg:16px;
-  --pad:16px;
-  --pad-lg:24px;
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --border: #e4e9f2;
+
+  --text: #33475b;          /* HubSpot navy */
+  --text-muted: #516f90;
+
+  --primary: #ff7a59;       /* HubSpot orange */
+  --primary-ink: #ffffff;
+
+  --accent: #00b3a4;        /* HubSpot teal */
+
+  --ink: #1f2d3d;           /* headings / strong */
+  --shadow: 0 2px 6px rgba(2,16,32,.08);
+  --radius: 10px;
 }
 
-/* --- Layout & typography --- */
-html,body{background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-.hub-app{background:var(--bg)!important; color:var(--ink)!important;}
-.kbd{font:12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas; border:1px solid var(--border); background:var(--panel-2); border-radius:6px; padding:2px 6px;}
-
-/* --- Shell (sidebar + header) --- */
-.hub-app .sidebar{background:var(--panel); border-right:1px solid var(--border);}
-.hub-app .logo{font-weight:700; letter-spacing:.2px; padding:14px 12px;}
-.hub-app .nav a{display:block; padding:10px 12px; border-radius:8px; color:var(--ink); text-decoration:none;}
-.hub-app .nav a.active{background:#fff; box-shadow:var(--shadow);}
-
-/* --- Page header --- */
-.page-header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 16px;}
-.page-title{font-size:20px; font-weight:700;}
-.badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; border-radius:999px; padding:4px 10px; background:var(--accent); color:#fff}
-
-/* --- Cards / Panels --- */
-.card,.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);}
-.card{padding:var(--pad-lg);}
-.panel{padding:var(--pad);}
-
-/* --- Tables --- */
-.table{width:100%; border-collapse:separate; border-spacing:0; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
-.table thead th{background:var(--panel-2); text-align:left; font-weight:600; color:var(--ink-muted); padding:12px 16px; border-bottom:1px solid var(--border);}
-.table tbody td{padding:14px 16px; border-bottom:1px solid var(--border);}
-.table tbody tr:last-child td{border-bottom:0;}
-.table--compact thead th,.table--compact tbody td{padding:10px 12px}
-
-/* --- Buttons --- */
-.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:8px 14px; font-weight:600; border-radius:10px; border:1px solid var(--border); background:#fff; color:var(--ink); cursor:pointer; transition:.15s ease-in-out;}
-.btn:hover{box-shadow:var(--shadow);}
-.btn:disabled{opacity:.6; cursor:not-allowed;}
-.btn.btn-primary{background:var(--primary); border-color:var(--primary); color:var(--primary-ink);}
-.btn.btn-danger{background:#ef4444; border-color:#ef4444; color:#fff;}
-.btn.btn-muted{background:var(--panel-2);}
-
-/* --- Inputs --- */
-input[type="text"], input[type="email"], input[type="date"], select, textarea{
-  width:100%; border:1px solid var(--border); background:#fff; border-radius:10px; padding:10px 12px; outline:none;
+/* ---------- Global layout & typography ---------- */
+html, body{
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-input:focus,select:focus,textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,179,164,.15);}
 
-/* --- Pills / status --- */
-.pill{display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:var(--panel-2); font-size:12px; color:var(--ink-muted);}
+.hub-app{
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
 
-/* --- Utility helpers --- */
-.row{display:flex; gap:12px; align-items:center;}
-.space-between{justify-content:space-between;}
-.mt-16{margin-top:16px}
-.mt-24{margin-top:24px}
-.w-100{width:100%}
+/* Page container (content column) */
+.page{ max-width:1100px; margin:0 auto; }
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
+  padding: 12px;
+}
+
+/* ---------- Nav ---------- */
+.nav{ margin: 8px 0; }
+.nav a{
+  display:block;
+  padding:10px 12px;
+  margin:6px 0;
+  color:var(--text);
+  text-decoration:none;
+  border-radius: 8px;
+  transition: background .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.nav a:hover{
+  background: rgba(2,16,32,.05);
+}
+.nav a.active{
+  background:#fff;
+  color:var(--text);
+  border:1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Header / page title ---------- */
+.header, .page-header{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.title, .page-title{
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+/* ---------- Cards / panels ---------- */
+.card, .panel{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.card + .card, .panel + .panel{ margin-top:12px; }
+
+/* ---------- Tables ---------- */
+.table{
+  width:100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.table thead th{
+  background: #f4f7fb;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.table tbody td{
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+.table tbody tr:hover{
+  background: rgba(2,16,32,.03);
+}
+
+/* ---------- Forms ---------- */
+input, select, textarea{
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: #b8c3d6;
+  box-shadow: 0 0 0 3px rgba(0,123,255,.08);
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  height:36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--text);
+  cursor:pointer;
+  transition: transform .02s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover{ box-shadow: var(--shadow); }
+.btn:active{ transform: translateY(1px); }
+
+.btn-primary{
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+.btn-primary:hover{ filter: brightness(0.98); }
+
+.btn-danger{
+  background: #e35d5b;
+  border-color: #e35d5b;
+  color: #fff;
+}
+.btn-danger:hover{ filter: brightness(0.98); }
+
+.btn-muted{
+  background:#f5f7fb;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* ---------- Pills / badges / tags ---------- */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  height:24px;
+  padding:0 8px;
+  font-size:12px;
+  border-radius: 999px;
+  background:#eef3ff;
+  color:#3b5ccc;
+  border:1px solid rgba(2,16,32,.08);
+}
+.tag{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius: 999px;
+  background:#f0faf9;
+  color:#08756d;
+  border:1px solid rgba(2,16,32,.06);
+}
+
+/* ---------- Utilities ---------- */
+.row{ display:flex; gap:12px; }
+.space-between{ justify-content:space-between; }
+.mt-8{ margin-top:8px; }
+.mt-12{ margin-top:12px; }
+.mt-16{ margin-top:16px; }
+.kbd{
+  background:#f4f7fb;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:2px 6px;
+  font-size:12px;
+  color:var(--text-muted);
+}
+
+/* ==============================================================
+   Polishing tweaks (already merged — no need to append separately)
+   ============================================================== */
+
+/* Header blending + spacing */
+.header{
+  background:transparent !important;
+  border:0 !important;
+  padding:0 !important;
+  margin:0 0 16px !important;
+}
+.header .title,
+.page-title{ font-size:22px; font-weight:700; color:var(--ink); }
+
+/* Page width is handled by .page above */
+
+/* Sidebar/nav emphasis */
+.sidebar{ padding:12px; }
+.nav a{ font-weight:600; }
+.nav a.active{ background:#fff; box-shadow:var(--shadow); }
+
+/* Table hover / density */
+.table tbody tr:hover{ background:rgba(2,16,32,.03); }
+
+/* Button sizing already aligned (height:36px) */
