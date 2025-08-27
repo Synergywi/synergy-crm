@@ -1,29 +1,23 @@
-// Ensure HubSpot theme loads LAST so it wins the cascade
-function injectHubSpotTheme() {
-  if (typeof document === "undefined") return;
+// HubSpot theme — import first so it gets bundled
+import "./web/hubspot-theme.css";
 
-  // force light mode
-  document.documentElement.classList.remove("dark");
-
-  // append a <link> so this CSS is the final stylesheet in <head>
-  const id = "hubspot-theme-css";
-  if (!document.getElementById(id)) {
-    const link = document.createElement("link");
-    link.id = id;
-    link.rel = "stylesheet";
-    link.href = "/web/hubspot-theme.css";
-    document.head.appendChild(link);
-  }
-}
-injectHubSpotTheme();
-
+import React from "react";
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
+
+// NOTE: Capitalized so JSX treats these as components
 import CompaniesPage from "./pages/CompaniesPage";
-import contactsPage from "./pages/Contacts";
+import ContactsPage from "./pages/Contacts";
 import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
   const { pathname } = useLocation();
+
+  // Ensure light mode for the HubSpot palette
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
   return (
     <div className="app hub-app">
@@ -34,9 +28,11 @@ export default function App() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             Dashboard
           </NavLink>
+
           <NavLink to="/companies" className={({ isActive }) => (isActive ? "active" : "")}>
             Companies
           </NavLink>
+
           <NavLink to="/contacts" className={({ isActive }) => (isActive ? "active" : "")}>
             Contacts
           </NavLink>
@@ -67,7 +63,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
-            <Route path="/contacts" element={<contactsPage />} />
+            <Route path="/contacts" element={<ContactsPage />} />
           </Routes>
         </div>
       </main>
