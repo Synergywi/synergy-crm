@@ -1,90 +1,183 @@
-/* --- HubSpot-like Dark Theme (global app shell) --- */
+/* HubSpot-like light theme (orange/teal + navy text) */
 
-:root{
-  --bg: #0b1020;
-  --panel: #0f172a;
-  --panel-border:#1f2a44;
-  --text:#e5e7eb;
-  --muted:#9aa4b2;
-  --accent:#3b82f6;
-  --accent-2:#6366f1;
-  --hover: rgba(255,255,255,0.04);
-  --live:#34d399;
-}
+/* Palette */
+:root {
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --border: #dfe3eb;
 
-*{ box-sizing: border-box; }
-html, body, #root{ height:100%; }
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --text: #33475b;        /* HubSpot navy */
+  --text-muted: #516f90;
+
+  --primary: #ff7a59;     /* HubSpot orange */
+  --primary-ink: #ffffff;
+
+  --accent: #00b39f;      /* HubSpot teal */
 }
 
-.app{
-  display:grid;
-  grid-template-columns: 240px 1fr;
-  min-height:100vh;
+/* ----- Global layout & typography ----- */
+html, body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Sidebar */
-.sidebar{
-  background: #0a0f1c;
-  border-right: 1px solid var(--panel-border);
-  padding: 18px 14px;
-}
-.logo{
-  font-weight:700; letter-spacing:.2px;
-  padding: 6px 8px; border-radius: 10px;
-  background: #0d1526; border:1px solid var(--panel-border);
-  display:inline-block;
-}
-.nav{ margin-top: 16px; display:flex; flex-direction:column; gap:4px; }
-.nav a{
-  color: var(--text);
-  padding: 8px 10px; border-radius: 8px; text-decoration:none;
-  display:block;
-}
-.nav a:hover{ background: var(--hover); }
-.nav a.active{
-  background: rgba(99,102,241,.12);
-  outline: 1px solid rgba(99,102,241,.4);
-}
-
-/* Main */
-main{ min-width:0; }
-.header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 16px 18px; border-bottom:1px solid var(--panel-border);
-}
-.title{ font-size:16px; font-weight:600; }
-.badge{
-  display:flex; align-items:center; gap:8px;
-  border:1px solid var(--panel-border); padding:6px 10px; border-radius:999px;
-  color: var(--muted); font-size:12px; background:#0d1526;
-}
-.container{ padding: 18px; }
-
-/* Small “kbd” display (we show current path there) */
-.kbd{
-  background:#0d1526; color:var(--muted); padding:2px 6px; border-radius:6px;
-  border:1px solid var(--panel-border); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-/* Generic cards & buttons used by pages (kept light; pages can extend) */
-.card{
-  background: var(--panel);
-  border:1px solid var(--panel-border);
-  border-radius:12px;
-  padding:16px;
-}
-.btn{
-  border:1px solid #29324b; background:#0b1220; color:var(--text);
-  border-radius:10px; padding:8px 12px; font-size:13px; line-height:1;
-}
-.btn:hover{ background:#0e1629; border-color:#334166; }
-.btn-primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.btn-primary:hover{ background:#2563eb; border-color:#2563eb; }
 .hub-app {
-  outline: 3px solid #22c55e !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* ----- Sidebar ----- */
+.hub-app .sidebar {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
+  padding: 16px 14px;
+  min-width: 240px;
+}
+
+.hub-app .logo {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* Nav */
+.hub-app .nav a {
+  display: block;
+  padding: 10px 12px;
+  margin: 2px 0;
+  color: var(--text-muted) !important;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background .15s ease, color .15s ease;
+}
+
+.hub-app .nav a:hover {
+  background: #eef3f8;
+  color: var(--text) !important;
+}
+
+.hub-app .nav a.active {
+  color: var(--text) !important;
+  background: rgba(255, 122, 89, 0.12);
+  border-left: 3px solid var(--primary);
+  padding-left: 9px; /* compensate for border-left */
+}
+
+/* ----- Main header ----- */
+.hub-app main {
+  padding: 20px;
+}
+
+.hub-app .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.hub-app .title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hub-app .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text-muted);
+}
+
+/* ----- Content container & panels ----- */
+.hub-app .container {
+  background: transparent;
+}
+
+/* “card/panel” style for content sections */
+.hub-app .card,
+.hub-app .panel,
+.hub-app .container > section,
+.hub-app .container > div:not(:has(nav)):not(:empty) {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  color: var(--text) !important;
+}
+
+/* Generic tables */
+.hub-app table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+}
+
+.hub-app thead {
+  background: #f3f6fa;
+  color: var(--text-muted);
+}
+
+.hub-app th, .hub-app td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-app tr:hover td {
+  background: #f9fbff;
+}
+
+/* Inputs */
+.hub-app input, .hub-app select, .hub-app textarea {
+  background: #fff !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.hub-app input:focus, .hub-app select:focus, .hub-app textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, .25) !important;
+}
+
+/* Buttons */
+.hub-app .btn,
+.hub-app button:not(.unstyled) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem .9rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.hub-app .btn-primary,
+.hub-app button.primary {
+  background: var(--primary) !important;
+  color: var(--primary-ink) !important;
+}
+.hub-app .btn-primary:hover,
+.hub-app button.primary:hover {
+  background: #ff6a44 !important;
+}
+
+.hub-app .btn-outline,
+.hub-app button.outline {
+  background: #fff !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
