@@ -1,171 +1,74 @@
-/* HubSpot-like Light Theme
-   Path: /public/hubspot-theme.css
-   Link in <head>: <link rel="stylesheet" href="/hubspot-theme.css" />
+/* HubSpot-ish light theme — components + utilities
+   Place at /public/hubspot-theme.css and <link> it in index.html
 */
 
-/* ---------- Palette ---------- */
+/* --- Palette (HubSpot navy + orange + teal) --- */
 :root{
   --bg:#f7f9fc;
   --panel:#fff;
-  --border:#dfe3eb;
-  --text:#33475b;          /* HubSpot navy */
-  --text-muted:#516f90;
-  --primary:#ff7a59;       /* HubSpot orange */
+  --panel-2:#f3f5f9;
+  --ink:#33475b;         /* HubSpot Navy */
+  --ink-muted:#516f90;
+  --border:#e2e8f0;
+  --primary:#ff7a59;     /* HubSpot Orange */
   --primary-ink:#fff;
-  --accent:#00b39f;        /* HubSpot teal */
-  --accent-ink:#073b3a;
-  --shadow:0 1px 2px rgba(16,24,40,.05);
+  --accent:#00b3a4;      /* HubSpot Teal */
+  --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 10px rgba(16,24,40,.06);
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-lg:16px;
+  --pad:16px;
+  --pad-lg:24px;
 }
 
-/* ---------- Base ---------- */
-html,body{
-  color-scheme:light;
-  background:var(--bg)!important;
-  color:var(--text)!important;
-  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,Arial;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-}
-.hub-app{min-height:100vh;display:grid;grid-template-columns:240px 1fr;background:var(--bg)!important;color:var(--text)!important}
-.dark,.dark *{background-color:initial!important;color:inherit!important;border-color:inherit!important;box-shadow:none!important}
+/* --- Layout & typography --- */
+html,body{background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+.hub-app{background:var(--bg)!important; color:var(--ink)!important;}
+.kbd{font:12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas; border:1px solid var(--border); background:var(--panel-2); border-radius:6px; padding:2px 6px;}
 
-/* ---------- Sidebar ---------- */
-.hub-app .sidebar{
-  background:var(--panel)!important;color:var(--text)!important;
-  border-right:1px solid var(--border)!important;padding:18px 14px
-}
-.hub-app .logo{font-weight:700;color:var(--text);margin-bottom:10px}
-.hub-app .nav a{
-  display:block;padding:10px 12px;margin:2px 0;border-radius:8px;
-  color:var(--text-muted)!important;text-decoration:none;transition:background .15s,color .15s
-}
-.hub-app .nav a:hover{background:#eef3f8;color:var(--text)!important}
-.hub-app .nav a.active{
-  color:var(--text)!important;background:rgba(255,122,89,.12);
-  border-left:3px solid var(--primary);padding-left:9px
-}
+/* --- Shell (sidebar + header) --- */
+.hub-app .sidebar{background:var(--panel); border-right:1px solid var(--border);}
+.hub-app .logo{font-weight:700; letter-spacing:.2px; padding:14px 12px;}
+.hub-app .nav a{display:block; padding:10px 12px; border-radius:8px; color:var(--ink); text-decoration:none;}
+.hub-app .nav a.active{background:#fff; box-shadow:var(--shadow);}
 
-/* Small kbd chip */
-.hub-app .kbd{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  background:#eef3f8;color:#213547;padding:2px 6px;border-radius:6px;border:1px solid var(--border)}
+/* --- Page header --- */
+.page-header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 16px;}
+.page-title{font-size:20px; font-weight:700;}
+.badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; border-radius:999px; padding:4px 10px; background:var(--accent); color:#fff}
 
-/* ---------- Main area ---------- */
-.hub-app main{padding:22px}
-.hub-app .header{
-  background:transparent!important;border:none!important;
-  padding:0 0 14px 0;margin:0 0 8px 0
+/* --- Cards / Panels --- */
+.card,.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);}
+.card{padding:var(--pad-lg);}
+.panel{padding:var(--pad);}
+
+/* --- Tables --- */
+.table{width:100%; border-collapse:separate; border-spacing:0; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
+.table thead th{background:var(--panel-2); text-align:left; font-weight:600; color:var(--ink-muted); padding:12px 16px; border-bottom:1px solid var(--border);}
+.table tbody td{padding:14px 16px; border-bottom:1px solid var(--border);}
+.table tbody tr:last-child td{border-bottom:0;}
+.table--compact thead th,.table--compact tbody td{padding:10px 12px}
+
+/* --- Buttons --- */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:8px 14px; font-weight:600; border-radius:10px; border:1px solid var(--border); background:#fff; color:var(--ink); cursor:pointer; transition:.15s ease-in-out;}
+.btn:hover{box-shadow:var(--shadow);}
+.btn:disabled{opacity:.6; cursor:not-allowed;}
+.btn.btn-primary{background:var(--primary); border-color:var(--primary); color:var(--primary-ink);}
+.btn.btn-danger{background:#ef4444; border-color:#ef4444; color:#fff;}
+.btn.btn-muted{background:var(--panel-2);}
+
+/* --- Inputs --- */
+input[type="text"], input[type="email"], input[type="date"], select, textarea{
+  width:100%; border:1px solid var(--border); background:#fff; border-radius:10px; padding:10px 12px; outline:none;
 }
-.hub-app .title{font-size:22px;font-weight:700;color:var(--text)}
-.hub-app .badge{display:inline-flex;align-items:center;gap:8px;background:var(--panel);
-  border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--text-muted)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,179,164,.15);}
 
-/* ---------- Cards / Panels ---------- */
-.hub-app .container{display:grid;gap:16px}
-.hub-app .container > *{
-  background:var(--panel)!important;border:1px solid var(--border)!important;
-  border-radius:12px;box-shadow:var(--shadow);color:var(--text)!important;padding:16px
-}
-/* nested detail panels */
-.hub-app .panel,.hub-app .card{background:var(--panel)!important;border:1px solid var(--border)!important;border-radius:12px;box-shadow:var(--shadow)}
+/* --- Pills / status --- */
+.pill{display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:var(--panel-2); font-size:12px; color:var(--ink-muted);}
 
-/* Section headings */
-.hub-app h1,.hub-app h2,.hub-app h3{color:var(--text)}
-
-/* ---------- Tables ---------- */
-.hub-app table{width:100%;border-collapse:separate;border-spacing:0;color:var(--text)}
-.hub-app thead{background:#f3f6fa;color:var(--text-muted)}
-.hub-app th,.hub-app td{padding:12px;border-bottom:1px solid var(--border)}
-.hub-app tr:hover td{background:#f9fbff}
-
-/* ---------- Inputs ---------- */
-.hub-app input,.hub-app select,.hub-app textarea{
-  background:#fff!important;color:var(--text)!important;border:1px solid var(--border)!important;
-  border-radius:8px!important;padding:8px 10px;outline:none
-}
-.hub-app input:focus,.hub-app select:focus,.hub-app textarea:focus{
-  border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(255,122,89,.25)!important
-}
-
-/* ---------- Buttons ---------- */
-.hub-app .btn,.hub-app button:not(.unstyled){
-  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-  padding:.45rem .8rem;border-radius:8px;border:1px solid var(--border);
-  background:#fff;color:var(--text);font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s
-}
-.hub-app .btn:hover,.hub-app button:not(.unstyled):hover{background:#f2f6fb}
-.hub-app .btn.primary,.hub-app button.primary{background:var(--primary)!important;border-color:var(--primary)!important;color:var(--primary-ink)!important}
-.hub-app .btn.primary:hover,.hub-app button.primary:hover{background:#ff6a44!important}
-.hub-app .btn.danger,.hub-app button.danger{background:#ef4444!important;color:#fff!important;border-color:#ef4444!important}
-
-/* Pills */
-.hub-app .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-weight:600}
-.hub-app .pill.ok{background:#e8fbf7;color:#0f766e}
-.hub-app .pill.warn{background:#ffeae4;color:#9a3412}
-
-/* Links */
-.hub-app a{color:#0b6e69}
-.hub-app a:hover{color:#0a5e5a;text-decoration:underline}
-
-/* Utilities */
-.row{display:flex;gap:12px}.space-between{justify-content:space-between}.mt-16{margin-top:16px}
-.hub-app, .hub-app *{text-shadow:none!important}
-
-/* ---------- Responsive ---------- */
-@media (max-width:960px){
-  .hub-app{grid-template-columns:1fr}
-  .hub-app .sidebar{border-right:none;border-bottom:1px solid var(--border)!important}
-}
-/* ===== HubSpot polish patch (drop at end of hubspot-theme.css) ===== */
-
-/* Center the working area and give cards a touch more breathing room */
-.hub-app main .container {
-  max-width: 1100px;
-  margin: 0 auto;
-  gap: 20px;
-}
-.hub-app .container > * {
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-/* Clean page header (kills any lingering grey bar) */
-.hub-app .header {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding: 0;
-  margin: 0 0 16px 0;
-}
-.hub-app .title {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-/* Softer table head + a hair more legibility */
-.hub-app thead {
-  background: #f7f9fc;
-  color: var(--text-muted);
-  letter-spacing: 0.2px;
-}
-
-/* “Edit/Delete” style to feel like HubSpot ghost buttons */
-.hub-app .btn,
-.hub-app button:not(.unstyled) {
-  background: #fff;
-  color: var(--text);
-  border-color: var(--border);
-  padding: 6px 10px;
-  font-size: 13px;
-}
-.hub-app .btn:hover,
-.hub-app button:not(.unstyled):hover {
-  background: #f3f6fb;
-}
-
-/* Active left-nav highlight: softer fill + orange rail */
-.hub-app .nav a.active {
-  background: rgba(255, 122, 89, .10);
-  border-left: 3px solid var(--primary);
-  padding-left: 9px;
-}
+/* --- Utility helpers --- */
+.row{display:flex; gap:12px; align-items:center;}
+.space-between{justify-content:space-between;}
+.mt-16{margin-top:16px}
+.mt-24{margin-top:24px}
+.w-100{width:100%}
