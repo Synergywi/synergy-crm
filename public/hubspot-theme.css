@@ -115,3 +115,57 @@ html,body{
   .hub-app{grid-template-columns:1fr}
   .hub-app .sidebar{border-right:none;border-bottom:1px solid var(--border)!important}
 }
+/* ===== HubSpot polish patch (drop at end of hubspot-theme.css) ===== */
+
+/* Center the working area and give cards a touch more breathing room */
+.hub-app main .container {
+  max-width: 1100px;
+  margin: 0 auto;
+  gap: 20px;
+}
+.hub-app .container > * {
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* Clean page header (kills any lingering grey bar) */
+.hub-app .header {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+.hub-app .title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* Softer table head + a hair more legibility */
+.hub-app thead {
+  background: #f7f9fc;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+}
+
+/* “Edit/Delete” style to feel like HubSpot ghost buttons */
+.hub-app .btn,
+.hub-app button:not(.unstyled) {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.hub-app .btn:hover,
+.hub-app button:not(.unstyled):hover {
+  background: #f3f6fb;
+}
+
+/* Active left-nav highlight: softer fill + orange rail */
+.hub-app .nav a.active {
+  background: rgba(255, 122, 89, .10);
+  border-left: 3px solid var(--primary);
+  padding-left: 9px;
+}
