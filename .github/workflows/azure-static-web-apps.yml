@@ -24,18 +24,34 @@ jobs:
         with:
           node-version: 18
 
+      # --- Install: relax peer deps to avoid ERESOLVE ---
+      # If you ever add a lockfile, npm ci will be tried first
       - name: Install deps
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
+          if [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+          elif [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            npm i -g pnpm@8
+            pnpm install --frozen-lockfile
+          elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci || npm install --legacy-peer-deps
           else
-            npm install
+            npm install --legacy-peer-deps
           fi
 
       - name: Build app
-        run: npm run build
+        run: |
+          if [ -f yarn.lock ]; then
+            yarn build
+          elif [ -f pnpm-lock.yaml ]; then
+            pnpm build
+          else
+            npm run build
+          fi
 
-      # Find your built frontend folder (dist/build/out/.output/public or dist/<project>)
+      # --- Detect build output folder (dist/build/out/.output/public or dist/<project>) ---
       - name: Detect app artifact directory
         run: |
           set -e
@@ -62,7 +78,7 @@ jobs:
           ls -la "$OUTPUT_DIR" || true
           find "$OUTPUT_DIR" -maxdepth 2 -type f | head -n 50 || true
 
-      # If /api exists, deploy it as Functions; otherwise deploy frontend only
+      # --- Optional API (Azure Functions in /api) ---
       - name: Detect API folder
         run: |
           if [ -d api ]; then
