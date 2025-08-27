@@ -19,7 +19,6 @@ jobs:
         with:
           node-version: 18
 
-      # Install with a safe fallback so peer-deps conflicts don't block CI
       - name: Install deps
         shell: bash
         run: |
@@ -33,7 +32,7 @@ jobs:
         shell: bash
         run: npm run build
 
-      # Detect the folder that actually contains index.html
+      # Find the folder that actually contains index.html (dist/build/out/.output/public or dist/<project>)
       - name: Detect app artifact directory
         shell: bash
         run: |
@@ -55,7 +54,7 @@ jobs:
           echo "OUTPUT_DIR=$OUT" >> $GITHUB_ENV
           echo "Using OUTPUT_DIR=$OUT"
 
-      # Ensure SPA routing + correct MIME types in the OUTPUT_DIR
+      # Put SPA routing + MIME types inside the built folder
       - name: Write staticwebapp.config.json to output
         shell: bash
         run: |
@@ -78,17 +77,15 @@ jobs:
       - name: Debug output listing
         shell: bash
         run: |
-          echo "== $OUTPUT_DIR =="
+          echo "== OUTPUT_DIR: $OUTPUT_DIR =="
           ls -la "$OUTPUT_DIR" || true
           find "$OUTPUT_DIR" -maxdepth 2 -type f | head -n 80 || true
           if [ -d api ]; then
             echo "== API tree (depth 2) =="
             find api -maxdepth 2 -type f -not -path "*/node_modules/*" | sed 's/^/  - /' || true
-          else
-            echo "No api/ folder detected"
           fi
 
-      # Try to deploy app + API. If this single step fails (SWA API distribution issue), we will fallback.
+      # Try app + API FIRST — app_location points directly at the built folder
       - name: Deploy to Azure Static Web Apps (app + API)
         id: deploy_with_api
         continue-on-error: true
@@ -96,20 +93,20 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: /
-          app_artifact_location: ${{ env.OUTPUT_DIR }}
-          api_location: api
+          app_location: ${{ env.OUTPUT_DIR }}   # <-- deploy from build folder, not repo root
+          app_artifact_location: ""             # not used when app_location is already the build
+          api_location: api                     # set "" if you truly have no API
           skip_app_build: true
 
-      # Fallback: deploy frontend-only if the API distribution fails
+      # If API distribution flakes, deploy frontend-only from the build folder
       - name: Fallback deploy (frontend only)
         if: steps.deploy_with_api.outcome == 'failure'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: /
-          app_artifact_location: ${{ env.OUTPUT_DIR }}
+          app_location: ${{ env.OUTPUT_DIR }}   # <-- still deploy from the build folder
+          app_artifact_location: ""
           api_location: ""
           skip_app_build: true
 
