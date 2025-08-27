@@ -2,15 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Synergy CRM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Synergy CRM 2</title>
 
-    <!-- Served from /public so it’s guaranteed to exist in dist -->
-    <link rel="stylesheet" href="/hubspot-theme.css" />
+    <!-- HubSpot theme -->
+    <link rel="stylesheet" href="/public/hubspot-theme.css">
+    <!-- your app bundle -->
+    <script type="module" src="/main.tsx"></script>
   </head>
-  <body>
-    <div id="root"></div>
-    <!-- Your app’s entry (keep this path if that’s what you use) -->
-    <script type="module" src="/App.tsx"></script>
+  <body class="hub-app">
+    <div id="app"></div>
   </body>
 </html>
