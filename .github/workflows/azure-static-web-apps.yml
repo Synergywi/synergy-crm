@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: npm run build
 
-      # Detect the folder that actually contains index.html (dist/build/out/.output/public or dist/<project>)
+      # Detect the folder that actually contains index.html
       - name: Detect app artifact directory
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
             echo "No built app found (dist/build/out/.output/public or dist/<project>)" >&2
             exit 1
           fi
-          echo "OUTPUT_DIR=$OUT" >> "$GITHUB_ENV"
+          echo "OUTPUT_DIR=$OUT" >> $GITHUB_ENV
           echo "Using OUTPUT_DIR=$OUT"
 
       # Ensure SPA routing + correct MIME types in the OUTPUT_DIR
@@ -81,9 +81,17 @@ jobs:
           echo "== $OUTPUT_DIR =="
           ls -la "$OUTPUT_DIR" || true
           find "$OUTPUT_DIR" -maxdepth 2 -type f | head -n 80 || true
+          if [ -d api ]; then
+            echo "== API tree (depth 2) =="
+            find api -maxdepth 2 -type f -not -path "*/node_modules/*" | sed 's/^/  - /' || true
+          else
+            echo "No api/ folder detected"
+          fi
 
-      # Deploy built SPA + Functions (let the action build the API; we skip only the app build)
+      # Try to deploy app + API. If this single step fails (SWA API distribution issue), we will fallback.
       - name: Deploy to Azure Static Web Apps (app + API)
+        id: deploy_with_api
+        continue-on-error: true
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -92,3 +100,26 @@ jobs:
           app_artifact_location: ${{ env.OUTPUT_DIR }}
           api_location: api
           skip_app_build: true
+
+      # Fallback: deploy frontend-only if the API distribution fails
+      - name: Fallback deploy (frontend only)
+        if: steps.deploy_with_api.outcome == 'failure'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: /
+          app_artifact_location: ${{ env.OUTPUT_DIR }}
+          api_location: ""
+          skip_app_build: true
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "Deploy with API outcome: ${{ steps.deploy_with_api.outcome }}"
+          if [ "${{ steps.deploy_with_api.outcome }}" = "failure" ]; then
+            echo "API distribution failed; site deployed frontend-only as fallback."
+          else
+            echo "API included in deployment."
+          fi
