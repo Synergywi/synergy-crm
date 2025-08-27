@@ -1,0 +1,254 @@
+/* HubSpot-like Light Theme (orange/teal + navy text)
+   Drop this file at:  /public/hubspot-theme.css
+   Load in <head>:     <link rel="stylesheet" href="/hubspot-theme.css" />
+*/
+
+/* ---------- Palette ---------- */
+:root {
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --border: #dfe3eb;
+
+  --text: #33475b;          /* HubSpot navy */
+  --text-muted: #516f90;
+
+  --primary: #ff7a59;       /* HubSpot orange */
+  --primary-ink: #ffffff;
+
+  --accent: #00b39f;        /* HubSpot teal */
+  --accent-ink: #073b3a;
+
+  --shadow: 0 1px 2px rgba(16,24,40,.05);
+}
+
+/* ---------- Global light override ---------- */
+html, body {
+  color-scheme: light;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* If the app toggles a `.dark` class, override it */
+.dark, .dark * {
+  background-color: initial !important;
+  color: inherit !important;
+  border-color: inherit !important;
+  box-shadow: none;
+}
+
+/* Root app shell */
+.hub-app {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+/* ---------- Sidebar ---------- */
+.hub-app .sidebar {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
+  padding: 18px 14px;
+}
+
+.hub-app .logo {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* Nav links */
+.hub-app .nav a {
+  display: block;
+  padding: 10px 12px;
+  margin: 2px 0;
+  color: var(--text-muted) !important;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background .15s ease, color .15s ease;
+}
+
+.hub-app .nav a:hover {
+  background: #eef3f8;
+  color: var(--text) !important;
+}
+
+.hub-app .nav a.active {
+  color: var(--text) !important;
+  background: rgba(255, 122, 89, 0.12);
+  border-left: 3px solid var(--primary);
+  padding-left: 9px; /* compensate for border-left */
+}
+
+/* Small “kbd” chip (used in Path:) */
+.hub-app .kbd {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #eef3f8;
+  color: #213547;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+/* ---------- Main ---------- */
+.hub-app main {
+  padding: 20px;
+}
+
+.hub-app .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.hub-app .title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hub-app .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text-muted);
+}
+
+/* ---------- Panels / Cards ---------- */
+.hub-app .container > section,
+.hub-app .container > div:not(:has(nav)):not(:empty),
+.hub-app .card,
+.hub-app .panel {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  color: var(--text) !important;
+}
+
+/* Section headings inside cards */
+.hub-app h1, .hub-app h2, .hub-app h3 {
+  color: var(--text);
+}
+
+/* ---------- Tables ---------- */
+.hub-app table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+}
+
+.hub-app thead {
+  background: #f3f6fa;
+  color: var(--text-muted);
+}
+
+.hub-app th, .hub-app td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-app tr:hover td {
+  background: #f9fbff;
+}
+
+/* ---------- Inputs ---------- */
+.hub-app input,
+.hub-app select,
+.hub-app textarea {
+  background: #fff !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.hub-app input:focus,
+.hub-app select:focus,
+.hub-app textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, .25) !important;
+}
+
+/* ---------- Buttons ---------- */
+.hub-app .btn,
+.hub-app button:not(.unstyled) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem .9rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+/* Primary (orange) */
+.hub-app .btn-primary,
+.hub-app button.primary {
+  background: var(--primary) !important;
+  color: var(--primary-ink) !important;
+}
+.hub-app .btn-primary:hover,
+.hub-app button.primary:hover {
+  background: #ff6a44 !important;
+}
+
+/* Outline / default */
+.hub-app .btn-outline,
+.hub-app button.outline,
+.hub-app button:not(.primary):not(.danger):not(.unstyled) {
+  background: #fff !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+.hub-app .btn-outline:hover,
+.hub-app button.outline:hover,
+.hub-app button:not(.primary):not(.danger):not(.unstyled):hover {
+  background: #f2f6fb !important;
+}
+
+/* Destructive */
+.hub-app .btn-danger,
+.hub-app button.danger {
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+
+/* Pills / status chips */
+.hub-app .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-weight:600; }
+.hub-app .pill.ok { background:#e8fbf7; color:#0f766e; }
+.hub-app .pill.warn { background:#ffeae4; color:#9a3412; }
+
+/* ---------- Links ---------- */
+.hub-app a { color: #0b6e69; }
+.hub-app a:hover { color: #0a5e5a; text-decoration: underline; }
+
+/* ---------- Utilities ---------- */
+.row { display:flex; gap:12px; }
+.space-between { justify-content: space-between; }
+.mt-16 { margin-top: 16px; }
+
+/* Remove leftover dark tints */
+.hub-app, .hub-app * { text-shadow: none !important; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 960px) {
+  .hub-app { grid-template-columns: 1fr; }
+  .hub-app .sidebar { border-right: none; border-bottom: 1px solid var(--border) !important; }
+}
