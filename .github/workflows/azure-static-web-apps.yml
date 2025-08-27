@@ -3,7 +3,13 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build_and_deploy:
@@ -12,14 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node (no cache)
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # Install with a safe fallback to avoid peer-deps lockups
       - name: Install deps
         run: |
-          if [ -f package-lock.json ]; then
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
             npm ci || npm install --legacy-peer-deps
           else
             npm install --legacy-peer-deps
@@ -28,7 +35,7 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # Detect common build output folders and pick the first that has an index.html
+      # Detect the built SPA folder (must contain an index.html)
       - name: Detect app artifact directory
         run: |
           set -e
@@ -43,25 +50,61 @@ jobs:
             if [ -n "$SUB" ]; then OUT=$(dirname "$SUB"); fi
           fi
           if [ -z "$OUT" ]; then
-            echo "No built app found (dist/build/out/.output/public or dist/<project>)" >&2
+            echo "No built app found (looked in dist, build, out, .output/public, or dist/<project>)" >&2
             exit 1
           fi
           echo "OUTPUT_DIR=$OUT" >> $GITHUB_ENV
           echo "Using OUTPUT_DIR=$OUT"
 
+      # Ensure SPA routing + correct MIME types live in the OUTPUT_DIR
+      - name: Ensure staticwebapp.config.json in output
+        run: |
+          CFG_PATH="${OUTPUT_DIR}/staticwebapp.config.json"
+          if [ ! -f "$CFG_PATH" ]; then
+            cat > "$CFG_PATH" << 'JSON'
+            {
+              "navigationFallback": {
+                "rewrite": "/index.html",
+                "exclude": ["/assets/*", "/*.css", "/*.js", "/*.map", "/*.ico", "/*.png", "/*.jpg", "/*.jpeg", "/*.svg"]
+              },
+              "mimeTypes": {
+                ".js": "text/javascript",
+                ".mjs": "text/javascript",
+                ".css": "text/css",
+                ".wasm": "application/wasm"
+              }
+            }
+JSON
+            echo "Created $CFG_PATH"
+          else
+            echo "Found existing staticwebapp.config.json"
+          fi
+
       - name: Debug output listing
         run: |
-          echo "== $OUTPUT_DIR =="
+          echo "== OUTPUT: $OUTPUT_DIR =="
           ls -la "$OUTPUT_DIR" || true
-          find "$OUTPUT_DIR" -maxdepth 2 -type f | head -n 50 || true
+          find "$OUTPUT_DIR" -maxdepth 2 -type f | head -n 80 || true
 
-      # FRONTEND-ONLY DEPLOY (temporarily disable API to isolate CDN issue)
-      - name: Deploy to Azure Static Web Apps (frontend only)
+      # Sanity-check Functions API presence/shape
+      - name: Sanity check API
+        run: |
+          if [ -d api ]; then
+            echo "API tree (depth 2):"
+            find api -maxdepth 2 -type f -not -path "*/node_modules/*" | sed 's/^/  - /'
+            test -f api/host.json || (echo "Missing api/host.json" >&2; exit 1)
+          else
+            echo "No api/ folder found." >&2
+            exit 1
+          fi
+
+      # Deploy built SPA + Functions (let the action build the API; we skip app build)
+      - name: Deploy to Azure Static Web Apps (app + API)
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
           app_location: /
           app_artifact_location: ${{ env.OUTPUT_DIR }}
-          api_location: ""
+          api_location: api
           skip_app_build: true
