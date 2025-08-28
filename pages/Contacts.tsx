@@ -1,5 +1,6 @@
+// /pages/Contacts.tsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   listContacts,
   addContact,
@@ -8,17 +9,16 @@ import {
 } from "../web/lib/contactsApi";
 
 export default function ContactsPage() {
-  const navigate = useNavigate();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Contact[]>([]);
+  const [busy, setBusy] = useState(false);
 
   async function refresh() {
-    setLoading(true);
+    setBusy(true);
     try {
       const data = await listContacts();
-      setContacts(data);
+      setRows(data);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
@@ -26,93 +26,65 @@ export default function ContactsPage() {
     refresh();
   }, []);
 
-  async function onAdd() {
-    const name = prompt("Contact name?");
+  async function handleAdd() {
+    // quick add via prompts (replace later with a proper modal if you want)
+    const name = window.prompt("Contact name?");
     if (!name) return;
-    const email = prompt("Email (optional)?") || undefined;
-
-    try {
-      const created = await addContact({ name, email } as Partial<Contact>);
-      await refresh();
-      if (created?.id) navigate(`/contacts/${encodeURIComponent(created.id)}`);
-    } catch (e) {
-      alert("Create failed");
-      console.error(e);
-    }
+    const email = window.prompt("Email (optional)?") ?? undefined;
+    await addContact({ name, email });
+    refresh();
   }
 
-  async function onDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm("Delete this contact?")) return;
-    try {
-      await deleteContact(id);
-      await refresh();
-    } catch (e) {
-      alert("Delete failed");
-      console.error(e);
-    }
+    await deleteContact(id);
+    refresh();
   }
 
   return (
     <div className="page">
-      <div className="header">
-        <div className="title">Synergy CRM 2</div>
-        <div className="badge">Live preview</div>
-      </div>
-
       <div className="panel">
         <div className="row space-between" style={{ marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Contacts</h2>
-          <div className="row" style={{ gap: 8 }}>
-            <button className="btn btn-primary" onClick={onAdd}>+ Add contact</button>
-          </div>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={busy}>
+            + Add contact
+          </button>
         </div>
 
         <table className="table">
           <thead>
             <tr>
-              <th style={{ width: "32%" }}>Name</th>
+              <th style={{ width: "34%" }}>Name</th>
               <th style={{ width: "28%" }}>Company</th>
               <th style={{ width: "28%" }}>Last seen</th>
-              <th style={{ width: "12%" }}>Actions</th>
+              <th style={{ width: "10%" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr><td colSpan={4}>Loading…</td></tr>
-            )}
-
-            {!loading && contacts.length === 0 && (
+            {rows.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ color: "var(--text-muted)" }}>
-                  No contacts yet.
+                  {busy ? "Loading…" : "No contacts yet."}
                 </td>
               </tr>
             )}
-
-            {!loading &&
-              contacts.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td>{c.company || "—"}</td>
-                  <td>{c.lastSeen || "—"}</td>
-                  <td>
-                    <div className="row" style={{ gap: 8 }}>
-                      <button
-                        className="btn btn-muted"
-                        onClick={() => navigate(`/contacts/${encodeURIComponent(c.id)}`)}
-                      >
-                        Open
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => onDelete(c.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+            {rows.map((c) => (
+              <tr key={c.id}>
+                <td>{c.name}</td>
+                <td>{c.company || "—"}</td>
+                <td>{c.lastSeen || "—"}</td>
+                <td>
+                  <div className="row" style={{ gap: 8 }}>
+                    <Link className="btn" to={`/contacts/${encodeURIComponent(c.id)}`}>
+                      Open
+                    </Link>
+                    <button className="btn btn-danger" onClick={() => handleDelete(c.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
