@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HubSpot-ish App Theme — clean build (v3)
+   HubSpot-ish App Theme — clean build (v4)
    Target: /public/hubspot-theme.css
    ========================================================================== */
 
@@ -11,26 +11,26 @@
   --text-muted:    #6b7486;
   --border:        #e5eaf0;
   --line:          #eef2f7;
-  --primary:       #ff8a65;  /* coral accent */
+  --primary:       #ff8a65;
   --primary-600:   #ff7a50;
   --primary-700:   #ff6b3d;
   --danger:        #ff5c5c;
   --danger-700:    #f04747;
   --focus:         #2d7ff9;
+
   /* Radii & shadows */
   --radius-sm: 8px;
   --radius-md: 12px;
   --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
   --shadow-2: 0 6px 18px rgba(16,24,40,.08);
-  /* Sizing */
+
+  /* page container width */
   --container: 1100px;
 }
 
-/* 0) Base reset & type ----------------------------------------------------- */
-
+/* Base --------------------------------------------------------------- */
 *,*::before,*::after{ box-sizing:border-box; }
 html,body{ height:100%; }
-html{ -webkit-text-size-adjust:100%; }
 body{
   margin:0;
   font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
@@ -40,17 +40,10 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
-img,svg,video,canvas{ display:block; max-width:100%; }
-a{ color:#3a73f8; text-decoration:none; }
-a:hover{ text-decoration:underline; }
-code,kbd,pre{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-
-/* Remove default top margins that often create big “mystery gaps” */
 h1,h2,h3,h4,h5,h6{ margin:0 0 .5rem; font-weight:600; }
 h1{ font-size:24px; } h2{ font-size:20px; } h3{ font-size:16px; }
 
-/* 1) Layout chrome --------------------------------------------------------- */
-
+/* Layout chrome ------------------------------------------------------ */
 .app.hub-app{
   min-height:100%;
   display:grid;
@@ -62,12 +55,8 @@ h1{ font-size:24px; } h2{ font-size:20px; } h3{ font-size:16px; }
   color:#cbd5e1;
   padding:20px 16px;
 }
-.sidebar .logo{
-  color:#fff; font-weight:700; letter-spacing:.2px; margin-bottom:16px;
-}
-.sidebar .nav a{
-  display:block; padding:10px 12px; border-radius:10px; color:#cbd5e1;
-}
+.sidebar .logo{ color:#fff; font-weight:700; margin-bottom:16px; }
+.sidebar .nav a{ display:block; padding:10px 12px; border-radius:10px; color:#cbd5e1; }
 .sidebar .nav a.active, .sidebar .nav a:hover{
   background:rgba(255,255,255,.06); color:#fff; text-decoration:none;
 }
@@ -77,28 +66,27 @@ main{ display:flex; flex-direction:column; min-width:0; }
   display:flex; align-items:center; justify-content:space-between;
   padding:16px 24px; border-bottom:1px solid var(--border); background:#fff;
 }
-.header .title{ font-weight:600; }
 .badge{
   display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px;
   color:#3c485a; background:#f0f4f9; border:1px solid var(--border);
 }
 
-/* Main container: anti margin-collapsing guard */
+/* Main container */
 .container{
   max-width:var(--container);
   margin:0 auto;
-  padding:24px;
-  overflow:auto;            /* <- prevents first-child margins from collapsing up */
+  padding:20px 24px 24px;
+  overflow:auto; /* defeats margin-collapsing from first child */
 }
 
-/* 2) Cards / panels -------------------------------------------------------- */
-
+/* Cards / panels ----------------------------------------------------- */
 .card,.panel{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
   box-shadow:var(--shadow-1);
-  padding:18px;             /* compact default */
+  padding:18px;
+  width:100%;
 }
 .card.lg,.panel.lg{ padding:24px; box-shadow:var(--shadow-2); }
 
@@ -108,12 +96,7 @@ main{ display:flex; flex-direction:column; min-width:0; }
 }
 .card-title{ font-weight:600; }
 
-/* Prevent extra gap before the first card */
-.container > .card:first-child,
-.container > .panel:first-child{ margin-top:0; }
-
-/* 3) Tables --------------------------------------------------------------- */
-
+/* Tables ------------------------------------------------------------- */
 .table{ width:100%; border-collapse:separate; border-spacing:0; }
 .table th,.table td{
   text-align:left; padding:12px 14px; border-bottom:1px solid var(--line);
@@ -126,8 +109,7 @@ main{ display:flex; flex-direction:column; min-width:0; }
 }
 .table tbody tr:hover{ background:#f9fbff; }
 
-/* 4) Forms ---------------------------------------------------------------- */
-
+/* Forms -------------------------------------------------------------- */
 label{ display:block; font-size:12px; color:var(--text-muted); margin:0 0 6px; }
 input[type="text"],input[type="email"],input[type="tel"],
 input[type="search"],input[type="password"],select,textarea{
@@ -146,14 +128,7 @@ input:focus,select:focus,textarea:focus{
   box-shadow:0 0 0 3px rgba(45,127,249,.15);
 }
 
-/* Form grid helpers */
-.form-grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;
-}
-.form-grid .full{ grid-column:1 / -1; }
-
-/* 5) Buttons -------------------------------------------------------------- */
-
+/* Buttons ------------------------------------------------------------ */
 .btn{
   appearance:none; user-select:none; cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center;
@@ -164,25 +139,14 @@ input:focus,select:focus,textarea:focus{
   transition:background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .btn:hover{ background:#f9fafb; }
-.btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(45,127,249,.2); }
-
-.btn-primary{
-  background:var(--primary); color:#fff; border-color:transparent;
-}
+.btn-primary{ background:var(--primary); color:#fff; border-color:transparent; }
 .btn-primary:hover{ background:var(--primary-600); }
-.btn-primary:active{ background:var(--primary-700); }
-
-.btn-danger{
-  background:#fff; color:#b42318; border-color:#ffd8d6;
-}
+.btn-danger{ background:#fff; color:#b42318; border-color:#ffd8d6; }
 .btn-danger:hover{ background:#fff5f5; }
-.btn-danger.solid{
-  background:var(--danger); color:#fff; border-color:transparent;
-}
+.btn-danger.solid{ background:var(--danger); color:#fff; border-color:transparent; }
 .btn-danger.solid:hover{ background:var(--danger-700); }
 
-/* 6) Tabs ----------------------------------------------------------------- */
-
+/* Tabs --------------------------------------------------------------- */
 .tabs{ display:flex; gap:8px; border-bottom:1px solid var(--border); margin-bottom:12px; }
 .tab{
   border:none; background:transparent; color:var(--text-muted);
@@ -190,47 +154,24 @@ input:focus,select:focus,textarea:focus{
 }
 .tab.active{ color:var(--text); background:#fff; border:1px solid var(--border); border-bottom-color:#fff; }
 
-/* 7) Page-specific helpers ------------------------------------------------ */
-
-.page-title{ font-size:18px; font-weight:700; margin:0 0 10px; }
-.page-subtitle{ color:var(--text-muted); margin:-6px 0 16px; }
-
-/* Keep the header area tight */
-.page-header,.contact-header{ margin:0 0 12px; }
-
-/* Prevent first-child margins from creating ghost space */
-.container > *:first-child{ margin-top:0 !important; }
-
-/* Action bar inside cards */
-.card-actions{ display:flex; gap:8px; }
-
-/* 8) Small utilities ------------------------------------------------------ */
-
+/* Utilities ---------------------------------------------------------- */
 .row{ display:flex; align-items:center; gap:8px; }
 .space-between{ justify-content:space-between; }
-.kbd{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size:12px; padding:.15rem .4rem; border:1px solid var(--border);
-  background:#fff; border-radius:6px; color:#475569;
-}
 
-/* 9) Contact detail layout (nice defaults) -------------------------------- */
+/* Contact page ------------------------------------------------------- */
+/* This wrapper is the key to getting the card a nice WIDE footprint */
+.contact-page{
+  max-width: 1040px;  /* target look */
+  margin: 0 auto;
+}
 
 .contact-card{ padding:24px; }
 .contact-card .card-header{ margin-bottom:12px; }
-.contact-card .name-row{
-  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+.contact-card .grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px 18px;
 }
-.contact-card .right-actions{ margin-left:auto; }
-.contact-card .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px 18px; }
 .contact-card .grid .full{ grid-column:1/-1; }
 
-/* 10) Print & dark safety (simple) --------------------------------------- */
-
-@media (prefers-color-scheme: dark){
-  /* Don’t invert – keep the light UI for now */
+@media (max-width: 860px){
+  .contact-card .grid{ grid-template-columns:1fr; }
 }
-
-/* ======================================================================= */
-/* End                                                                      */
-/* ======================================================================= */
