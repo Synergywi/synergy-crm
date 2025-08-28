@@ -93,7 +93,6 @@ export default function ContactDetailPage() {
 
   return (
     <div className="page">
-      {/* header */}
       <div className="header">
         <div className="row space-between" style={{ alignItems: "center" }}>
           <div className="title">Contact</div>
@@ -106,12 +105,10 @@ export default function ContactDetailPage() {
         </div>
       </div>
 
-      {/* card */}
       <div className="panel" style={{ paddingTop: 16 }}>
         <div className="crm-form">
           <h3 style={{ margin: "0 0 12px" }}>{model.name || "New contact"}</h3>
 
-          {/* tabs */}
           <div className="tabs" style={{ marginBottom: 12 }}>
             <button className={`tab ${tab === "profile" ? "active" : ""}`} onClick={() => setTab("profile")}>
               Profile
@@ -157,7 +154,6 @@ export default function ContactDetailPage() {
                 />
                 <ReadOnlyField label="Last seen" value={model.lastSeen || "—"} />
 
-                {/* Notes full width */}
                 <div className="crm-field" style={{ gridColumn: "1 / -1" }}>
                   <Label>Notes</Label>
                   <textarea
@@ -210,5 +206,19 @@ function Field(props: {
       <Label>{props.label}</Label>
       <input
         className="crm-input"
-        type={props.type || "text"}
-        value={props.val
+        type={props.type ?? "text"}
+        value={props.value}
+        onChange={e => props.onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="crm-field">
+      <Label>{label}</Label>
+      <input className="crm-input" value={String(value)} readOnly />
+    </div>
+  );
+}
