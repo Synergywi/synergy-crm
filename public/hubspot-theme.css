@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HubSpot-ish App Theme — clean build (v4)
+   HubSpot-ish App Theme — clean build v5 (wider)
    Target: /public/hubspot-theme.css
    ========================================================================== */
 
@@ -18,14 +18,14 @@
   --danger-700:    #f04747;
   --focus:         #2d7ff9;
 
-  /* Radii & shadows */
+  /* Layout */
   --radius-sm: 8px;
   --radius-md: 12px;
   --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
   --shadow-2: 0 6px 18px rgba(16,24,40,.08);
 
-  /* page container width */
-  --container: 1100px;
+  /* WIDER page container */
+  --container: 1280px;
 }
 
 /* Base --------------------------------------------------------------- */
@@ -43,23 +43,18 @@ body{
 h1,h2,h3,h4,h5,h6{ margin:0 0 .5rem; font-weight:600; }
 h1{ font-size:24px; } h2{ font-size:20px; } h3{ font-size:16px; }
 
-/* Layout chrome ------------------------------------------------------ */
+/* App chrome --------------------------------------------------------- */
 .app.hub-app{
   min-height:100%;
   display:grid;
   grid-template-columns: 240px 1fr;
 }
-
 .sidebar{
-  background:#0f1b2b;
-  color:#cbd5e1;
-  padding:20px 16px;
+  background:#0f1b2b; color:#cbd5e1; padding:20px 16px;
 }
 .sidebar .logo{ color:#fff; font-weight:700; margin-bottom:16px; }
 .sidebar .nav a{ display:block; padding:10px 12px; border-radius:10px; color:#cbd5e1; }
-.sidebar .nav a.active, .sidebar .nav a:hover{
-  background:rgba(255,255,255,.06); color:#fff; text-decoration:none;
-}
+.sidebar .nav a.active, .sidebar .nav a:hover{ background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
 
 main{ display:flex; flex-direction:column; min-width:0; }
 .header{
@@ -71,12 +66,13 @@ main{ display:flex; flex-direction:column; min-width:0; }
   color:#3c485a; background:#f0f4f9; border:1px solid var(--border);
 }
 
-/* Main container */
+/* Page container (wider) */
 .container{
+  width:100%;
   max-width:var(--container);
   margin:0 auto;
   padding:20px 24px 24px;
-  overflow:auto; /* defeats margin-collapsing from first child */
+  overflow:auto; /* avoid margin-collapsing issues */
 }
 
 /* Cards / panels ----------------------------------------------------- */
@@ -88,11 +84,11 @@ main{ display:flex; flex-direction:column; min-width:0; }
   padding:18px;
   width:100%;
 }
-.card.lg,.panel.lg{ padding:24px; box-shadow:var(--shadow-2); }
+.card.lg,.panel.lg{ padding:28px; box-shadow:var(--shadow-2); }
 
 .card-header{
   display:flex; align-items:center; justify-content:space-between;
-  margin:-6px -6px 16px; padding:6px;
+  margin:-4px -4px 16px; padding:4px;
 }
 .card-title{ font-weight:600; }
 
@@ -115,8 +111,7 @@ input[type="text"],input[type="email"],input[type="tel"],
 input[type="search"],input[type="password"],select,textarea{
   width:100%;
   border:1px solid var(--border);
-  background:#fff;
-  color:var(--text);
+  background:#fff; color:var(--text);
   border-radius:var(--radius-sm);
   height:40px; padding:8px 12px;
   outline:none;
@@ -158,20 +153,22 @@ input:focus,select:focus,textarea:focus{
 .row{ display:flex; align-items:center; gap:8px; }
 .space-between{ justify-content:space-between; }
 
-/* Contact page ------------------------------------------------------- */
-/* This wrapper is the key to getting the card a nice WIDE footprint */
+/* Contact page (make this WIDE) ------------------------------------- */
 .contact-page{
-  max-width: 1040px;  /* target look */
+  width:100%;
+  max-width: 1160px;   /* wider footprint */
   margin: 0 auto;
 }
-
-.contact-card{ padding:24px; }
+.contact-card{ padding:28px; }
 .contact-card .card-header{ margin-bottom:12px; }
 .contact-card .grid{
-  display:grid; grid-template-columns:1fr 1fr; gap:14px 18px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 22px;
 }
 .contact-card .grid .full{ grid-column:1/-1; }
 
-@media (max-width: 860px){
+/* Narrow screens */
+@media (max-width: 900px){
   .contact-card .grid{ grid-template-columns:1fr; }
 }
