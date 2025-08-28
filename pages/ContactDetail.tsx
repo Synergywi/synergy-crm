@@ -91,6 +91,14 @@ export default function ContactDetailPage() {
     );
   }
 
+  // Inline grid fallback so layout looks right even if CSS isn't loaded.
+  const gridFallback: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    columnGap: 16,
+    rowGap: 12,
+  };
+
   return (
     <div className="page">
       <div className="header">
@@ -123,7 +131,9 @@ export default function ContactDetailPage() {
 
           {tab === "profile" && (
             <>
-              <div className="crm-grid">
+              {/* 2-column form grid */}
+              <div className="crm-grid" style={gridFallback}>
+                {/* Row 1 */}
                 <Field
                   label="Name"
                   value={model.name ?? ""}
@@ -136,89 +146,8 @@ export default function ContactDetailPage() {
                   type="email"
                 />
 
+                {/* Row 2 */}
                 <Field
                   label="Phone"
                   value={model.phone ?? ""}
-                  onChange={v => setModel({ ...model, phone: v })}
-                />
-                <Field
-                  label="Company"
-                  value={model.company ?? ""}
-                  onChange={v => setModel({ ...model, company: v })}
-                />
-
-                <Field
-                  label="Role"
-                  value={model.role ?? ""}
-                  onChange={v => setModel({ ...model, role: v })}
-                />
-                <ReadOnlyField label="Last seen" value={model.lastSeen || "—"} />
-
-                <div className="crm-field" style={{ gridColumn: "1 / -1" }}>
-                  <Label>Notes</Label>
-                  <textarea
-                    className="crm-textarea"
-                    value={(model.notes as string) ?? ""}
-                    onChange={e => setModel({ ...model, notes: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="row" style={{ gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
-                <button className="btn" onClick={() => simulateLogin(selected.id)}>Simulate login</button>
-                <button className="btn" onClick={() => clearLog(selected.id)}>Clear log</button>
-                <button className="btn btn-danger" onClick={onDelete} disabled={saving}>Delete</button>
-              </div>
-            </>
-          )}
-
-          {tab === "portal" && (
-            <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
-          )}
-
-          {tab === "cases" && (
-            <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- helpers ---------- */
-
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
-      {children}
-    </div>
-  );
-}
-
-function Field(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: React.HTMLInputTypeAttribute;
-}) {
-  return (
-    <div className="crm-field">
-      <Label>{props.label}</Label>
-      <input
-        className="crm-input"
-        type={props.type ?? "text"}
-        value={props.value}
-        onChange={e => props.onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="crm-field">
-      <Label>{label}</Label>
-      <input className="crm-input" value={String(value)} readOnly />
-    </div>
-  );
-}
+                  onChange={v =>
