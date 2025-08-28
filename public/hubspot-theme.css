@@ -1,252 +1,157 @@
-/* ------------------------------------------------------------------
-   HubSpot–like Light Theme (orange / teal / navy text)
-   Drop-in CSS for /public/hubspot-theme.css
-------------------------------------------------------------------- */
+/* /public/hubspot-theme.css
+   HubSpot-like light UI — strong overrides to defeat any dark defaults
+*/
 
-/* ---------- Palette ---------- */
-:root{
-  --bg: #f7f9fc;
-  --panel: #ffffff;
-  --border: #e4e9f2;
+/* Force light scheme even on systems set to dark */
+:root { color-scheme: light; }
 
-  --text: #33475b;          /* HubSpot navy */
-  --text-muted: #516f90;
+/* Palette */
+:root {
+  --bg:        #f7f9fc;
+  --panel:     #ffffff;
+  --border:    #e4e7ee;
 
-  --primary: #ff7a59;       /* HubSpot orange */
-  --primary-ink: #ffffff;
+  --text:        #33475b;   /* HubSpot navy */
+  --text-muted:  #6a7a8c;
 
-  --accent: #00b3a4;        /* HubSpot teal */
-
-  --ink: #1f2d3d;           /* headings / strong */
-  --shadow: 0 2px 6px rgba(2,16,32,.08);
-  --radius: 10px;
+  --primary:      #ff7a59;  /* HubSpot orange */
+  --primary-ink:  #ffffff;
+  --accent:       #00b39f;  /* HubSpot teal */
 }
 
-/* ---------- Global layout & typography ---------- */
-html, body{
+/* GLOBAL RESET – make light win everywhere */
+html, body {
   background: var(--bg) !important;
   color: var(--text) !important;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.35;
 }
 
-.hub-app{
-  background: var(--bg) !important;
+/* Wrap-level overrides */
+.app, .hub-app, .container, .header, .panel, .table,
+.sidebar, main, .nav, .tabs, .badge, .logo {
+  background: transparent !important;
   color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
-/* Page container (content column) */
-.page{ max-width:1100px; margin:0 auto; }
-
-/* ---------- Sidebar ---------- */
-.sidebar{
+/* Layout */
+.hub-app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.hub-app .sidebar {
   background: var(--panel) !important;
-  color: var(--text) !important;
   border-right: 1px solid var(--border) !important;
-  padding: 12px;
-}
-
-/* ---------- Nav ---------- */
-.nav{ margin: 8px 0; }
-.nav a{
-  display:block;
-  padding:10px 12px;
-  margin:6px 0;
-  color:var(--text);
-  text-decoration:none;
-  border-radius: 8px;
-  transition: background .15s ease, box-shadow .15s ease, color .15s ease;
-}
-.nav a:hover{
-  background: rgba(2,16,32,.05);
-}
-.nav a.active{
-  background:#fff;
-  color:var(--text);
-  border:1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-/* ---------- Header / page title ---------- */
-.header, .page-header{
-  background: transparent;
-  border: 0;
-  padding: 0;
-  margin: 0 0 16px;
-}
-.title, .page-title{
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 0 0 8px;
-}
-
-/* ---------- Cards / panels ---------- */
-.card, .panel{
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 16px;
 }
-.card + .card, .panel + .panel{ margin-top:12px; }
+.hub-app .logo { font-weight: 700; margin-bottom: 10px; }
 
-/* ---------- Tables ---------- */
-.table{
-  width:100%;
-  border-collapse: collapse;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow);
+.hub-app .nav a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 4px;
 }
-.table thead th{
-  background: #f4f7fb;
-  color: var(--text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: .02em;
-  text-align: left;
-  padding: 12px 14px;
+.hub-app .nav a:hover { background: #f2f5fa; }
+.hub-app .nav a.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+main { padding: 20px 24px; }
+.header {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.header .title { font-size: 18px; font-weight: 700; }
+.badge {
+  background: #eaf4ff; color: #1a73e8;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px;
+}
+
+/* Cards & panels */
+.panel {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* Tables */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
-.table tbody td{
-  padding: 12px 14px;
-  border-top: 1px solid var(--border);
-}
-.table tbody tr:hover{
-  background: rgba(2,16,32,.03);
-}
+.table thead th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
 
-/* ---------- Forms ---------- */
-input, select, textarea{
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
+.tab {
+  background: #f2f5fa; border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+}
+.tab.active { background: #e8f0fe; color: #1a73e8; border-color: #cbdafc; }
+
+/* Forms */
+input, select, textarea {
+  background: #ffffff !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
   outline: none;
 }
-input:focus, select:focus, textarea:focus{
-  border-color: #b8c3d6;
-  box-shadow: 0 0 0 3px rgba(0,123,255,.08);
+input:focus, select:focus, textarea:focus {
+  border-color: #cbdafc !important;
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.12) !important;
+}
+label { color: var(--text-muted); font-size: 12px; }
+
+/* Buttons */
+.btn {
+  background: #eef1f6; color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 12px; border-radius: 10px; cursor: pointer;
+}
+.btn:hover { background: #e7ebf3; }
+.btn-primary {
+  background: var(--primary) !important; color: var(--primary-ink) !important;
+  border-color: #ff8f74 !important;
+}
+.btn-danger {
+  background: #ffe8e5 !important; color: #b42318 !important;
+  border-color: #ffd1cc !important;
 }
 
-/* ---------- Buttons ---------- */
-.btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  height:36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border:1px solid var(--border);
-  background:#fff;
-  color:var(--text);
-  cursor:pointer;
-  transition: transform .02s ease, box-shadow .15s ease, background .15s ease;
+/* Pills, labels, helpers */
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; border: 1px solid var(--border); background: #f8fafc;
 }
-.btn:hover{ box-shadow: var(--shadow); }
-.btn:active{ transform: translateY(1px); }
-
-.btn-primary{
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-ink);
-}
-.btn-primary:hover{ filter: brightness(0.98); }
-
-.btn-danger{
-  background: #e35d5b;
-  border-color: #e35d5b;
-  color: #fff;
-}
-.btn-danger:hover{ filter: brightness(0.98); }
-
-.btn-muted{
-  background:#f5f7fb;
-  color: var(--text);
-  border-color: var(--border);
+.row { display: flex; align-items: center; gap: 8px; }
+.space-between { justify-content: space-between; }
+.kbd {
+  background: #eef1f6; border: 1px solid var(--border);
+  border-radius: 6px; padding: 2px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
 }
 
-/* ---------- Pills / badges / tags ---------- */
-.badge{
-  display:inline-flex;
-  align-items:center;
-  height:24px;
-  padding:0 8px;
-  font-size:12px;
-  border-radius: 999px;
-  background:#eef3ff;
-  color:#3b5ccc;
-  border:1px solid rgba(2,16,32,.08);
+/* Hard kill any dark-mode declarations in other stylesheets */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: light; }
+  html, body { background: var(--bg) !important; color: var(--text) !important; }
 }
-.tag{
-  display:inline-block;
-  padding:4px 10px;
-  border-radius: 999px;
-  background:#f0faf9;
-  color:#08756d;
-  border:1px solid rgba(2,16,32,.06);
+/* If a framework adds .dark or [data-theme="dark"], neutralize it */
+.dark, [data-theme="dark"] * {
+  background: initial !important;
+  color: inherit !important;
+  border-color: inherit !important;
 }
-
-/* ---------- Utilities ---------- */
-.row{ display:flex; gap:12px; }
-.space-between{ justify-content:space-between; }
-.mt-8{ margin-top:8px; }
-.mt-12{ margin-top:12px; }
-.mt-16{ margin-top:16px; }
-.kbd{
-  background:#f4f7fb;
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:2px 6px;
-  font-size:12px;
-  color:var(--text-muted);
-}
-
-/* ==============================================================
-   Polishing tweaks (already merged — no need to append separately)
-   ============================================================== */
-
-/* Header blending + spacing */
-.header{
-  background:transparent !important;
-  border:0 !important;
-  padding:0 !important;
-  margin:0 0 16px !important;
-}
-.header .title,
-.page-title{ font-size:22px; font-weight:700; color:var(--ink); }
-
-/* Page width is handled by .page above */
-
-/* Sidebar/nav emphasis */
-.sidebar{ padding:12px; }
-.nav a{ font-weight:600; }
-.nav a.active{ background:#fff; box-shadow:var(--shadow); }
-
-/* Table hover / density */
-.table tbody tr:hover{ background:rgba(2,16,32,.03); }
-
-/* Button sizing already aligned (height:36px) */
-/* Tabs */
-.tabs{
-  display:flex; gap:16px;
-  border-bottom:1px solid var(--border);
-  margin:4px 0 12px 0;
-}
-.tab{
-  appearance:none; border:0; background:transparent; cursor:pointer;
-  padding:10px 2px; margin:0;
-  color:var(--text-muted); font-weight:600;
-}
-.tab.active{
-  color:var(--ink);
-  border-bottom:2px solid var(--primary);
-}
-.tab:hover{ color:var(--ink); }
-
