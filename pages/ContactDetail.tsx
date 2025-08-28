@@ -10,272 +10,350 @@ import {
   type Contact,
 } from "../web/lib/contactsApi";
 
-type TabKey = "profile" | "portal" | "cases";
+type Tab = "profile" | "portal" | "cases";
 
 function splitName(full?: string): { givenNames: string; surname: string } {
-  const n = (full || "").trim().replace(/\s+/g, " ");
-  if (!n) return { givenNames: "", surname: "" };
-  const parts = n.split(" ");
+  const s = (full || "").trim();
+  if (!s) return { givenNames: "", surname: "" };
+  const parts = s.split(/\s+/);
   if (parts.length === 1) return { givenNames: parts[0], surname: "" };
-  const surname = parts.pop() as string;
-  const givenNames = parts.join(" ");
-  return { givenNames, surname };
+  const surname = parts.pop() || "";
+  return { givenNames: parts.join(" "), surname };
 }
 
-function joinName(givenNames: string, surname: string): string {
+function joinName(givenNames?: string, surname?: string) {
   return [givenNames?.trim(), surname?.trim()].filter(Boolean).join(" ");
 }
 
 export default function ContactDetailPage() {
-  const { id } = useParams();
+  const { id = "" } = useParams();
   const navigate = useNavigate();
 
+  const [active, setActive] = useState<Tab>("profile");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
 
-  // Form model
-  const [givenNames, setGivenNames] = useState("");
-  const [surname, setSurname] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [company, setCompany] = useState("");
-  const [notes, setNotes] = useState("");
-  const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [model, setModel] = useState<Partial<Contact>>({
+    givenNames: "",
+    surname: "",
+    email: "",
+    phone: "",
+    company: "",
+    notes: "",
+    lastSeen: "",
+  });
 
-  const fullName = useMemo(() => joinName(givenNames, surname), [givenNames, surname]);
-
+  // Load contact
   useEffect(() => {
-    let alive = true;
+    let cancelled = false;
     (async () => {
-      if (!id) return;
-      setError(null);
       setLoading(true);
+      setError(null);
       try {
         const c = await getContact(id);
-        if (!alive) return;
-        const parts = splitName(c.name);
-        setGivenNames(parts.givenNames);
-        setSurname(parts.surname);
-        setEmail(c.email || "");
-        setPhone(c.phone || "");
-        setCompany(c.company || "");
-        setNotes(c.notes || "");
-        setLastSeen(c.lastSeen ?? null);
+        const names =
+          (c.givenNames || c.surname)
+            ? { givenNames: c.givenNames || "", surname: c.surname || "" }
+            : splitName(c.name);
+
+        if (!cancelled) {
+          setModel({
+            id: c.id,
+            givenNames: names.givenNames,
+            surname: names.surname,
+            email: c.email || "",
+            phone: c.phone || "",
+            company: c.company || "",
+            role: c.role || "",
+            notes: c.notes || "",
+            lastSeen: c.lastSeen || "",
+            // keep legacy field so list/table stays happy
+            name: c.name,
+          });
+        }
       } catch (e: any) {
-        console.error(e);
-        setError("Failed to load contact.");
+        if (!cancelled) setError(e?.message || "Failed to load contact.");
       } finally {
-        alive = false;
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
-      alive = false;
+      cancelled = true;
     };
   }, [id]);
 
-  async function onSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!id) return;
+  const fullName = useMemo(
+    () => joinName(model.givenNames, model.surname),
+    [model.givenNames, model.surname]
+  );
+
+  async function onSave() {
     setSaving(true);
+    setOk(null);
     setError(null);
+
+    // Build a payload that works for both new & legacy backends
+    const payload: Partial<Contact> = {
+      givenNames: model.givenNames?.trim() || "",
+      surname: model.surname?.trim() || "",
+      name: fullName, // legacy servers expect "name"
+      email: model.email?.trim() || "",
+      phone: model.phone?.trim() || "",
+      company: model.company?.trim() || "",
+      role: model.role?.trim() || "",
+      notes: model.notes || "",
+      // do NOT send lastSeen unless you truly need to update it
+    };
+
     try {
-      const patch: Partial<Contact> = {
-        name: fullName,
-        email: email || undefined,
-        phone: phone || undefined,
-        company: company || undefined,
-        notes: notes || undefined,
-      };
-      await updateContact(id, patch);
-      // Optionally show a tiny UX confirmation:
-      // You can wire a toast here if you want.
+      // Try PATCH first via our API helper
+      const updated = await updateContact(id, payload);
+      setModel(prev => ({ ...prev, ...updated }));
+      setOk("Saved.");
     } catch (e: any) {
-      console.error(e);
-      setError("Failed to save. Please try again.");
+      const msg = String(e?.message || "");
+      const looksLikeMethodIssue =
+        /HTTP\s*405/i.test(msg) ||
+        /Method Not Allowed/i.test(msg) ||
+        /HTTP\s*404/i.test(msg) ||
+        /route/i.test(msg) ||
+        /validation/i.test(msg) ||
+        /bad request/i.test(msg);
+
+      if (!looksLikeMethodIssue) {
+        setError(msg || "Failed to save. Please try again.");
+        setSaving(false);
+        return;
+      }
+
+      // Fallback: PUT to the same endpoint for legacy servers
+      try {
+        const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}${text ? ` – ${text}` : ""}`);
+        }
+        const updated = (await res.json()) as Contact;
+        setModel(prev => ({ ...prev, ...updated }));
+        setOk("Saved.");
+      } catch (e2: any) {
+        setError(e2?.message || "Failed to save. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
   }
 
   async function onDelete() {
-    if (!id) return;
-    if (!confirm("Delete this contact? This cannot be undone.")) return;
+    if (!confirm("Delete this contact?")) return;
     try {
       await deleteContact(id);
       navigate("/contacts");
     } catch (e: any) {
-      console.error(e);
-      alert("Failed to delete.");
+      setError(e?.message || "Failed to delete contact.");
     }
   }
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="panel">Loading…</div>
+      <div className="page">
+        <div className="header">
+          <div className="title">Contact</div>
+        </div>
+        <div className="container">Loading…</div>
       </div>
     );
   }
 
   return (
-    <div className="container contact-page">
-      {/* Page header */}
-      <div className="row" style={{ marginBottom: 16, justifyContent: "space-between" }}>
-        <div className="row" style={{ gap: 8 }}>
-          <Link to="/contacts" className="btn">Back</Link>
-          <h1 style={{ margin: 0, fontSize: 18 }}>Contact</h1>
-        </div>
-
-        <button
-          className="btn btn-primary"
-          form="contact-form"
-          type="submit"
-          disabled={saving}
-        >
-          {saving ? "Saving…" : "Save Contact"}
-        </button>
+    <div className="page">
+      <div className="header">
+        <div className="title">Synergy CRM 2</div>
       </div>
-
-      {/* Card */}
-      <div className="card contact-card">
-        <div className="card-header">
-          <div className="card-title" style={{ fontSize: 16 }}>
-            {fullName || "New contact"}
+      <div className="container">
+        <div className="row" style={{ alignItems: "center", marginBottom: 8 }}>
+          <Link to="/contacts" className="btn" style={{ marginRight: 8 }}>
+            Back
+          </Link>
+          <div className="title" style={{ marginRight: "auto" }}>
+            Contact
           </div>
-
-          {/* Tabs */}
-          <div className="tabs" style={{ borderBottom: "none", margin: 0 }}>
-            <button
-              className={`tab ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              Profile
-            </button>
-            <button
-              className={`tab ${activeTab === "portal" ? "active" : ""}`}
-              onClick={() => setActiveTab("portal")}
-            >
-              Portal
-            </button>
-            <button
-              className={`tab ${activeTab === "cases" ? "active" : ""}`}
-              onClick={() => setActiveTab("cases")}
-            >
-              Cases
-            </button>
-          </div>
+          <button
+            className="btn btn-primary"
+            onClick={onSave}
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving ? "Saving…" : "Save Contact"}
+          </button>
         </div>
 
-        {error && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid #ffd8d6",
-              background: "#fff5f5",
-              color: "#7f1d1d",
-              fontSize: 13,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {activeTab === "profile" && (
-          <form id="contact-form" onSubmit={onSave}>
-            <div className="grid" style={{ marginTop: 4 }}>
-              <div>
-                <label>Given names</label>
-                <input
-                  type="text"
-                  value={givenNames}
-                  onChange={(e) => setGivenNames(e.target.value)}
-                  placeholder="Given names"
-                />
-              </div>
-
-              <div>
-                <label>Surname</label>
-                <input
-                  type="text"
-                  value={surname}
-                  onChange={(e) => setSurname(e.target.value)}
-                  placeholder="Surname"
-                />
-              </div>
-
-              <div>
-                <label>Phone</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone"
-                />
-              </div>
-
-              <div>
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                />
-              </div>
-
-              <div>
-                <label>Company</label>
-                <input
-                  type="text"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Company"
-                />
-              </div>
-
-              <div>
-                <label>Last seen</label>
-                <input type="text" value={lastSeen || "—"} disabled />
-              </div>
-
-              <div className="full">
-                <label>Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Notes…"
-                />
-              </div>
+        <div className="panel">
+          <div className="panel-header" style={{ display: "flex", gap: 8 }}>
+            <div className="title">{fullName || "New contact"}</div>
+            <div className="spacer" />
+            <div className="tabs">
+              <button
+                className={`tab ${active === "profile" ? "active" : ""}`}
+                onClick={() => setActive("profile")}
+              >
+                Profile
+              </button>
+              <button
+                className={`tab ${active === "portal" ? "active" : ""}`}
+                onClick={() => setActive("portal")}
+              >
+                Portal
+              </button>
+              <button
+                className={`tab ${active === "cases" ? "active" : ""}`}
+                onClick={() => setActive("cases")}
+              >
+                Cases
+              </button>
             </div>
-          </form>
-        )}
+          </div>
 
-        {activeTab === "portal" && (
-          <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
-        )}
+          {error && (
+            <div
+              className="alert"
+              style={{
+                background: "#ffecef",
+                border: "1px solid #ffd6dc",
+                color: "#b21e3a",
+                padding: "10px 12px",
+                borderRadius: 8,
+                marginBottom: 12,
+              }}
+            >
+              {error}
+            </div>
+          )}
+          {ok && (
+            <div
+              className="alert"
+              style={{
+                background: "#eef9f0",
+                border: "1px solid #d6f5dc",
+                color: "#0c7a2b",
+                padding: "10px 12px",
+                borderRadius: 8,
+                marginBottom: 12,
+              }}
+            >
+              {ok}
+            </div>
+          )}
 
-        {activeTab === "cases" && (
-          <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
-        )}
+          {active === "profile" && (
+            <div className="grid-2" style={{ gap: 12 }}>
+              <Field
+                label="Given names"
+                value={model.givenNames || ""}
+                onChange={v => setModel(m => ({ ...m, givenNames: v }))}
+              />
+              <Field
+                label="Surname"
+                value={model.surname || ""}
+                onChange={v => setModel(m => ({ ...m, surname: v }))}
+              />
+              <Field
+                label="Phone"
+                value={model.phone || ""}
+                onChange={v => setModel(m => ({ ...m, phone: v }))}
+              />
+              <Field
+                label="Email"
+                value={model.email || ""}
+                onChange={v => setModel(m => ({ ...m, email: v }))}
+              />
+              <Field
+                label="Company"
+                value={model.company || ""}
+                onChange={v => setModel(m => ({ ...m, company: v }))}
+              />
+              <Field label="Last seen" value={model.lastSeen || "—"} readOnly />
+              <TextArea
+                label="Notes"
+                value={model.notes || ""}
+                onChange={v => setModel(m => ({ ...m, notes: v }))}
+                rows={6}
+              />
+            </div>
+          )}
 
-        {/* Footer actions */}
-        <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
-          <button className="btn" onClick={() => id && simulateLogin(id)}>
-            Simulate login
-          </button>
-          <button className="btn" onClick={() => id && clearLog(id)}>
-            Clear log
-          </button>
-          <button className="btn btn-danger" onClick={onDelete}>
-            Delete
-          </button>
+          {active === "portal" && (
+            <div style={{ color: "var(--text-muted)" }}>
+              Portal settings coming soon.
+            </div>
+          )}
+
+          {active === "cases" && (
+            <div style={{ color: "var(--text-muted)" }}>
+              Related cases will appear here.
+            </div>
+          )}
+
+          <div className="row" style={{ gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+            <button className="btn" onClick={() => simulateLogin(id)}>
+              Simulate login
+            </button>
+            <button className="btn" onClick={() => clearLog(id)}>
+              Clear log
+            </button>
+            <button className="btn btn-danger" onClick={onDelete}>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Small input component that follows the theme */
+function Field(props: {
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+  readOnly?: boolean;
+}) {
+  return (
+    <label className="field">
+      <div className="label">{props.label}</div>
+      <input
+        className="input"
+        value={props.value}
+        readOnly={props.readOnly}
+        onChange={e => props.onChange?.(e.target.value)}
+        placeholder={props.label}
+      />
+    </label>
+  );
+}
+
+function TextArea(props: {
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+  rows?: number;
+}) {
+  return (
+    <label className="field" style={{ gridColumn: "1 / -1" }}>
+      <div className="label">{props.label}</div>
+      <textarea
+        className="input"
+        rows={props.rows || 5}
+        value={props.value}
+        onChange={e => props.onChange?.(e.target.value)}
+        placeholder={props.label}
+      />
+    </label>
   );
 }
