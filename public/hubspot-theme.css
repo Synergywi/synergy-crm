@@ -233,3 +233,20 @@ input:focus, select:focus, textarea:focus{
 .table tbody tr:hover{ background:rgba(2,16,32,.03); }
 
 /* Button sizing already aligned (height:36px) */
+/* Tabs */
+.tabs{
+  display:flex; gap:16px;
+  border-bottom:1px solid var(--border);
+  margin:4px 0 12px 0;
+}
+.tab{
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  padding:10px 2px; margin:0;
+  color:var(--text-muted); font-weight:600;
+}
+.tab.active{
+  color:var(--ink);
+  border-bottom:2px solid var(--primary);
+}
+.tab:hover{ color:var(--ink); }
+
