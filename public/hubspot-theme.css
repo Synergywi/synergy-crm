@@ -1,8 +1,8 @@
 /* /public/hubspot-theme.css
-   HubSpot-like light UI — strong overrides to defeat any dark defaults
-*/
+   HubSpot-like LIGHT UI — wins over any dark defaults
+   -------------------------------------------------- */
 
-/* Force light scheme even on systems set to dark */
+/* Force light scheme even if OS/browser prefers dark */
 :root { color-scheme: light; }
 
 /* Palette */
@@ -113,45 +113,4 @@ input:focus, select:focus, textarea:focus {
   border-color: #cbdafc !important;
   box-shadow: 0 0 0 3px rgba(26,115,232,0.12) !important;
 }
-label { color: var(--text-muted); font-size: 12px; }
-
-/* Buttons */
-.btn {
-  background: #eef1f6; color: var(--text);
-  border: 1px solid var(--border);
-  padding: 8px 12px; border-radius: 10px; cursor: pointer;
-}
-.btn:hover { background: #e7ebf3; }
-.btn-primary {
-  background: var(--primary) !important; color: var(--primary-ink) !important;
-  border-color: #ff8f74 !important;
-}
-.btn-danger {
-  background: #ffe8e5 !important; color: #b42318 !important;
-  border-color: #ffd1cc !important;
-}
-
-/* Pills, labels, helpers */
-.pill {
-  display: inline-block; padding: 2px 8px; border-radius: 999px;
-  font-size: 12px; border: 1px solid var(--border); background: #f8fafc;
-}
-.row { display: flex; align-items: center; gap: 8px; }
-.space-between { justify-content: space-between; }
-.kbd {
-  background: #eef1f6; border: 1px solid var(--border);
-  border-radius: 6px; padding: 2px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-
-/* Hard kill any dark-mode declarations in other stylesheets */
-@media (prefers-color-scheme: dark) {
-  :root { color-scheme: light; }
-  html, body { background: var(--bg) !important; color: var(--text) !important; }
-}
-/* If a framework adds .dark or [data-theme="dark"], neutralize it */
-.dark, [data-theme="dark"] * {
-  background: initial !important;
-  color: inherit !important;
-  border-color: inherit !important;
-}
+label { color: var(--text-muted); font
