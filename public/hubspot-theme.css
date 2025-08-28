@@ -1,319 +1,236 @@
 /* ==========================================================================
-   HubSpot-style Theme (clean build)
-   File: /public/hubspot-theme.css
-   --------------------------------------------------------------------------
-   Design goals:
-   • Light, clean CRM look with HubSpot-like accents
-   • Consistent cards (panels), tables, forms, and tabs
-   • Tight, readable spacing; action buttons align right in card headers
+   HubSpot-ish App Theme — clean build (v3)
+   Target: /public/hubspot-theme.css
    ========================================================================== */
 
-/* ---------- Design tokens ---------- */
-:root {
-  --bg-page: #f6f9fc;
-  --bg-card: #ffffff;
-
-  --text: #24324b;
-  --text-muted: #6c7a95;
-
-  --border: #e9edf5;
-  --border-strong: #d9e2ef;
-
-  --brand-50: #fff3ee;
-  --brand-100: #ffe1d6;
-  --brand-500: #ff7a59;   /* HubSpot orange-ish */
-  --brand-600: #ff6a45;
-
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger:  #ef4444;
-  --info:    #3b82f6;
-
+:root{
+  /* Colors */
+  --bg:            #f6f8fb;
+  --card:          #ffffff;
+  --text:          #1a2433;
+  --text-muted:    #6b7486;
+  --border:        #e5eaf0;
+  --line:          #eef2f7;
+  --primary:       #ff8a65;  /* coral accent */
+  --primary-600:   #ff7a50;
+  --primary-700:   #ff6b3d;
+  --danger:        #ff5c5c;
+  --danger-700:    #f04747;
+  --focus:         #2d7ff9;
+  /* Radii & shadows */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-
-  --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
-  --shadow-md: 0 2px 8px rgba(16,24,40,.06);
-
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  --shadow-2: 0 6px 18px rgba(16,24,40,.08);
+  /* Sizing */
+  --container: 1100px;
 }
 
-/* ---------- Base ---------- */
-*,
-*::before,
-*::after { box-sizing: border-box; }
+/* 0) Base reset & type ----------------------------------------------------- */
 
-html, body {
-  height: 100%;
-  background: var(--bg-page);
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color:var(--text);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+img,svg,video,canvas{ display:block; max-width:100%; }
+a{ color:#3a73f8; text-decoration:none; }
+a:hover{ text-decoration:underline; }
+code,kbd,pre{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+/* Remove default top margins that often create big “mystery gaps” */
+h1,h2,h3,h4,h5,h6{ margin:0 0 .5rem; font-weight:600; }
+h1{ font-size:24px; } h2{ font-size:20px; } h3{ font-size:16px; }
+
+/* 1) Layout chrome --------------------------------------------------------- */
+
+.app.hub-app{
+  min-height:100%;
+  display:grid;
+  grid-template-columns: 240px 1fr;
 }
 
-body {
-  margin: 0;
-  color: var(--text);
-  font: 14px/1.5 var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.sidebar{
+  background:#0f1b2b;
+  color:#cbd5e1;
+  padding:20px 16px;
+}
+.sidebar .logo{
+  color:#fff; font-weight:700; letter-spacing:.2px; margin-bottom:16px;
+}
+.sidebar .nav a{
+  display:block; padding:10px 12px; border-radius:10px; color:#cbd5e1;
+}
+.sidebar .nav a.active, .sidebar .nav a:hover{
+  background:rgba(255,255,255,.06); color:#fff; text-decoration:none;
 }
 
-img { max-width: 100%; display: block; }
-
-a { color: #475569; text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* ---------- App chrome (optional; won’t break if not present) ---------- */
-.app .sidebar {
-  width: 220px;
-  background: #0f1a2b;
-  color: #b3bfd3;
-  padding: 20px 14px;
+main{ display:flex; flex-direction:column; min-width:0; }
+.header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 24px; border-bottom:1px solid var(--border); background:#fff;
 }
-.app .sidebar .logo { color: #fff; font-weight: 600; margin-bottom: 12px; }
-.app .sidebar .nav a {
-  display: block; padding: 8px 10px; border-radius: 8px; color: #b3bfd3;
-}
-.app .sidebar .nav a.active,
-.app .sidebar .nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
-
-.app main { min-height: 100vh; }
-
-/* Page header row */
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 0;
-}
-.header .title { font-size: 18px; font-weight: 600; }
-.badge { background: #eef2f7; color: #607089; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
-
-/* ---------- Layout container ---------- */
-.container,
-.hub-container {
-  width: min(1120px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 12px 0 32px; /* top tightened */
+.header .title{ font-weight:600; }
+.badge{
+  display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px;
+  color:#3c485a; background:#f0f4f9; border:1px solid var(--border);
 }
 
-/* ---------- Cards / Panels ---------- */
-.panel,
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+/* Main container: anti margin-collapsing guard */
+.container{
+  max-width:var(--container);
+  margin:0 auto;
+  padding:24px;
+  overflow:auto;            /* <- prevents first-child margins from collapsing up */
 }
 
-/* Inner spacing when no header block is used */
-.panel:not(:has(.panel-header)),
-.card:not(:has(.card-header)) {
-  padding: 16px;
+/* 2) Cards / panels -------------------------------------------------------- */
+
+.card,.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-1);
+  padding:18px;             /* compact default */
+}
+.card.lg,.panel.lg{ padding:24px; box-shadow:var(--shadow-2); }
+
+.card-header{
+  display:flex; align-items:center; justify-content:space-between;
+  margin:-6px -6px 16px; padding:6px;
+}
+.card-title{ font-weight:600; }
+
+/* Prevent extra gap before the first card */
+.container > .card:first-child,
+.container > .panel:first-child{ margin-top:0; }
+
+/* 3) Tables --------------------------------------------------------------- */
+
+.table{ width:100%; border-collapse:separate; border-spacing:0; }
+.table th,.table td{
+  text-align:left; padding:12px 14px; border-bottom:1px solid var(--line);
+  vertical-align:middle;
+}
+.table thead th{
+  font-size:12px; letter-spacing:.03em; text-transform:uppercase;
+  color:var(--text-muted); background:#fbfcfe;
+  border-bottom:1px solid var(--border);
+}
+.table tbody tr:hover{ background:#f9fbff; }
+
+/* 4) Forms ---------------------------------------------------------------- */
+
+label{ display:block; font-size:12px; color:var(--text-muted); margin:0 0 6px; }
+input[type="text"],input[type="email"],input[type="tel"],
+input[type="search"],input[type="password"],select,textarea{
+  width:100%;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--text);
+  border-radius:var(--radius-sm);
+  height:40px; padding:8px 12px;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+textarea{ min-height:120px; resize:vertical; }
+input:focus,select:focus,textarea:focus{
+  border-color:var(--focus);
+  box-shadow:0 0 0 3px rgba(45,127,249,.15);
 }
 
-/* Header with actions (title left, buttons right) */
-.panel-header,
-.card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(#fff, #fff);
+/* Form grid helpers */
+.form-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;
+}
+.form-grid .full{ grid-column:1 / -1; }
+
+/* 5) Buttons -------------------------------------------------------------- */
+
+.btn{
+  appearance:none; user-select:none; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  height:36px; padding:0 12px; gap:8px;
+  font-weight:600; font-size:13px;
+  border-radius:10px; border:1px solid var(--border);
+  color:#334155; background:#fff;
+  transition:background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.btn:hover{ background:#f9fafb; }
+.btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(45,127,249,.2); }
+
+.btn-primary{
+  background:var(--primary); color:#fff; border-color:transparent;
+}
+.btn-primary:hover{ background:var(--primary-600); }
+.btn-primary:active{ background:var(--primary-700); }
+
+.btn-danger{
+  background:#fff; color:#b42318; border-color:#ffd8d6;
+}
+.btn-danger:hover{ background:#fff5f5; }
+.btn-danger.solid{
+  background:var(--danger); color:#fff; border-color:transparent;
+}
+.btn-danger.solid:hover{ background:var(--danger-700); }
+
+/* 6) Tabs ----------------------------------------------------------------- */
+
+.tabs{ display:flex; gap:8px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.tab{
+  border:none; background:transparent; color:var(--text-muted);
+  padding:8px 10px; border-radius:8px; font-weight:600; cursor:pointer;
+}
+.tab.active{ color:var(--text); background:#fff; border:1px solid var(--border); border-bottom-color:#fff; }
+
+/* 7) Page-specific helpers ------------------------------------------------ */
+
+.page-title{ font-size:18px; font-weight:700; margin:0 0 10px; }
+.page-subtitle{ color:var(--text-muted); margin:-6px 0 16px; }
+
+/* Keep the header area tight */
+.page-header,.contact-header{ margin:0 0 12px; }
+
+/* Prevent first-child margins from creating ghost space */
+.container > *:first-child{ margin-top:0 !important; }
+
+/* Action bar inside cards */
+.card-actions{ display:flex; gap:8px; }
+
+/* 8) Small utilities ------------------------------------------------------ */
+
+.row{ display:flex; align-items:center; gap:8px; }
+.space-between{ justify-content:space-between; }
+.kbd{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size:12px; padding:.15rem .4rem; border:1px solid var(--border);
+  background:#fff; border-radius:6px; color:#475569;
 }
 
-.panel-title,
-.card-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: .2px;
+/* 9) Contact detail layout (nice defaults) -------------------------------- */
+
+.contact-card{ padding:24px; }
+.contact-card .card-header{ margin-bottom:12px; }
+.contact-card .name-row{
+  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.contact-card .right-actions{ margin-left:auto; }
+.contact-card .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px 18px; }
+.contact-card .grid .full{ grid-column:1/-1; }
+
+/* 10) Print & dark safety (simple) --------------------------------------- */
+
+@media (prefers-color-scheme: dark){
+  /* Don’t invert – keep the light UI for now */
 }
 
-/* Tabs directly inside header or below */
-.panel-tabs,
-.card-tabs,
-.tabs {
-  display: flex; gap: 8px;
-  padding: 8px 12px 0;
-}
-
-.tab,
-.tabs .tab {
-  appearance: none;
-  border: 1px solid transparent;
-  background: #f7fafc;
-  color: #4a5974;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.tab.active,
-.tabs .tab.active {
-  background: var(--brand-50);
-  border-color: var(--brand-100);
-  color: var(--brand-600);
-}
-
-/* Card footer (buttons right) */
-.panel-footer,
-.card-footer {
-  display: flex; justify-content: flex-end; gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  background: #fff;
-}
-
-/* Subtle overall spacing between stacked cards */
-.panel + .panel,
-.card + .card { margin-top: 16px; }
-
-/* ---------- Buttons ---------- */
-.btn {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: #3a4660;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.btn:hover { background: #f9fbfe; }
-.btn:disabled { opacity: .6; cursor: not-allowed; }
-
-.btn-primary {
-  background: var(--brand-500);
-  border-color: var(--brand-500);
-  color: #fff;
-}
-.btn-primary:hover { background: var(--brand-600); border-color: var(--brand-600); }
-
-.btn-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
-}
-.btn-danger:hover { filter: brightness(.95); }
-
-/* ---------- Forms ---------- */
-label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0 0 6px;
-}
-
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="number"],
-input[type="search"],
-select,
-textarea {
-  width: 100%;
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  height: 38px;
-  outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-textarea { min-height: 120px; resize: vertical; }
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--brand-500);
-  box-shadow: 0 0 0 3px rgba(255, 122, 89, .12);
-}
-
-/* Two-column responsive grid for forms */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 20px;
-}
-.form-grid .col-span-2 { grid-column: 1 / -1; }
-
-@media (max-width: 860px) {
-  .form-grid { grid-template-columns: 1fr; }
-}
-
-/* Read-only field look */
-.readonly {
-  background: #f8fafc;
-  border-style: dashed;
-  color: #5f6b84;
-}
-
-/* ---------- Tables ---------- */
-.table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.table thead th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6c7a95;
-  background: #f9fbfe;
-  border-bottom: 1px solid var(--border);
-  padding: 10px 14px;
-}
-
-.table tbody td {
-  border-bottom: 1px solid var(--border);
-  padding: 12px 14px;
-  color: var(--text);
-}
-
-.table tbody tr:hover { background: #fbfdff; }
-.table .actions { display: flex; gap: 8px; }
-
-/* ---------- Badges / Pills ---------- */
-.pill {
-  display: inline-flex; align-items: center;
-  height: 22px; padding: 0 8px;
-  border-radius: 999px;
-  font-size: 11px; font-weight: 600;
-  background: #eef2f7; color: #5e6d86;
-}
-.pill.success { background: #eaf7ee; color: #187a38; }
-.pill.warn    { background: #fff6e6; color: #a86500; }
-.pill.info    { background: #e9f2ff; color: #1f5fbf; }
-
-/* ---------- Utility ---------- */
-.row { display: flex; align-items: center; }
-.row.space-between { justify-content: space-between; }
-.kbd {
-  font: 11px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  background: #eef2f7; color: #51607a; padding: 2px 6px; border-radius: 6px;
-}
-
-/* ---------- Contact pages specific niceties ---------- */
-/* Keep the big gap above the first card tight */
-.page > .panel:first-child,
-.page > .card:first-child { margin-top: 8px; }
-
-/* If a page uses a header bar with title + actions */
-.contact-header,
-.list-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin: 4px 0 8px;
-}
-
-/* “Open” link in tables resembles HubSpot purple link */
-.table a { color: #6c4dd6; font-weight: 500; }
-.table a:hover { text-decoration: underline; }
-
-/* ---------- Safe defaults for any old dark theme leftovers ---------- */
-body,
-.app main,
-.container,
-.hub-container { background: var(--bg-page) !important; color: var(--text) !important; }
+/* ======================================================================= */
+/* End                                                                      */
+/* ======================================================================= */
