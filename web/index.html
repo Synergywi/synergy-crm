@@ -7,23 +7,19 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="color-scheme" content="light only" />
-    <meta name="theme-color" content="#f7f9fc" />
     <title>Synergy CRM 2</title>
 
-    <!-- HubSpot-like theme (served from /public). Update the v= when you change the CSS to bust caches. -->
-    <link rel="preload" href="/hubspot-theme.css?v=2025-08-29-1" as="style" />
-    <link rel="stylesheet" href="/hubspot-theme.css?v=2025-08-29-1" />
+    <!-- Single source of truth for styles: served from /public -->
+    <link rel="stylesheet" href="/hubspot-theme.css" />
 
-    <!-- Prevent flash of unstyled background before CSS loads -->
+    <!-- tiny FOUC guard -->
     <style>
-      html, body { margin: 0; background: #f7f9fc; }
+      html, body, #root { height: 100%; }
+      html, body { margin: 0; background: #f6f8fb; }
     </style>
   </head>
   <body>
-    <noscript>You need JavaScript enabled to run this app.</noscript>
     <div id="root"></div>
-
-    <!-- Vite entrypoint -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
