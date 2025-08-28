@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getContact,
   updateContact,
@@ -9,246 +9,158 @@ import {
   type Contact,
 } from "../web/lib/contactsApi";
 
-/** naive splitter: last word -> surname; the rest -> given names */
-function splitName(full: string | undefined) {
-  const s = (full || "").trim().replace(/\s+/g, " ");
-  if (!s) return { given: "", surname: "" };
-  const parts = s.split(" ");
-  if (parts.length === 1) return { given: parts[0], surname: "" };
-  const surname = parts.pop() as string;
-  return { given: parts.join(" "), surname };
-}
-
-/** joiner that avoids extra spaces */
-function joinName(given: string, surname: string) {
-  return [given?.trim(), surname?.trim()].filter(Boolean).join(" ");
-}
-
 type TabKey = "profile" | "portal" | "cases";
 
 export default function ContactDetailPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id = "" } = useParams();
+  const nav = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [model, setModel] = useState<Contact | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  // Local model with split names
+  const [model, setModel] = useState<Partial<Contact> & {
+    givenNames?: string;
+    surname?: string;
+    notes?: string;
+  }>({});
 
-  // Form fields (split name)
-  const [given, setGiven] = useState("");
-  const [surname, setSurname] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [notes, setNotes] = useState("");
+  const [active, setActive] = useState<TabKey>("profile");
 
   useEffect(() => {
     (async () => {
-      if (!id) return;
-      setLoading(true);
       const c = await getContact(id);
-      setModel(c);
-      const { given, surname } = splitName(c?.name);
-      setGiven(given);
-      setSurname(surname);
-      setEmail(c?.email || "");
-      setPhone(c?.phone || "");
-      setCompany(c?.company || "");
-      setRole(c?.role || "");
-      setNotes(c?.notes || "");
-      setLoading(false);
+      // naive split for existing single-name records
+      const [first = "", ...rest] = (c.name || "").trim().split(" ");
+      const last = rest.join(" ");
+      setModel({
+        ...c,
+        givenNames: c.givenNames ?? first,
+        surname: c.surname ?? last,
+      });
     })();
   }, [id]);
 
-  const lastSeen = useMemo(() => model?.lastSeen ?? "—", [model]);
+  const fullName = useMemo(() => {
+    const fn = `${model.givenNames ?? ""} ${model.surname ?? ""}`.trim();
+    return fn || model.name || "";
+  }, [model]);
 
   async function onSave() {
-    if (!id) return;
-    const payload: Partial<Contact> = {
-      name: joinName(given, surname),
-      email: email || undefined,
-      phone: phone || undefined,
-      company: company || undefined,
-      role: role || undefined,
-      notes: notes || undefined,
+    const payload: Partial<Contact> & {
+      givenNames?: string;
+      surname?: string;
+    } = {
+      id,
+      name: fullName,
+      givenNames: model.givenNames,
+      surname: model.surname,
+      email: model.email,
+      phone: model.phone,
+      company: model.company,
+      role: model.role,
+      lastSeen: model.lastSeen,
+      notes: model.notes,
     };
-    const updated = await updateContact(id, payload);
-    setModel(updated);
-    alert("Contact saved");
+    await updateContact(id, payload);
+    alert("Saved.");
   }
 
   async function onDelete() {
-    if (!id) return;
     if (!confirm("Delete this contact?")) return;
     await deleteContact(id);
-    navigate("/contacts");
-  }
-
-  if (loading) {
-    return (
-      <div className="container">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Contact</div>
-          </div>
-          <div className="card-body">Loading…</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!model) {
-    return (
-      <div className="container">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Contact</div>
-          </div>
-          <div className="card-body">Not found.</div>
-        </div>
-      </div>
-    );
+    nav("/contacts");
   }
 
   return (
-    <div className="page">
-      {/* Top bar: Back + page title lives in content area to keep alignment */}
-      <div className="container" style={{ marginBottom: 12 }}>
-        <button className="btn" onClick={() => navigate(-1)}>Back</button>
-        <div style={{ height: 8 }} />
-        <div className="title">Contact</div>
+    <div className="hub-container page">
+      <div className="toolbar">
+        <button className="btn" onClick={() => nav(-1)}>Back</button>
+        <h1 className="title">Contact</h1>
+        <div className="spacer" />
+        <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
       </div>
 
-      <div className="container">
-        <div className="card">
-          {/* Card header with Save on right */}
-          <div className="card-header">
-            <div className="card-title">{joinName(given, surname) || "(new contact)"}</div>
-            <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
-          </div>
-
-          {/* Tabs */}
-          <div className="card-tabs">
-            <button
-              className={`tab ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              Profile
-            </button>
-            <button
-              className={`tab ${activeTab === "portal" ? "active" : ""}`}
-              onClick={() => setActiveTab("portal")}
-            >
-              Portal
-            </button>
-            <button
-              className={`tab ${activeTab === "cases" ? "active" : ""}`}
-              onClick={() => setActiveTab("cases")}
-            >
-              Cases
-            </button>
-          </div>
-
-          {/* Card body */}
-          <div className="card-body">
-            {activeTab === "profile" && (
-              <form className="crm-grid" onSubmit={(e) => { e.preventDefault(); onSave(); }}>
-                {/* Given + Surname */}
-                <FormGroup label="Given names">
-                  <input
-                    placeholder="Given names"
-                    value={given}
-                    onChange={(e) => setGiven(e.target.value)}
-                  />
-                </FormGroup>
-                <FormGroup label="Surname">
-                  <input
-                    placeholder="Surname"
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                  />
-                </FormGroup>
-
-                {/* Phone + Email */}
-                <FormGroup label="Phone">
-                  <input
-                    placeholder="Phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </FormGroup>
-                <FormGroup label="Email">
-                  <input
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </FormGroup>
-
-                {/* Company + Last seen (readonly) */}
-                <FormGroup label="Company">
-                  <input
-                    placeholder="Company"
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                  />
-                </FormGroup>
-                <FormGroup label="Last seen">
-                  <input value={lastSeen} readOnly />
-                </FormGroup>
-
-                {/* Role spans full width (or put it left and notes right if you prefer) */}
-                <FormGroup label="Role" span={2}>
-                  <input
-                    placeholder="Role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                  />
-                </FormGroup>
-
-                <FormGroup label="Notes" span={2}>
-                  <textarea
-                    placeholder="Notes…"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={6}
-                  />
-                </FormGroup>
-
-                {/* Footer actions (inside the card, right aligned) */}
-                <div className="crm-span-2" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                  <button type="button" className="btn" onClick={() => simulateLogin(model.id)}>Simulate login</button>
-                  <button type="button" className="btn" onClick={() => clearLog(model.id)}>Clear log</button>
-                  <button type="button" className="btn btn-danger" onClick={onDelete}>Delete</button>
-                </div>
-              </form>
-            )}
-
-            {activeTab === "portal" && (
-              <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
-            )}
-
-            {activeTab === "cases" && (
-              <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
-            )}
+      <div className="card narrow">
+        <div className="card-header" style={{justifyContent:"space-between", width:"100%"}}>
+          <h2>{fullName || "New contact"}</h2>
+          <div className="tabs">
+            <button className={`tab ${active === "profile" ? "active" : ""}`} onClick={() => setActive("profile")}>Profile</button>
+            <button className={`tab ${active === "portal" ? "active" : ""}`} onClick={() => setActive("portal")}>Portal</button>
+            <button className={`tab ${active === "cases" ? "active" : ""}`} onClick={() => setActive("cases")}>Cases</button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-/** Shared labeled input block – aligns with hubspot-theme.css spacing */
-function FormGroup(props: {
-  label: string;
-  children: React.ReactNode;
-  span?: 1 | 2;
-}) {
-  return (
-    <div className={`form-group ${props.span === 2 ? "crm-span-2" : ""}`}>
-      <label>{props.label}</label>
-      {props.children}
+        {active === "profile" && (
+          <div className="form-grid">
+            <div>
+              <label>Given names</label>
+              <input
+                value={model.givenNames ?? ""}
+                onChange={e => setModel(m => ({...m, givenNames: e.target.value}))}
+                placeholder="Given names"
+              />
+            </div>
+            <div>
+              <label>Surname</label>
+              <input
+                value={model.surname ?? ""}
+                onChange={e => setModel(m => ({...m, surname: e.target.value}))}
+                placeholder="Surname"
+              />
+            </div>
+
+            <div>
+              <label>Phone</label>
+              <input
+                value={model.phone ?? ""}
+                onChange={e => setModel(m => ({...m, phone: e.target.value}))}
+                placeholder="Phone"
+              />
+            </div>
+            <div>
+              <label>Email</label>
+              <input
+                value={model.email ?? ""}
+                onChange={e => setModel(m => ({...m, email: e.target.value}))}
+                placeholder="Email"
+              />
+            </div>
+
+            <div>
+              <label>Company</label>
+              <input
+                value={model.company ?? ""}
+                onChange={e => setModel(m => ({...m, company: e.target.value}))}
+                placeholder="Company"
+              />
+            </div>
+            <div>
+              <label>Last seen</label>
+              <input value={model.lastSeen ?? ""} readOnly />
+            </div>
+
+            <div className="form-row--full">
+              <label>Notes</label>
+              <textarea
+                value={model.notes ?? ""}
+                onChange={e => setModel(m => ({...m, notes: e.target.value}))}
+                placeholder="Notes…"
+              />
+            </div>
+
+            <div className="form-row--full" style={{display:"flex", justifyContent:"flex-end", gap:8}}>
+              <button className="btn" onClick={() => simulateLogin(id)}>Simulate login</button>
+              <button className="btn" onClick={() => clearLog(id)}>Clear log</button>
+              <button className="btn btn-danger" onClick={onDelete}>Delete</button>
+            </div>
+          </div>
+        )}
+
+        {active === "portal" && (
+          <div style={{color:"var(--text-muted)"}}>Portal settings coming soon.</div>
+        )}
+        {active === "cases" && (
+          <div style={{color:"var(--text-muted)"}}>Related cases will appear here.</div>
+        )}
+      </div>
     </div>
   );
 }
