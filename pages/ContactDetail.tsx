@@ -1,117 +1,150 @@
-// pages/ContactDetail.tsx
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { Contact, getContact, updateContact } from "../web/lib/contactsStore";
+// /pages/ContactDetail.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  listContacts,
+  updateContact,
+  simulateLogin,
+  clearLog,
+  type Contact,
+} from "../web/lib/contactsApi";
 
 type TabKey = "profile" | "portal" | "cases";
 
 export default function ContactDetailPage() {
   const { id = "" } = useParams();
-  const navigate = useNavigate();
-  const [contact, setContact] = useState<Contact | null>(null);
-  const [tab, setTab] = useState<TabKey>("profile");
-  const [saving, setSaving] = useState(false);
+  const nav = useNavigate();
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
   useEffect(() => {
-    const c = getContact(id);
-    if (!c) return navigate("/contacts");
-    setContact(c);
-  }, [id, navigate]);
+    (async () => setContacts(await listContacts()))();
+  }, []);
 
-  const lastSeenDisplay = useMemo(
-    () => (contact?.lastSeen ? new Date(contact.lastSeen).toISOString() : "—"),
-    [contact?.lastSeen]
-  );
+  const contact = useMemo(() => contacts.find(c => c.id === id) || null, [contacts, id]);
 
-  if (!contact) return null;
+  const [form, setForm] = useState<Partial<Contact>>({});
+  useEffect(() => {
+    if (contact) {
+      setForm({
+        name: contact.name || "",
+        email: contact.email || "",
+        phone: contact.phone || "",
+        company: contact.company || "",
+        role: contact.role || "",
+        notes: contact.notes || "",
+      });
+    }
+  }, [contact]);
 
-  function onSave(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSaving(true);
-    const fd = new FormData(e.currentTarget);
-    const updated = updateContact(contact.id, {
-      name: (fd.get("name") as string).trim(),
-      email: (fd.get("email") as string)?.trim() || undefined,
-      company: (fd.get("company") as string)?.trim() || undefined,
-      phone: (fd.get("phone") as string)?.trim() || undefined,
-      role: (fd.get("role") as string)?.trim() || undefined,
-    });
-    setContact(updated);
-    setSaving(false);
+  async function onSave() {
+    if (!contact) return;
+    await updateContact(contact.id, form);
+    setContacts(await listContacts());
+    alert("Saved");
+  }
+
+  if (!contact) {
+    return (
+      <div className="page">
+        <div className="panel">
+          <div style={{ marginBottom: 12 }}>Contact not found.</div>
+          <button className="btn" onClick={() => nav("/contacts")}>Back to Contacts</button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="panel">
-      <div className="row space-between mb-16">
-        <div className="row">
-          <NavLink to="/contacts" className="btn btn-muted" style={{ marginRight: 8 }}>Back</NavLink>
-          <h2 className="title" style={{ margin: 0 }}>{contact.name}</h2>
+    <div className="page">
+      <div className="header">
+        <div className="row space-between">
+          <h1 className="title">Contact</h1>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn" onClick={() => nav("/contacts")}>Back</button>
+            <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
+          </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="tabs mb-16">
-          <button className={`tab ${tab === "profile" ? "active" : ""}`} onClick={() => setTab("profile")}>Profile</button>
-          <button className={`tab ${tab === "portal" ? "active" : ""}`} onClick={() => setTab("portal")}>Portal</button>
-          <button className={`tab ${tab === "cases" ? "active" : ""}`} onClick={() => setTab("cases")}>Cases</button>
+      <div className="panel">
+        <h3 style={{ marginTop: 0 }}>{contact.name}</h3>
+
+        {/* Tabs */}
+        <div className="tabs">
+          <button className={`tab ${activeTab === "profile" ? "active" : ""}`} onClick={() => setActiveTab("profile")}>
+            Profile
+          </button>
+          <button className={`tab ${activeTab === "portal" ? "active" : ""}`} onClick={() => setActiveTab("portal")}>
+            Portal
+          </button>
+          <button className={`tab ${activeTab === "cases" ? "active" : ""}`} onClick={() => setActiveTab("cases")}>
+            Cases
+          </button>
         </div>
 
-        {tab === "profile" && (
-          <form onSubmit={onSave}>
-            <div className="row space-between">
-              <div style={{ flex: 1, marginRight: 8 }}>
-                <label>Name</label>
-                <input name="name" defaultValue={contact.name} required className="input" />
-              </div>
-              <div style={{ flex: 1, marginLeft: 8 }}>
-                <label>Email</label>
-                <input name="email" type="email" defaultValue={contact.email} className="input" />
-              </div>
-            </div>
+        {activeTab === "profile" && (
+          <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
+            <LabeledInput label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+            <LabeledInput label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} />
+            <LabeledInput label="Phone" value={form.phone} onChange={v => setForm({ ...form, phone: v })} />
+            <LabeledInput label="Company" value={form.company} onChange={v => setForm({ ...form, company: v })} />
+            <LabeledInput label="Role" value={form.role} onChange={v => setForm({ ...form, role: v })} />
+            <LabeledTextArea label="Notes" value={form.notes} onChange={v => setForm({ ...form, notes: v })} />
+            <ReadOnly label="Last seen" value={contact.lastSeen || "—"} />
 
-            <div className="row space-between mt-8">
-              <div style={{ flex: 1, marginRight: 8 }}>
-                <label>Company</label>
-                <input name="company" defaultValue={contact.company} className="input" />
-              </div>
-              <div style={{ flex: 1, marginLeft: 8 }}>
-                <label>Phone</label>
-                <input name="phone" defaultValue={contact.phone} className="input" />
-              </div>
+            <div className="row" style={{ gap: 8, marginTop: 8 }}>
+              <button className="btn" onClick={() => simulateLogin(contact.id)}>Simulate login</button>
+              <button className="btn" onClick={() => clearLog(contact.id)}>Clear log</button>
             </div>
-
-            <div className="row space-between mt-8">
-              <div style={{ flex: 1, marginRight: 8 }}>
-                <label>Role</label>
-                <input name="role" defaultValue={contact.role} className="input" />
-              </div>
-              <div style={{ flex: 1, marginLeft: 8 }}>
-                <label>Last seen</label>
-                <input disabled className="input" value={lastSeenDisplay} />
-              </div>
-            </div>
-
-            <div className="row mt-16">
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save Contact"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {tab === "portal" && (
-          <div className="panel">
-            <p>Portal access controls and invites will appear here.</p>
-            <button className="btn" disabled>Invite to portal (coming soon)</button>
           </div>
         )}
 
-        {tab === "cases" && (
-          <div className="panel">
-            <p>No related cases yet.</p>
-            <button className="btn" disabled>Link a case (coming soon)</button>
-          </div>
+        {activeTab === "portal" && (
+          <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
         )}
+
+        {activeTab === "cases" && (
+          <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LabeledInput(props: { label: string; value?: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{ flex: "1 1 320px" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
+      <input value={props.value || ""} onChange={e => props.onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function LabeledTextArea(props: { label: string; value?: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{ flex: "1 1 100%" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
+      <textarea style={{ minHeight: 90 }} value={props.value || ""} onChange={e => props.onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function ReadOnly(props: { label: string; value: React.ReactNode }) {
+  return (
+    <div style={{ flex: "1 1 320px" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          padding: "10px 12px",
+          minHeight: 38,
+        }}
+      >
+        {props.value}
       </div>
     </div>
   );
