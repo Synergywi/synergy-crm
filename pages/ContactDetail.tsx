@@ -1,6 +1,6 @@
 // /pages/ContactDetail.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getContact,
   updateContact,
@@ -12,65 +12,142 @@ import {
 
 type TabKey = "profile" | "portal" | "cases";
 
+function splitName(full?: string): { givenNames: string; surname: string } {
+  const n = (full || "").trim().replace(/\s+/g, " ");
+  if (!n) return { givenNames: "", surname: "" };
+  const parts = n.split(" ");
+  if (parts.length === 1) return { givenNames: parts[0], surname: "" };
+  const surname = parts.pop() as string;
+  const givenNames = parts.join(" ");
+  return { givenNames, surname };
+}
+
+function joinName(givenNames: string, surname: string): string {
+  return [givenNames?.trim(), surname?.trim()].filter(Boolean).join(" ");
+}
+
 export default function ContactDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [model, setModel] = useState<Partial<Contact>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  const [error, setError] = useState<string | null>(null);
+
+  // Form model
   const [givenNames, setGivenNames] = useState("");
   const [surname, setSurname] = useState("");
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
-  const contactName = useMemo(
-    () => `${givenNames} ${surname}`.trim() || "Contact",
-    [givenNames, surname]
-  );
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [company, setCompany] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lastSeen, setLastSeen] = useState<string | null>(null);
+
+  const fullName = useMemo(() => joinName(givenNames, surname), [givenNames, surname]);
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       if (!id) return;
-      const c = await getContact(id);
-      setModel(c);
-      // Split name for UI (API stores name as single string)
-      const parts = (c.name || "").split(" ");
-      setGivenNames(parts.slice(0, -1).join(" ") || parts[0] || "");
-      setSurname(parts.length > 1 ? parts[parts.length - 1] : "");
+      setError(null);
+      setLoading(true);
+      try {
+        const c = await getContact(id);
+        if (!alive) return;
+        const parts = splitName(c.name);
+        setGivenNames(parts.givenNames);
+        setSurname(parts.surname);
+        setEmail(c.email || "");
+        setPhone(c.phone || "");
+        setCompany(c.company || "");
+        setNotes(c.notes || "");
+        setLastSeen(c.lastSeen ?? null);
+      } catch (e: any) {
+        console.error(e);
+        setError("Failed to load contact.");
+      } finally {
+        alive = false;
+        setLoading(false);
+      }
     })();
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
-  async function onSave() {
+  async function onSave(e: React.FormEvent) {
+    e.preventDefault();
     if (!id) return;
-    const payload: Partial<Contact> = {
-      ...model,
-      name: `${givenNames} ${surname}`.trim(),
-    };
-    await updateContact(id, payload);
+    setSaving(true);
+    setError(null);
+    try {
+      const patch: Partial<Contact> = {
+        name: fullName,
+        email: email || undefined,
+        phone: phone || undefined,
+        company: company || undefined,
+        notes: notes || undefined,
+      };
+      await updateContact(id, patch);
+      // Optionally show a tiny UX confirmation:
+      // You can wire a toast here if you want.
+    } catch (e: any) {
+      console.error(e);
+      setError("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function onDelete() {
     if (!id) return;
-    if (!confirm("Delete this contact?")) return;
-    await deleteContact(id);
-    navigate("/contacts");
+    if (!confirm("Delete this contact? This cannot be undone.")) return;
+    try {
+      await deleteContact(id);
+      navigate("/contacts");
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to delete.");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container">
+        <div className="panel">Loading…</div>
+      </div>
+    );
   }
 
   return (
-    <div className="container">
-      <div className="row" style={{ marginBottom: 12 }}>
-        <button className="btn" onClick={() => navigate(-1)}>Back</button>
-        <div style={{ fontWeight: 700, marginLeft: 12 }}>Contact</div>
+    <div className="container contact-page">
+      {/* Page header */}
+      <div className="row" style={{ marginBottom: 16, justifyContent: "space-between" }}>
+        <div className="row" style={{ gap: 8 }}>
+          <Link to="/contacts" className="btn">Back</Link>
+          <h1 style={{ margin: 0, fontSize: 18 }}>Contact</h1>
+        </div>
+
+        <button
+          className="btn btn-primary"
+          form="contact-form"
+          type="submit"
+          disabled={saving}
+        >
+          {saving ? "Saving…" : "Save Contact"}
+        </button>
       </div>
 
-      <div className="contact-page">
-        <div className="card contact-card lg">
-          <div className="card-header">
-            <div className="card-title">{contactName}</div>
-            <div className="card-actions">
-              <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
-            </div>
+      {/* Card */}
+      <div className="card contact-card">
+        <div className="card-header">
+          <div className="card-title" style={{ fontSize: 16 }}>
+            {fullName || "New contact"}
           </div>
 
           {/* Tabs */}
-          <div className="tabs">
+          <div className="tabs" style={{ borderBottom: "none", margin: 0 }}>
             <button
               className={`tab ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => setActiveTab("profile")}
@@ -90,9 +167,27 @@ export default function ContactDetailPage() {
               Cases
             </button>
           </div>
+        </div>
 
-          {activeTab === "profile" && (
-            <div className="grid">
+        {error && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid #ffd8d6",
+              background: "#fff5f5",
+              color: "#7f1d1d",
+              fontSize: 13,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {activeTab === "profile" && (
+          <form id="contact-form" onSubmit={onSave}>
+            <div className="grid" style={{ marginTop: 4 }}>
               <div>
                 <label>Given names</label>
                 <input
@@ -102,6 +197,7 @@ export default function ContactDetailPage() {
                   placeholder="Given names"
                 />
               </div>
+
               <div>
                 <label>Surname</label>
                 <input
@@ -115,18 +211,19 @@ export default function ContactDetailPage() {
               <div>
                 <label>Phone</label>
                 <input
-                  type="text"
-                  value={model.phone ?? ""}
-                  onChange={(e) => setModel({ ...model, phone: e.target.value })}
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   placeholder="Phone"
                 />
               </div>
+
               <div>
                 <label>Email</label>
                 <input
                   type="email"
-                  value={model.email ?? ""}
-                  onChange={(e) => setModel({ ...model, email: e.target.value })}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email"
                 />
               </div>
@@ -135,44 +232,48 @@ export default function ContactDetailPage() {
                 <label>Company</label>
                 <input
                   type="text"
-                  value={model.company ?? ""}
-                  onChange={(e) => setModel({ ...model, company: e.target.value })}
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                   placeholder="Company"
                 />
               </div>
+
               <div>
                 <label>Last seen</label>
-                <input type="text" value={model.lastSeen ?? "—"} readOnly />
+                <input type="text" value={lastSeen || "—"} disabled />
               </div>
 
               <div className="full">
                 <label>Notes</label>
                 <textarea
-                  value={(model as any).notes ?? ""}
-                  onChange={(e) => setModel({ ...model, notes: e.target.value as any })}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="Notes…"
                 />
               </div>
             </div>
-          )}
+          </form>
+        )}
 
-          {activeTab === "portal" && (
-            <div style={{ color: "var(--text-muted)" }}>
-              Portal settings coming soon.
-            </div>
-          )}
+        {activeTab === "portal" && (
+          <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
+        )}
 
-          {activeTab === "cases" && (
-            <div style={{ color: "var(--text-muted)" }}>
-              Related cases will appear here.
-            </div>
-          )}
+        {activeTab === "cases" && (
+          <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
+        )}
 
-          <div className="row" style={{ justifyContent: "flex-end", marginTop: 12 }}>
-            <button className="btn" onClick={() => id && simulateLogin(id)}>Simulate login</button>
-            <button className="btn" onClick={() => id && clearLog(id)}>Clear log</button>
-            <button className="btn btn-danger" onClick={onDelete}>Delete</button>
-          </div>
+        {/* Footer actions */}
+        <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
+          <button className="btn" onClick={() => id && simulateLogin(id)}>
+            Simulate login
+          </button>
+          <button className="btn" onClick={() => id && clearLog(id)}>
+            Clear log
+          </button>
+          <button className="btn btn-danger" onClick={onDelete}>
+            Delete
+          </button>
         </div>
       </div>
     </div>
