@@ -1,4 +1,3 @@
-// /pages/ContactDetail.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -65,8 +64,8 @@ export default function ContactDetailPage() {
         role: model.role ?? "",
         notes: model.notes ?? "",
       });
-      const data = await listContacts();
-      setContacts(data);
+      const fresh = await listContacts();
+      setContacts(fresh);
     } finally {
       setSaving(false);
     }
@@ -109,7 +108,7 @@ export default function ContactDetailPage() {
 
       {/* card */}
       <div className="panel" style={{ paddingTop: 16 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div className="crm-form">
           <h3 style={{ margin: "0 0 12px" }}>{model.name || "New contact"}</h3>
 
           {/* tabs */}
@@ -127,15 +126,7 @@ export default function ContactDetailPage() {
 
           {tab === "profile" && (
             <>
-              {/* two-column layout with a comfortable max width */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(280px, 1fr) minmax(280px, 1fr)",
-                  gap: 16,
-                  alignItems: "start",
-                }}
-              >
+              <div className="crm-grid">
                 <Field
                   label="Name"
                   value={model.name ?? ""}
@@ -147,6 +138,7 @@ export default function ContactDetailPage() {
                   onChange={v => setModel({ ...model, email: v })}
                   type="email"
                 />
+
                 <Field
                   label="Phone"
                   value={model.phone ?? ""}
@@ -157,6 +149,7 @@ export default function ContactDetailPage() {
                   value={model.company ?? ""}
                   onChange={v => setModel({ ...model, company: v })}
                 />
+
                 <Field
                   label="Role"
                   value={model.role ?? ""}
@@ -165,24 +158,16 @@ export default function ContactDetailPage() {
                 <ReadOnlyField label="Last seen" value={model.lastSeen || "—"} />
 
                 {/* Notes full width */}
-                <div style={{ gridColumn: "1 / -1" }}>
+                <div className="crm-field" style={{ gridColumn: "1 / -1" }}>
                   <Label>Notes</Label>
                   <textarea
+                    className="crm-textarea"
                     value={(model.notes as string) ?? ""}
                     onChange={e => setModel({ ...model, notes: e.target.value })}
-                    style={{
-                      width: "100%",
-                      minHeight: 140,
-                      padding: "10px 12px",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      background: "#fff",
-                    }}
                   />
                 </div>
               </div>
 
-              {/* actions pinned to the right, with breathing room */}
               <div className="row" style={{ gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
                 <button className="btn" onClick={() => simulateLogin(selected.id)}>Simulate login</button>
                 <button className="btn" onClick={() => clearLog(selected.id)}>Clear log</button>
@@ -221,41 +206,9 @@ function Field(props: {
   type?: React.HTMLInputTypeAttribute;
 }) {
   return (
-    <div>
+    <div className="crm-field">
       <Label>{props.label}</Label>
       <input
+        className="crm-input"
         type={props.type || "text"}
-        value={props.value}
-        onChange={e => props.onChange(e.target.value)}
-        style={{
-          width: "100%",
-          height: 38,
-          padding: "0 12px",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          background: "#fff",
-        }}
-      />
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <div
-        style={{
-          width: "100%",
-          minHeight: 38,
-          padding: "10px 12px",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          background: "#fff",
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
+        value={props.val
