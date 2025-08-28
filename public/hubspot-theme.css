@@ -1,170 +1,241 @@
-/* ===================================================================
-   HubSpot-style Light Theme for Synergy CRM
-   Clean spacing, crisp labels, consistent inputs, card header actions
-   =================================================================== */
+/* ==========================================================================
+   HubSpot-ish Light Theme (clean, airy, orange CTA, navy accents)
+   Full replacement
+   ========================================================================== */
 
-/* ----- Palette ----- */
-:root{
-  --bg:#f7f9fc;
-  --panel:#ffffff;
-  --panel-ink:#2a3748;
-  --border:#e6edf5;
-  --divider:#edf2f8;
-  --shadow:0 6px 24px rgba(18,38,63,.06);
+/* --- Palette -------------------------------------------------------------- */
+:root {
+  --bg:           #f6f9fc;
+  --panel:        #ffffff;
+  --border:       #e5edf4;
 
-  --text:#2a3748;
-  --muted:#7c8ea6;
-  --heading:#33475b;
+  --text:         #2c3a4b;    /* deep slate */
+  --text-muted:   #6c7b8a;
 
-  --primary:#ff7a59;   /* HubSpot orange */
-  --primary-ink:#ffffff;
-  --danger:#ef4e4e;
-  --link:#2b7fff;
+  --primary:      #ff7a59;    /* HubSpot-ish orange */
+  --primary-ink:  #ffffff;
 
-  --r-sm:10px;
-  --r:12px;
-  --r-lg:16px;
-
-  --pad-sm:14px;
-  --pad:20px;
-  --gap:12px;
-
-  --focus:0 0 0 3px rgba(43,127,255,.12);
+  --accent:       #0fb;       /* teal accent for tiny bits only */
 }
 
-/* ----- Base ----- */
-*{ box-sizing:border-box; }
-html,body,#root{ height:100%; }
-html,body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,"Helvetica Neue","Noto Sans";
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  line-height:1.35;
+/* --- Global layout & typography ------------------------------------------ */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Utils */
-.row{ display:flex; align-items:center; }
-.space-between{ justify-content:space-between; }
-.title{ font-size:22px; font-weight:800; color:var(--heading); }
-.link,a{ color:var(--link); text-decoration:none; }
-.link:hover,a:hover{ text-decoration:underline; }
+*, *::before, *::after { box-sizing: border-box; }
 
-/* ----- Shell ----- */
-.hub-app{
-  min-height:100%;
-  display:grid;
-  grid-template-columns:240px 1fr;
-}
-.hub-app main{ padding:18px 22px 28px; }
-.hub-app .header{ display:flex; justify-content:space-between; margin-bottom:14px; }
-.hub-app .badge{ font-size:12px; padding:6px 10px; border-radius:999px; background:#eef8ff; color:#2b7fff; border:1px solid #d8e8ff; }
+h1, h2, h3, h4 { margin: 0 0 10px; font-weight: 600; }
+h1 { font-size: 20px; }
+h2 { font-size: 18px; }
+h3 { font-size: 16px; }
 
-/* Sidebar */
-.hub-app .sidebar{
-  background:#0f1a2a; color:#d1d9e6; padding:18px 14px; border-right:1px solid rgba(255,255,255,.06);
-}
-.hub-app .sidebar .logo{ color:#fff; font-weight:700; margin-bottom:16px; }
-.hub-app .nav{ display:flex; flex-direction:column; gap:6px; }
-.hub-app .nav a{ padding:10px 12px; border-radius:8px; color:#c6d2e3; border:1px solid transparent; }
-.hub-app .nav a:hover{ background:rgba(255,255,255,.06); color:#fff; }
-.hub-app .nav a.active{ background:rgba(255,255,255,.10); color:#fff; font-weight:600; }
-
-/* Container */
-.container, .page{ max-width:1200px; }
-
-/* ----- Cards ----- */
-.card{
-  background:var(--panel);
-  color:var(--panel-ink);
-  border:1px solid var(--border);
-  border-radius:var(--r-lg);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-}
-.card-header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 18px;
-  border-bottom:1px solid var(--divider);
-  background:#fbfdff;
-}
-.card-title{ font-size:18px; font-weight:800; color:var(--heading); }
-.card-actions{ display:flex; gap:10px; }
-.card-body{ padding:18px 18px 14px; }
-.card-footer{
-  border-top:1px solid var(--divider);
-  padding:12px 18px;
-  display:flex; justify-content:flex-end; gap:8px;
-  background:#fff;
+/* --- App shell ------------------------------------------------------------ */
+.app.hub-app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
 }
 
-/* ----- Table (Contacts list) ----- */
-.table{
-  width:100%; border-collapse:separate; border-spacing:0;
-  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden;
-}
-.table th,.table td{ padding:12px 16px; border-bottom:1px solid var(--divider); text-align:left; }
-.table th{ font-size:12px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); background:#fbfdff; }
-.table tr:last-child td{ border-bottom:0; }
-.table tr:hover td{ background:#fbfdff; }
-
-/* ----- Tabs ----- */
-.tabs{ display:flex; gap:12px; border-bottom:1px solid var(--divider); padding:0 18px; }
-.tab{
-  appearance:none; background:transparent; border:0; padding:10px 6px; font-weight:700; color:var(--muted); cursor:pointer;
-}
-.tab:hover{ color:var(--heading); }
-.tab.active{ color:var(--heading); position:relative; }
-.tab.active::after{
-  content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--primary);
+.sidebar {
+  background: #0f1a26;
+  color: #c2cbd6;
+  padding: 18px 16px;
 }
 
-/* ----- Buttons ----- */
-.btn{
-  appearance:none; border:1px solid var(--border); background:#fff; color:var(--heading);
-  padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
+.sidebar .logo {
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 14px;
 }
-.btn:hover{ background:#f6f9fe; }
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
-.btn-primary{ background:var(--primary); color:var(--primary-ink); border-color:#ff6d48; }
-.btn-primary:hover{ filter:brightness(.98); }
-.btn-danger{ background:var(--danger); color:#fff; border-color:#e44545; }
-.btn-danger:hover{ filter:brightness(.98); }
 
-/* ----- Forms (uniform across app) ----- */
-label, .crm-label{ font-size:13px; font-weight:700; color:#5a6c87; margin-bottom:6px; }
-input, select, textarea{
-  width:100%; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text);
-  padding:10px 12px; font:inherit; outline:none;
+.nav { display: grid; gap: 6px; }
+.nav a {
+  color: #c2cbd6;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 8px;
 }
-input:focus, select:focus, textarea:focus{ border-color:#c8dcff; box-shadow:var(--focus); }
-textarea{ min-height:120px; resize:vertical; }
+.nav a:hover { background: rgba(255,255,255,.06); }
+.nav a.active { color: #fff; background: rgba(255,255,255,.12); }
 
-/* ----- Contact form grid & spacing ----- */
-.crm-form .tabs{ margin:6px 0 0; }
-.crm-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px 20px;
-  padding:16px 18px 18px;
+main { padding: 20px; }
+
+.header {
+  display: flex; align-items: center; gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
-.crm-field{ display:flex; flex-direction:column; }
-.crm-span-full{ grid-column:1 / -1; }
-.crm-readonly{ background:#f7f9fc; color:var(--muted); }
+.title { font-size: 18px; font-weight: 700; }
+.badge {
+  background: #e9f2ff; color: #214a96; border-radius: 999px;
+  padding: 3px 8px; font-size: 12px;
+}
 
-/* Make small sub-section headings look tidy (optional) */
-.subtle{ color:var(--muted); font-size:13px; }
+/* Center column container for pages */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
-/* --- Final polish for tighter, cleaner form spacing --- */
-.page .card{ max-width:960px; margin:12px auto 0; }   /* keep form tight & centered */
-.crm-grid{ gap:12px 18px; }                           /* tighten vertical rhythm */
-.crm-label{ margin-bottom:4px; }                      /* less air under labels */
-input, select, textarea{ padding:8px 10px; }          /* more compact controls */
+/* --- Cards --------------------------------------------------------------- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 35, 58, 0.05);
+  overflow: hidden;
+  /* keep the card narrower than main container for breathing room */
+  max-width: 960px;
+  margin: 0 auto;                 /* center card */
+}
 
-/* keep actions visible on long forms */
-.card-header{ position:sticky; top:0; z-index:2; background:#fbfdff; }
+.card-header,
+.card-body,
+.card-footer {
+  padding-left: 20px;
+  padding-right: 20px;
+}
 
-/* make footer feel anchored */
-.card-footer{ justify-content:flex-end; padding:12px 18px; }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  background: #fbfdff;
+}
+
+.card-title { font-weight: 700; font-size: 16px; }
+
+.card-body { padding-top: 18px; padding-bottom: 16px; }
+
+.card-footer {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding-top: 12px; padding-bottom: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* --- Tabs --------------------------------------------------------------- */
+.tabs {
+  display: flex; gap: 12px; align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;                 /* align with card padding */
+  background: #fff;
+}
+
+.tab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 12px 4px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+}
+
+.tab.active { color: var(--text); }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px; border-radius: 3px 3px 0 0;
+  background: var(--primary);
+}
+
+/* --- Forms -------------------------------------------------------------- */
+.form-row { display: grid; gap: 18px; }
+.crm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;                 /* tighter vertical, roomier horizontal */
+}
+.crm-span-2 { grid-column: 1 / -1; }
+
+.form-group { display: flex; flex-direction: column; }
+label {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+
+input, select, textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #c5d7ef;
+  box-shadow: 0 0 0 2px rgba(44, 114, 255, 0.08);
+}
+
+textarea { min-height: 120px; resize: vertical; }
+
+/* read-only-ish look (e.g. last seen) */
+.input-ghost {
+  background: #f8fbff;
+  color: #5e6d7c;
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+.btn {
+  appearance: none; border: 1px solid var(--border);
+  background: #fff; color: var(--text);
+  padding: 8px 12px; border-radius: 10px;
+  font-weight: 600; cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, box-shadow .12s;
+}
+.btn:hover { background: #fafcff; border-color: #dfe8f0; }
+.btn:active { transform: translateY(0.5px); }
+
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+.btn-primary:hover { filter: brightness(1.05); }
+
+.btn-danger {
+  background: #ff6b6b; border-color: #ff6b6b; color: #fff;
+}
+.btn-danger:hover { filter: brightness(1.05); }
+
+/* --- Tables (list pages) ------------------------------------------------ */
+.table {
+  width: 100%; border-collapse: collapse;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.table th {
+  text-align: left; font-weight: 700; color: var(--text-muted);
+  background: #fbfdff; border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+}
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.table tr:last-child td { border-bottom: 0; }
+
+/* --- Utility ------------------------------------------------------------ */
+.kbd {
+  display: inline-block; padding: 2px 6px; border-radius: 6px;
+  background: #e9eef6; color: #334; font-weight: 700; font-size: 12px;
+}
+
+/* Keep overall page flow consistent */
+.page .card { margin-top: 8px; }
+
+/* Make header sticky within viewport for long forms */
+.card-header {
+  position: sticky; top: 0; z-index: 2;
+}
+
+/* Ensure tabs align to card body edges */
+.tabs + .card-body { padding-top: 16px; }
