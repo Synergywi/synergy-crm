@@ -1,9 +1,10 @@
 // /pages/ContactDetail.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  listContacts,
+  getContact,
   updateContact,
+  deleteContact,
   simulateLogin,
   clearLog,
   type Contact,
@@ -12,219 +13,210 @@ import {
 type TabKey = "profile" | "portal" | "cases";
 
 export default function ContactDetailPage() {
+  const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const contact = useMemo(
-    () => contacts.find(c => c.id === id) || null,
-    [contacts, id]
-  );
+  const [data, setData] = useState<Contact | null>(null);
+  const [tab, setTab] = useState<TabKey>("profile");
+  const [busy, setBusy] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
-
-  const [form, setForm] = useState<Partial<Contact>>({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    role: "",
-    notes: "",
-  });
+  // local form
+  const [form, setForm] = useState<Partial<Contact>>({});
 
   useEffect(() => {
     (async () => {
-      const data = await listContacts();
-      setContacts(data);
-    })();
-  }, []);
-
-  // Sync the edit form when the contact loads/changes
-  useEffect(() => {
-    if (contact) {
+      if (!id) return;
+      const c = await getContact(id);
+      setData(c);
       setForm({
-        name: contact.name ?? "",
-        email: contact.email ?? "",
-        phone: contact.phone ?? "",
-        company: contact.company ?? "",
-        role: contact.role ?? "",
-        notes: contact.notes ?? "",
+        name: c?.name ?? "",
+        email: c?.email ?? "",
+        phone: c?.phone ?? "",
+        company: c?.company ?? "",
+        role: c?.role ?? "",
+        notes: c?.notes ?? "",
       });
-    }
-  }, [contact?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    })();
+  }, [id]);
 
-  async function onSave() {
+  const title = useMemo(() => data?.name ?? "Contact", [data]);
+
+  async function handleSave() {
     if (!id) return;
-    await updateContact(id, {
-      name: (form.name ?? "").trim(),
-      email: form.email ?? "",
-      phone: form.phone ?? "",
-      company: form.company ?? "",
-      role: form.role ?? "",
-      notes: form.notes ?? "",
-    });
-    // Stay on page, but refresh local list so values reflect server
-    const data = await listContacts();
-    setContacts(data);
+    setBusy(true);
+    try {
+      await updateContact(id, form);
+      const fresh = await getContact(id);
+      setData(fresh);
+      // keep form in sync in case the API normalized anything
+      setForm({
+        name: fresh?.name ?? "",
+        email: fresh?.email ?? "",
+        phone: fresh?.phone ?? "",
+        company: fresh?.company ?? "",
+        role: fresh?.role ?? "",
+        notes: fresh?.notes ?? "",
+      });
+      alert("Saved");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!id) return;
+    if (!confirm("Delete this contact?")) return;
+    await deleteContact(id);
+    navigate("/contacts");
   }
 
   if (!id) {
     return (
       <div className="page">
-        <div className="panel">Missing contact id.</div>
-      </div>
-    );
-  }
-
-  if (!contact) {
-    return (
-      <div className="page">
-        <div className="panel">Loading contact…</div>
+        <div className="panel">Invalid contact id.</div>
       </div>
     );
   }
 
   return (
     <div className="page">
-      <div className="header">
-        <div className="title">Contact</div>
-        <div className="row" style={{ gap: 8 }}>
-          <button className="btn" onClick={() => navigate("/contacts")}>Back</button>
-          <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
+      <div className="panel" style={{ marginBottom: 12 }}>
+        <div className="row space-between" style={{ alignItems: "center" }}>
+          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>Contact</h2>
+            <span className="pill">{title}</span>
+          </div>
+          <div className="row" style={{ gap: 8 }}>
+            <Link className="btn" to="/contacts">Back</Link>
+            <button className="btn btn-primary" onClick={handleSave} disabled={busy}>
+              Save Contact
+            </button>
+            <button className="btn btn-danger" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="panel">
-        <h3 style={{ margin: "0 0 8px" }}>{contact.name}</h3>
+        <h3 style={{ margin: "0 0 12px" }}>{title}</h3>
 
-        {/* Tabs */}
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === "profile" ? "active" : ""}`}
-            onClick={() => setActiveTab("profile")}
-          >
+        {/* tabs */}
+        <div className="tabs" style={{ marginBottom: 12 }}>
+          <button className={`tab ${tab === "profile" ? "active" : ""}`} onClick={() => setTab("profile")}>
             Profile
           </button>
-          <button
-            className={`tab ${activeTab === "portal" ? "active" : ""}`}
-            onClick={() => setActiveTab("portal")}
-          >
+          <button className={`tab ${tab === "portal" ? "active" : ""}`} onClick={() => setTab("portal")}>
             Portal
           </button>
-          <button
-            className={`tab ${activeTab === "cases" ? "active" : ""}`}
-            onClick={() => setActiveTab("cases")}
-          >
+          <button className={`tab ${tab === "cases" ? "active" : ""}`} onClick={() => setTab("cases")}>
             Cases
           </button>
         </div>
 
-        {activeTab === "profile" && (
-          <div>
-            <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
-              <Field
+        {tab === "profile" && (
+          <>
+            <FieldRow>
+              <LabeledInput
                 label="Name"
                 value={form.name ?? ""}
-                onChange={v => setForm(f => ({ ...f, name: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, name: v }))}
               />
-              <Field
+              <LabeledInput
                 label="Email"
                 value={form.email ?? ""}
-                onChange={v => setForm(f => ({ ...f, email: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, email: v }))}
               />
-              <Field
+              <LabeledInput
                 label="Phone"
                 value={form.phone ?? ""}
-                onChange={v => setForm(f => ({ ...f, phone: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
               />
-              <Field
+              <LabeledInput
                 label="Company"
                 value={form.company ?? ""}
-                onChange={v => setForm(f => ({ ...f, company: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, company: v }))}
               />
-              <Field
+              <LabeledInput
                 label="Role"
                 value={form.role ?? ""}
-                onChange={v => setForm(f => ({ ...f, role: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, role: v }))}
               />
-              <TextArea
-                label="Notes"
-                value={form.notes ?? ""}
-                onChange={v => setForm(f => ({ ...f, notes: v }))}
-              />
-              <ReadOnlyField label="Last seen" value={contact.lastSeen ?? "—"} />
+            </FieldRow>
+
+            <LabeledTextarea
+              label="Notes"
+              value={form.notes ?? ""}
+              onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
+            />
+
+            <div className="row" style={{ gap: 8, marginTop: 8 }}>
+              <button className="btn" onClick={() => simulateLogin(id)}>Simulate login</button>
+              <button className="btn" onClick={() => clearLog(id)}>Clear log</button>
             </div>
 
-            <div className="row" style={{ gap: 8, marginTop: 12 }}>
-              <button className="btn" onClick={() => simulateLogin(contact.id)}>Simulate login</button>
-              <button className="btn" onClick={() => clearLog(contact.id)}>Clear log</button>
+            <div style={{ marginTop: 12 }}>
+              <LabeledRO label="Last seen" value={data?.lastSeen || "—"} />
             </div>
-          </div>
+          </>
         )}
 
-        {activeTab === "portal" && (
-          <div style={{ color: "var(--text-muted)" }}>
-            Portal settings coming soon.
-          </div>
+        {tab === "portal" && (
+          <div style={{ color: "var(--text-muted)" }}>Portal settings coming soon.</div>
         )}
 
-        {activeTab === "cases" && (
-          <div style={{ color: "var(--text-muted)" }}>
-            Related cases will appear here.
-          </div>
+        {tab === "cases" && (
+          <div style={{ color: "var(--text-muted)" }}>Related cases will appear here.</div>
         )}
       </div>
     </div>
   );
 }
 
-/* ---------- Small form helpers ---------- */
+/* ---------- small presentational helpers ---------- */
 
-function Field(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function FieldRow({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ flex: "1 1 260px" }}>
-      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-        {props.label}
-      </div>
-      <input
-        value={props.value}
-        onChange={e => props.onChange(e.target.value)}
-        placeholder={props.label}
-      />
+    <div className="row" style={{ flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+      {children}
     </div>
   );
 }
 
-function TextArea(props: {
+function LabeledInput(props: {
   label: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   return (
-    <div style={{ flex: "1 1 520px" }}>
-      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-        {props.label}
-      </div>
+    <label style={{ flex: "1 1 260px" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
+      <input value={props.value} onChange={(e) => props.onChange(e.target.value)} />
+    </label>
+  );
+}
+
+function LabeledTextarea(props: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label style={{ display: "block", width: "100%", marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
       <textarea
         value={props.value}
-        onChange={e => props.onChange(e.target.value)}
-        placeholder={props.label}
-        style={{ minHeight: 90 }}
+        onChange={(e) => props.onChange(e.target.value)}
+        style={{ minHeight: 100 }}
       />
-    </div>
+    </label>
   );
 }
 
-function ReadOnlyField(props: { label: string; value: React.ReactNode }) {
+function LabeledRO(props: { label: string; value: React.ReactNode }) {
   return (
-    <div style={{ flex: "1 1 520px" }}>
-      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-        {props.label}
-      </div>
+    <label style={{ display: "block" }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{props.label}</div>
       <div
         style={{
           background: "#fff",
@@ -236,6 +228,6 @@ function ReadOnlyField(props: { label: string; value: React.ReactNode }) {
       >
         {props.value}
       </div>
-    </div>
+    </label>
   );
 }
