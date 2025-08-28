@@ -1,116 +1,222 @@
-/* /public/hubspot-theme.css
-   HubSpot-like LIGHT UI — wins over any dark defaults
-   -------------------------------------------------- */
+/* HubSpot-like light theme (orange/teal + navy) */
 
-/* Force light scheme even if OS/browser prefers dark */
-:root { color-scheme: light; }
-
-/* Palette */
+/* -------- Palette -------- */
 :root {
-  --bg:        #f7f9fc;
-  --panel:     #ffffff;
-  --border:    #e4e7ee;
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --border: #e6ecf5;
 
-  --text:        #33475b;   /* HubSpot navy */
-  --text-muted:  #6a7a8c;
+  --text: #1f2a44;        /* HubSpot navy */
+  --text-muted: #6b7a90;
 
-  --primary:      #ff7a59;  /* HubSpot orange */
-  --primary-ink:  #ffffff;
-  --accent:       #00b39f;  /* HubSpot teal */
+  --primary: #ff7a59;     /* HubSpot orange */
+  --primary-ink: #ffffff;
+
+  --accent: #00a4bd;      /* HubSpot teal */
+  --danger: #f03d3e;
+  --danger-ink: #ffffff;
+
+  --shadow: 0 1px 2px rgba(16,24,40,.04), 0 2px 12px rgba(16,24,40,.06);
+  --radius: 12px;
+  --radius-sm: 8px;
 }
 
-/* GLOBAL RESET – make light win everywhere */
+/* -------- Global layout & typography -------- */
 html, body {
+  height: 100%;
   background: var(--bg) !important;
   color: var(--text) !important;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.35;
 }
 
-/* Wrap-level overrides */
-.app, .hub-app, .container, .header, .panel, .table,
-.sidebar, main, .nav, .tabs, .badge, .logo {
-  background: transparent !important;
-  color: var(--text) !important;
-  border-color: var(--border) !important;
-}
-
-/* Layout */
-.hub-app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.hub-app .sidebar {
-  background: var(--panel) !important;
-  border-right: 1px solid var(--border) !important;
-  padding: 16px;
-}
-.hub-app .logo { font-weight: 700; margin-bottom: 10px; }
-
-.hub-app .nav a {
-  display: block;
-  padding: 8px 10px;
-  border-radius: 8px;
+/* Scope all component defaults inside .hub-app to increase specificity */
+.hub-app {
   color: var(--text);
-  text-decoration: none;
-  margin-bottom: 4px;
+  background: var(--bg);
 }
-.hub-app .nav a:hover { background: #f2f5fa; }
-.hub-app .nav a.active {
-  background: #e8f0fe;
-  color: #1a73e8;
+
+.hub-app .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.hub-app .title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.hub-app .badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #e9f7fb;
+  color: #1b7891;
+  font-size: 12px;
+  border: 1px solid #d2eef5;
+}
+
+/* Side bar + basic structure (optional) */
+.hub-app .sidebar {
+  color: var(--text);
+}
+.hub-app .logo {
   font-weight: 600;
 }
 
-main { padding: 20px 24px; }
-.header {
-  background: var(--panel) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px;
-}
-.header .title { font-size: 18px; font-weight: 700; }
-.badge {
-  background: #eaf4ff; color: #1a73e8;
-  padding: 4px 10px; border-radius: 999px; font-size: 12px;
-}
-
-/* Cards & panels */
-.panel {
-  background: var(--panel) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px;
+/* -------- Panels / cards -------- */
+.hub-app .panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 16px;
 }
 
-/* Tables */
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td {
-  padding: 10px 12px;
+.hub-app .container > .panel + .panel,
+.hub-app .panel + .panel {
+  margin-top: 16px;
+}
+
+/* -------- Tables -------- */
+.hub-app .table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.hub-app .table th,
+.hub-app .table td {
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
 }
-.table thead th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
-
-/* Tabs */
-.tabs { display: flex; gap: 8px; margin: 10px 0 14px; }
-.tab {
-  background: #f2f5fa; border: 1px solid var(--border);
-  padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+.hub-app .table thead th {
+  background: #f3f6fb;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  font-size: 12px;
+  font-weight: 600;
 }
-.tab.active { background: #e8f0fe; color: #1a73e8; border-color: #cbdafc; }
+.hub-app .table tbody tr:last-child td {
+  border-bottom: 0;
+}
 
-/* Forms */
-input, select, textarea {
-  background: #ffffff !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
-  padding: 8px 10px !important;
+/* -------- Inputs -------- */
+.hub-app input,
+.hub-app textarea,
+.hub-app select {
+  width: 100%;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  min-height: 38px;
   outline: none;
 }
-input:focus, select:focus, textarea:focus {
-  border-color: #cbdafc !important;
-  box-shadow: 0 0 0 3px rgba(26,115,232,0.12) !important;
+.hub-app textarea { min-height: 96px; }
+.hub-app input:focus,
+.hub-app textarea:focus,
+.hub-app select:focus {
+  border-color: #c6d7f2;
+  box-shadow: 0 0 0 3px rgba(0,164,189,.08);
 }
-label { color: var(--text-muted); font
+
+/* Read-only “value” blocks */
+.hub-app .ro {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  min-height: 38px;
+}
+
+/* -------- Buttons -------- */
+.hub-app .btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hub-app .btn:hover {
+  background: #f6f8fc;
+}
+
+.hub-app .btn-primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: var(--primary);
+}
+.hub-app .btn-primary:hover {
+  filter: brightness(.98);
+}
+
+.hub-app .btn-danger {
+  background: var(--danger);
+  color: var(--danger-ink);
+  border-color: var(--danger);
+}
+.hub-app .btn-muted {
+  background: #eef2f7;
+  color: #2b3a55;
+  border-color: #e3e9f4;
+}
+
+/* -------- Tabs -------- */
+.hub-app .tabs {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.hub-app .tab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.hub-app .tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* -------- Small layout helpers -------- */
+.hub-app .row { display: flex; align-items: center; }
+.hub-app .space-between { justify-content: space-between; }
+.hub-app .mt-16 { margin-top: 16px; }
+.hub-app .mb-16 { margin-bottom: 16px; }
+
+/* Keyboard/route chip used in the sidebar */
+.hub-app .kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #eff2f7;
+  color: #667590;
+  font-size: 12px;
+  border: 1px solid #e4e9f2;
+}
