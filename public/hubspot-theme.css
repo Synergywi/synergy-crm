@@ -1,6 +1,6 @@
 /* /public/hubspot-theme.css  — HubSpot-like light theme (navy, orange, teal) */
 
-/* Palette */
+/* ---------- Palette ---------- */
 :root {
   --bg: #f7f9fc;
   --panel: #ffffff;
@@ -11,41 +11,87 @@
 
   --primary: #ff7a59;      /* HubSpot orange */
   --primary-ink: #ffffff;
+
   --accent: #00b3a4;       /* HubSpot teal */
+  --accent-ink: #063a38;
 }
 
-/* Global layout & typography */
+/* ---------- Base ---------- */
 html, body {
   background: var(--bg) !important;
   color: var(--text) !important;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
 }
 
+/* ---------- App layout (fixes the sidebar) ---------- */
 .app.hub-app {
-  background: var(--bg) !important;
-  color: var(--text) !important;
+  display: grid;
+  grid-template-columns: 260px 1fr;   /* left sidebar + content */
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
 }
 
-/* Sidebar */
 .hub-app .sidebar {
-  background: var(--panel) !important;
-  color: var(--text) !important;
+  background: var(--panel);
   border-right: 1px solid var(--border);
+  padding: 16px;
+  position: sticky;   /* stay pinned */
+  top: 0;
+  height: 100vh;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+
+.hub-app main {
+  padding: 20px 24px;
+}
+
+/* ---------- Sidebar contents ---------- */
 .hub-app .logo { font-weight: 700; }
 
-/* Header */
+.hub-app .nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-app .nav a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.hub-app .nav a:hover {
+  background: #f3f7fb;
+  border-color: var(--border);
+}
+
+.hub-app .nav a.active {
+  background: #e8f6f5;             /* subtle teal tint */
+  border-color: #d6f0ee;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+/* ---------- Header / badges ---------- */
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .header .title { font-size: 20px; font-weight: 700; }
 .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #eaf2ff; }
 
-/* Simple layout helpers */
+/* ---------- Layout helpers ---------- */
 .row { display: flex; align-items: center; }
 .space-between { justify-content: space-between; }
 
-/* Panels & cards */
+/* ---------- Panels & tables ---------- */
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -53,17 +99,16 @@ html, body {
   padding: 16px;
 }
 
-/* Tables */
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
 .table thead th { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .02em; }
 
-/* Tabs */
+/* ---------- Tabs ---------- */
 .tabs { display: flex; gap: 4px; margin: 8px 0 12px; border-bottom: 1px solid var(--border); }
 .tab { background: transparent; border: 0; padding: 10px 12px; cursor: pointer; color: var(--text-muted); }
 .tab.active { color: var(--text); border-bottom: 2px solid var(--accent); }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   height: 32px; padding: 0 12px; border-radius: 8px;
@@ -75,7 +120,7 @@ html, body {
 .btn-primary:hover { filter: brightness(0.98); }
 .btn-danger { background: #ff5c5c; border-color: #ff5c5c; color: white; }
 
-/* Inputs */
+/* ---------- Inputs ---------- */
 input, select, textarea {
   width: 100%; background: #fff; color: var(--text);
   border: 1px solid var(--border); border-radius: 8px;
@@ -85,5 +130,5 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,179,164,0.16);
 }
 
-/* Small utility */
+/* ---------- Small utility ---------- */
 .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #eef2f6; padding: 2px 6px; border-radius: 6px; }
