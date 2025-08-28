@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  listContacts,
+  getContact,
   updateContact,
   deleteContact,
   simulateLogin,
@@ -12,220 +12,195 @@ import {
 type TabKey = "profile" | "portal" | "cases";
 
 export default function ContactDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
-  const [model, setModel] = useState<Partial<Contact>>({});
+  const [loading, setLoading] = useState(true);
+  const [model, setModel] = useState<Contact | null>(null);
 
-  // Load list (so we can derive the contact)
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      const data = await listContacts();
-      setContacts(data);
-      setLoading(false);
+      if (!id) return;
+      setLoading(true);
+      const data = await getContact(id);
+      if (mounted) {
+        setModel(data);
+        setLoading(false);
+      }
     })();
-  }, []);
+    return () => { mounted = false; };
+  }, [id]);
 
-  // Find current contact
-  const contact = useMemo(
-    () => contacts.find((c) => c.id === id) || null,
-    [contacts, id]
-  );
+  const name = useMemo(() => model?.name || "Contact", [model]);
 
-  // Seed local model each time we switch contact
-  useEffect(() => {
-    if (!contact) return;
-    setModel({
-      id: contact.id,
-      name: contact.name ?? "",
-      email: contact.email ?? "",
-      phone: contact.phone ?? "",
-      company: contact.company ?? "",
-      role: contact.role ?? "",
-      notes: contact.notes ?? "",
-      lastSeen: contact.lastSeen ?? "",
-    });
-  }, [contact?.id]);
+  function patch<K extends keyof Contact>(key: K, val: Contact[K]) {
+    if (!model) return;
+    setModel({ ...model, [key]: val });
+  }
 
   async function onSave() {
-    if (!model?.id) return;
+    if (!model) return;
     await updateContact(model.id, {
-      name: model.name ?? "",
-      email: model.email ?? "",
-      phone: model.phone ?? "",
-      company: model.company ?? "",
-      role: model.role ?? "",
-      notes: model.notes ?? "",
+      name: model.name,
+      email: model.email,
+      phone: model.phone,
+      company: model.company,
+      role: model.role,
+      notes: (model as any).notes,     // notes is optional on some seeds
     });
-    navigate("/contacts");
   }
 
   async function onDelete() {
-    if (!model?.id) return;
+    if (!model) return;
     if (!confirm("Delete this contact?")) return;
     await deleteContact(model.id);
     navigate("/contacts");
   }
 
-  if (loading) return <div className="card"><div className="card-body">Loading…</div></div>;
-  if (!contact)
+  if (loading || !model) {
     return (
-      <div className="card">
-        <div className="card-body">
-          <div style={{ marginBottom: 12 }}>Contact not found.</div>
-          <Link className="btn" to="/contacts">Back to contacts</Link>
+      <div className="page">
+        <div className="header container">
+          <div className="title">Synergy CRM 2</div>
+          <div className="badge">Live preview</div>
+        </div>
+        <div className="container">
+          <div className="card"><div className="card-body">Loading…</div></div>
         </div>
       </div>
     );
+  }
 
   return (
     <div className="page">
-      {/* Minor breadcrumb row (Back + section title) */}
-      <div className="row space-between" style={{ marginBottom: 8 }}>
-        <div className="row" style={{ gap: 8 }}>
+      {/* Page header */}
+      <div className="header container">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Link to="/contacts" className="btn">Back</Link>
-          <div className="title" style={{ marginLeft: 6 }}>Contact</div>
+          <h1 className="title">Contact</h1>
         </div>
+        {/* keep empty slot here so header spacing remains consistent */}
       </div>
 
-      {/* Main card */}
-      <div className="card crm-form">
-        <div className="card-header">
-          <div className="card-title">{contact.name || "Untitled"}</div>
-          <div className="card-actions">
-            <button className="btn btn-primary" onClick={onSave}>Save Contact</button>
+      <div className="container">
+        <div className="card">
+          {/* Card header with CTA aligned to card padding */}
+          <div className="card-header">
+            <div className="card-title">{name}</div>
+            <button onClick={onSave} className="btn btn-primary">Save Contact</button>
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === "profile" ? "active" : ""}`}
-            onClick={() => setActiveTab("profile")}
-          >
-            Profile
-          </button>
-          <button
-            className={`tab ${activeTab === "portal" ? "active" : ""}`}
-            onClick={() => setActiveTab("portal")}
-          >
-            Portal
-          </button>
-          <button
-            className={`tab ${activeTab === "cases" ? "active" : ""}`}
-            onClick={() => setActiveTab("cases")}
-          >
-            Cases
-          </button>
-        </div>
+          {/* Tabs (aligned to card edges) */}
+          <div className="tabs">
+            <button
+              className={`tab ${activeTab === "profile" ? "active" : ""}`}
+              onClick={() => setActiveTab("profile")}
+            >Profile</button>
+            <button
+              className={`tab ${activeTab === "portal" ? "active" : ""}`}
+              onClick={() => setActiveTab("portal")}
+            >Portal</button>
+            <button
+              className={`tab ${activeTab === "cases" ? "active" : ""}`}
+              onClick={() => setActiveTab("cases")}
+            >Cases</button>
+          </div>
 
-        {/* Body */}
-        {activeTab === "profile" && (
-          <div className="card-body" style={{ paddingTop: 6 }}>
-            <div className="crm-grid">
-              <Field
-                label="Name"
-                value={model.name ?? ""}
-                onChange={(v) => setModel((m) => ({ ...m, name: v }))}
-              />
-              <Field
-                label="Email"
-                type="email"
-                value={model.email ?? ""}
-                onChange={(v) => setModel((m) => ({ ...m, email: v }))}
-              />
-              <Field
-                label="Phone"
-                value={model.phone ?? ""}
-                onChange={(v) => setModel((m) => ({ ...m, phone: v }))}
-              />
-              <Field
-                label="Company"
-                value={model.company ?? ""}
-                onChange={(v) => setModel((m) => ({ ...m, company: v }))}
-              />
-              <Field
-                label="Role"
-                value={model.role ?? ""}
-                onChange={(v) => setModel((m) => ({ ...m, role: v }))}
-              />
-              <Field
-                label="Last seen"
-                value={model.lastSeen || "—"}
-                onChange={() => {}}
-                readOnly
-              />
+          {/* Body */}
+          <div className="card-body">
+            {activeTab === "profile" && (
+              <div className="crm-grid">
+                <FormGroup label="Name">
+                  <input
+                    value={model.name ?? ""}
+                    onChange={(e) => patch("name", e.target.value)}
+                    placeholder="Full name"
+                  />
+                </FormGroup>
 
-              {/* Notes full width */}
-              <div className="crm-field crm-span-full">
-                <div className="crm-label">Notes</div>
-                <textarea
-                  className="crm-textarea"
-                  value={model.notes ?? ""}
-                  onChange={(e) =>
-                    setModel((m) => ({ ...m, notes: e.target.value }))
-                  }
-                />
+                <FormGroup label="Email">
+                  <input
+                    value={model.email ?? ""}
+                    onChange={(e) => patch("email", e.target.value)}
+                    placeholder="Email address"
+                  />
+                </FormGroup>
+
+                <FormGroup label="Phone">
+                  <input
+                    value={model.phone ?? ""}
+                    onChange={(e) => patch("phone", e.target.value)}
+                    placeholder="Phone"
+                  />
+                </FormGroup>
+
+                <FormGroup label="Company">
+                  <input
+                    value={model.company ?? ""}
+                    onChange={(e) => patch("company", e.target.value)}
+                    placeholder="Company"
+                  />
+                </FormGroup>
+
+                <FormGroup label="Role">
+                  <input
+                    value={model.role ?? ""}
+                    onChange={(e) => patch("role", e.target.value)}
+                    placeholder="Role"
+                  />
+                </FormGroup>
+
+                <FormGroup label="Last seen">
+                  <input className="input-ghost" readOnly value={model.lastSeen ?? "—"} />
+                </FormGroup>
+
+                <FormGroup label="Notes" span={2}>
+                  <textarea
+                    value={(model as any).notes ?? ""}
+                    onChange={(e) => patch("notes" as keyof Contact, e.target.value as any)}
+                    placeholder="Notes…"
+                  />
+                </FormGroup>
               </div>
-            </div>
+            )}
 
-            {/* Footer actions aligned right */}
-            <div className="card-footer">
-              <button
-                className="btn"
-                onClick={() => model.id && simulateLogin(model.id)}
-              >
-                Simulate login
-              </button>
-              <button
-                className="btn"
-                onClick={() => model.id && clearLog(model.id)}
-              >
-                Clear log
-              </button>
-              <button className="btn btn-danger" onClick={onDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        )}
+            {activeTab === "portal" && (
+              <div style={{ color: "var(--text-muted)" }}>
+                Portal preferences coming soon.
+              </div>
+            )}
 
-        {activeTab === "portal" && (
-          <div className="card-body" style={{ color: "var(--muted)" }}>
-            Portal settings coming soon.
+            {activeTab === "cases" && (
+              <div style={{ color: "var(--text-muted)" }}>
+                Related cases will appear here.
+              </div>
+            )}
           </div>
-        )}
-        {activeTab === "cases" && (
-          <div className="card-body" style={{ color: "var(--muted)" }}>
-            Related cases will appear here.
+
+          {/* Footer actions aligned with card edges */}
+          <div className="card-footer">
+            <button className="btn" onClick={() => simulateLogin(model.id)}>Simulate login</button>
+            <button className="btn" onClick={() => clearLog(model.id)}>Clear log</button>
+            <button className="btn btn-danger" onClick={onDelete}>Delete</button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-function Field(props: {
+/* ---------- Small helper ---------- */
+function FormGroup(props: {
   label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: "text" | "email" | "tel";
-  readOnly?: boolean;
+  children: React.ReactNode;
+  span?: 1 | 2;
 }) {
   return (
-    <div className="crm-field">
-      <div className="crm-label">{props.label}</div>
-      <input
-        className={`crm-input ${props.readOnly ? "crm-readonly" : ""}`}
-        type={props.type || "text"}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        disabled={props.readOnly}
-        readOnly={props.readOnly}
-      />
+    <div className={`form-group ${props.span === 2 ? "crm-span-2" : ""}`}>
+      <label>{props.label}</label>
+      {props.children}
     </div>
   );
 }
