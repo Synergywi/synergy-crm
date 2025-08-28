@@ -1,16 +1,27 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light only" />
     <title>Synergy CRM 2</title>
 
-    <!-- HubSpot theme -->
-    <link rel="stylesheet" href="/public/hubspot-theme.css">
-    <!-- your app bundle -->
-    <script type="module" src="/main.tsx"></script>
+    <!-- HubSpot-like theme (placed in /public) -->
+    <link rel="stylesheet" href="/hubspot-theme.css" />
+
+    <!-- Prevent flash of unstyled background before CSS loads -->
+    <style>
+      html, body { margin: 0; background: #f7f9fc; }
+    </style>
   </head>
-  <body class="hub-app">
-    <div id="app"></div>
+  <body>
+    <noscript>You need JavaScript enabled to run this app.</noscript>
+    <div id="root"></div>
+
+    <!-- Vite entrypoint -->
+    <script type="module" src="/main.tsx"></script>
   </body>
 </html>
