@@ -3,66 +3,75 @@ export type Contact = {
   id: string;
   name: string;
   email?: string;
+  phone?: string;
   company?: string;
   role?: string;
-  phone?: string;
   notes?: string;
-  lastSeen?: string;
+  lastSeen?: string | null;
 };
 
-const KEY = "synergy.contacts";
+const KEY = "contacts.v1";
 
-function read(): Contact[] {
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-  catch { return []; }
+function load(): Contact[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return seed();
+    return JSON.parse(raw) as Contact[];
+  } catch {
+    return seed();
+  }
 }
-function write(list: Contact[]) {
+
+function save(list: Contact[]) {
   localStorage.setItem(KEY, JSON.stringify(list));
 }
 
+function seed(): Contact[] {
+  const seeded: Contact[] = [
+    { id: "c-1", name: "John", email: "jsmith@hotmail.com", lastSeen: "2025-08-25T22:03:30.593Z" },
+  ];
+  save(seeded);
+  return seeded;
+}
+
 export async function listContacts(): Promise<Contact[]> {
-  return read();
+  return load();
 }
 
-export async function createContact(data: Partial<Contact>): Promise<Contact> {
-  const list = read();
-  const contact: Contact = {
-    id: crypto.randomUUID(),
-    name: data.name || "Unnamed",
-    email: data.email || "",
-    company: data.company || "",
-    role: data.role || "",
-    phone: data.phone || "",
-    notes: data.notes || "",
-    lastSeen: new Date().toISOString(),
+export async function addContact(input: Partial<Contact>): Promise<Contact> {
+  const list = load();
+  const c: Contact = {
+    id: `c-${Date.now()}`,
+    name: input.name?.trim() || "New Contact",
+    email: input.email?.trim(),
+    phone: input.phone?.trim(),
+    company: input.company?.trim(),
+    role: input.role?.trim(),
+    notes: input.notes?.trim(),
+    lastSeen: null,
   };
-  list.push(contact);
-  write(list);
-  return contact;
+  list.unshift(c);
+  save(list);
+  return c;
 }
 
-export async function updateContact(id: string, patch: Partial<Contact>): Promise<Contact> {
-  const list = read();
+export async function updateContact(id: string, patch: Partial<Contact>): Promise<Contact | null> {
+  const list = load();
   const i = list.findIndex(c => c.id === id);
-  if (i === -1) throw new Error("Not found");
+  if (i === -1) return null;
   list[i] = { ...list[i], ...patch };
-  write(list);
+  save(list);
   return list[i];
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  write(read().filter(c => c.id !== id));
+  save(load().filter(c => c.id !== id));
 }
 
-/** Optional: seed one example on first run */
-export function seedOnce() {
-  const list = read();
-  if (list.length === 0) {
-    write([{
-      id: crypto.randomUUID(),
-      name: "John",
-      email: "jsmith@hotmail.com",
-      lastSeen: new Date().toISOString()
-    }]);
-  }
+export async function simulateLogin(id: string): Promise<void> {
+  await updateContact(id, { lastSeen: new Date().toISOString() });
+}
+
+export async function clearLog(id: string): Promise<void> {
+  await updateContact(id, { lastSeen: null });
 }
