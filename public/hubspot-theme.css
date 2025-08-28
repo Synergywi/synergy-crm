@@ -156,3 +156,15 @@ textarea{ min-height:120px; resize:vertical; }
 
 /* Make small sub-section headings look tidy (optional) */
 .subtle{ color:var(--muted); font-size:13px; }
+
+/* --- Final polish for tighter, cleaner form spacing --- */
+.page .card{ max-width:960px; margin:12px auto 0; }   /* keep form tight & centered */
+.crm-grid{ gap:12px 18px; }                           /* tighten vertical rhythm */
+.crm-label{ margin-bottom:4px; }                      /* less air under labels */
+input, select, textarea{ padding:8px 10px; }          /* more compact controls */
+
+/* keep actions visible on long forms */
+.card-header{ position:sticky; top:0; z-index:2; background:#fbfdff; }
+
+/* make footer feel anchored */
+.card-footer{ justify-content:flex-end; padding:12px 18px; }
