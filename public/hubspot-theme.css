@@ -1,241 +1,195 @@
-/* ==========================================================================
-   HubSpot-ish Light Theme (clean, airy, orange CTA, navy accents)
-   Full replacement
-   ========================================================================== */
+/* HubSpot-like Light theme (orange/teal + navy text) */
 
-/* --- Palette -------------------------------------------------------------- */
+/* ------ Palette ------ */
 :root {
-  --bg:           #f6f9fc;
-  --panel:        #ffffff;
-  --border:       #e5edf4;
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --border: #e4e8ee;
 
-  --text:         #2c3a4b;    /* deep slate */
-  --text-muted:   #6c7b8a;
+  --text: #33475b;          /* HubSpot navy */
+  --text-muted: #556987;
 
-  --primary:      #ff7a59;    /* HubSpot-ish orange */
-  --primary-ink:  #ffffff;
+  --primary: #ff7a59;       /* HubSpot orange */
+  --primary-ink: #ffffff;
 
-  --accent:       #0fb;       /* teal accent for tiny bits only */
+  --accent: #00b3bf;        /* HubSpot teal */
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 10px 20px rgba(16,24,40,.04);
+  --gap: 16px;              /* base gap */
 }
 
-/* --- Global layout & typography ------------------------------------------ */
+/* ------ Global layout & typography ------ */
 html, body {
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
-
-h1, h2, h3, h4 { margin: 0 0 10px; font-weight: 600; }
-h1 { font-size: 20px; }
-h2 { font-size: 18px; }
-h3 { font-size: 16px; }
-
-/* --- App shell ------------------------------------------------------------ */
-.app.hub-app {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
+/* Keep your app layout */
+.hub-app {
+  background: var(--bg) !important;
+  color: var(--text) !important;
 }
 
-.sidebar {
-  background: #0f1a26;
-  color: #c2cbd6;
-  padding: 18px 16px;
+/* Sidebar (if present) */
+.hub-app .sidebar {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
 }
 
-.sidebar .logo {
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 14px;
-}
-
-.nav { display: grid; gap: 6px; }
-.nav a {
-  color: #c2cbd6;
-  text-decoration: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-}
-.nav a:hover { background: rgba(255,255,255,.06); }
-.nav a.active { color: #fff; background: rgba(255,255,255,.12); }
-
-main { padding: 20px; }
-
-.header {
-  display: flex; align-items: center; gap: 10px;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.title { font-size: 18px; font-weight: 700; }
-.badge {
-  background: #e9f2ff; color: #214a96; border-radius: 999px;
-  padding: 3px 8px; font-size: 12px;
-}
-
-/* Center column container for pages */
-.container {
+/* ------ Containers / cards ------ */
+.container,
+.hub-container {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 24px 28px;
 }
 
-/* --- Cards --------------------------------------------------------------- */
-.card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(15, 35, 58, 0.05);
-  overflow: hidden;
-  /* keep the card narrower than main container for breathing room */
+.card,
+.panel {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+/* Narrow, centered card for details screens */
+.card.narrow,
+.panel.narrow {
   max-width: 960px;
-  margin: 0 auto;                 /* center card */
+  margin: 12px auto 36px !important; /* force tighten spacing */
 }
 
-.card-header,
-.card-body,
-.card-footer {
-  padding-left: 20px;
-  padding-right: 20px;
+/* Header/toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.toolbar .title {
+  font-size: 24px;
+  font-weight: 700;
+}
+.toolbar .spacer {
+  flex: 1;
 }
 
+/* Card header inside the card */
 .card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-top: 14px; padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-  background: #fbfdff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -4px 0 12px;
+}
+.card-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
 }
 
-.card-title { font-weight: 700; font-size: 16px; }
-
-.card-body { padding-top: 18px; padding-bottom: 16px; }
-
-.card-footer {
-  display: flex; gap: 8px; justify-content: flex-end;
-  padding-top: 12px; padding-bottom: 14px;
-  border-top: 1px solid var(--border);
+/* Tabs */
+.tabs, .tablist {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0 16px;
 }
-
-/* --- Tabs --------------------------------------------------------------- */
-.tabs {
-  display: flex; gap: 12px; align-items: center;
-  border-bottom: 1px solid var(--border);
-  padding: 0 20px;                 /* align with card padding */
-  background: #fff;
-}
-
 .tab {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 12px 4px;
-  font-weight: 600;
-  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: #fafcff;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
   cursor: pointer;
-  position: relative;
+}
+.tab.active {
+  border-color: #ffd0c4;
+  background: #fff6f3;
+  color: #b5472c;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
 }
 
-.tab.active { color: var(--text); }
-.tab.active::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -1px;
-  height: 3px; border-radius: 3px 3px 0 0;
-  background: var(--primary);
-}
-
-/* --- Forms -------------------------------------------------------------- */
-.form-row { display: grid; gap: 18px; }
-.crm-grid {
+/* Form grid */
+.form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;                 /* tighter vertical, roomier horizontal */
+  gap: 16px 24px;
 }
-.crm-span-2 { grid-column: 1 / -1; }
-
-.form-group { display: flex; flex-direction: column; }
+.form-row--full {
+  grid-column: 1 / -1;
+}
 label {
+  font-size: 12px;
   color: var(--text-muted);
-  font-size: 12.5px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  display: block;
 }
-
 input, select, textarea {
   width: 100%;
+  background: #fff;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 20px;
+  box-sizing: border-box;
+  color: var(--text);
+}
+textarea { min-height: 120px; }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
-  outline: none;
-  transition: border-color .12s ease, box-shadow .12s ease;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
 }
-
-input:focus, select:focus, textarea:focus {
-  border-color: #c5d7ef;
-  box-shadow: 0 0 0 2px rgba(44, 114, 255, 0.08);
-}
-
-textarea { min-height: 120px; resize: vertical; }
-
-/* read-only-ish look (e.g. last seen) */
-.input-ghost {
-  background: #f8fbff;
-  color: #5e6d7c;
-}
-
-/* --- Buttons ------------------------------------------------------------ */
-.btn {
-  appearance: none; border: 1px solid var(--border);
-  background: #fff; color: var(--text);
-  padding: 8px 12px; border-radius: 10px;
-  font-weight: 600; cursor: pointer;
-  transition: background .12s ease, border-color .12s ease, box-shadow .12s;
-}
-.btn:hover { background: #fafcff; border-color: #dfe8f0; }
-.btn:active { transform: translateY(0.5px); }
-
 .btn-primary {
   background: var(--primary);
-  border-color: var(--primary);
   color: var(--primary-ink);
+  border-color: #ff8f76;
 }
-.btn-primary:hover { filter: brightness(1.05); }
-
 .btn-danger {
-  background: #ff6b6b; border-color: #ff6b6b; color: #fff;
+  background: #ff6b6b;
+  color: #fff;
+  border-color: #ff8585;
 }
-.btn-danger:hover { filter: brightness(1.05); }
 
-/* --- Tables (list pages) ------------------------------------------------ */
+/* Table in a card */
+.table-wrap {
+  overflow: auto;
+}
 .table {
-  width: 100%; border-collapse: collapse;
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: 12px; overflow: hidden;
+  width: 100%;
+  border-collapse: collapse;
 }
 .table th {
-  text-align: left; font-weight: 700; color: var(--text-muted);
-  background: #fbfdff; border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 12px;
   padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fafcff;
 }
-.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.table tr:last-child td { border-bottom: 0; }
-
-/* --- Utility ------------------------------------------------------------ */
-.kbd {
-  display: inline-block; padding: 2px 6px; border-radius: 6px;
-  background: #e9eef6; color: #334; font-weight: 700; font-size: 12px;
-}
-
-/* Keep overall page flow consistent */
-.page .card { margin-top: 8px; }
-
-/* Make header sticky within viewport for long forms */
-.card-header {
-  position: sticky; top: 0; z-index: 2;
+.table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
 }
 
-/* Ensure tabs align to card body edges */
-.tabs + .card-body { padding-top: 16px; }
+/* Ensure our spacing wins even if older styles linger */
+.page { padding-top: 8px !important; }
+.card, .panel { margin-top: 12px !important; }
+
+/* Small screens */
+@media (max-width: 920px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .toolbar .title { font-size: 20px; }
+}
