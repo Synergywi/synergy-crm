@@ -1,214 +1,158 @@
 /* ===================================================================
-   HubSpot-style Light Theme for Synergy CRM (full file)
+   HubSpot-style Light Theme for Synergy CRM
+   Clean spacing, crisp labels, consistent inputs, card header actions
    =================================================================== */
 
 /* ----- Palette ----- */
 :root{
   --bg:#f7f9fc;
   --panel:#ffffff;
+  --panel-ink:#2a3748;
   --border:#e6edf5;
-  --panel-border:#dfe7f1;
-  --shadow:0 4px 16px rgba(18,38,63,0.06);
+  --divider:#edf2f8;
+  --shadow:0 6px 24px rgba(18,38,63,.06);
 
-  --text:#2a3748;           /* ink */
-  --text-muted:#7c8ea6;     /* secondary */
-  --heading:#33475b;        /* HubSpot navy */
+  --text:#2a3748;
+  --muted:#7c8ea6;
+  --heading:#33475b;
 
-  --primary:#ff7a59;        /* HubSpot orange */
+  --primary:#ff7a59;   /* HubSpot orange */
   --primary-ink:#ffffff;
-
   --danger:#ef4e4e;
-  --success:#00b39f;        /* HubSpot teal */
+  --link:#2b7fff;
 
-  --radius:12px;
-  --radius-sm:10px;
-  --radius-lg:16px;
+  --r-sm:10px;
+  --r:12px;
+  --r-lg:16px;
 
-  --pad:20px;
   --pad-sm:14px;
+  --pad:20px;
   --gap:12px;
+
+  --focus:0 0 0 3px rgba(43,127,255,.12);
 }
 
-/* ----- Base / Reset ----- */
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-html, body {
+/* ----- Base ----- */
+*{ box-sizing:border-box; }
+html,body,#root{ height:100%; }
+html,body{
   margin:0;
-  padding:0;
   background:var(--bg);
   color:var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,"Helvetica Neue","Noto Sans";
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   line-height:1.35;
 }
 
-/* Utility */
+/* Utils */
 .row{ display:flex; align-items:center; }
 .space-between{ justify-content:space-between; }
-.title{ font-size:20px; font-weight:700; color:var(--heading); }
-.kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#eef3fb; border:1px solid var(--border); border-radius:8px; padding:2px 8px; }
+.title{ font-size:22px; font-weight:800; color:var(--heading); }
+.link,a{ color:var(--link); text-decoration:none; }
+.link:hover,a:hover{ text-decoration:underline; }
 
-/* Links */
-a, .link { color:#2b7fff; text-decoration:none; }
-a:hover, .link:hover{ text-decoration:underline; }
-
-/* ----- App Shell ----- */
+/* ----- Shell ----- */
 .hub-app{
   min-height:100%;
   display:grid;
-  grid-template-columns: 240px 1fr;
-  gap:0;
+  grid-template-columns:240px 1fr;
 }
-.hub-app main{ padding: 18px 22px 28px; }
-.hub-app .header{
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:14px;
-}
-.hub-app .badge{
-  font-size:12px; padding:6px 10px; border-radius:9999px;
-  background:#eef8ff; color:#2b7fff; border:1px solid #d8e8ff;
-}
+.hub-app main{ padding:18px 22px 28px; }
+.hub-app .header{ display:flex; justify-content:space-between; margin-bottom:14px; }
+.hub-app .badge{ font-size:12px; padding:6px 10px; border-radius:999px; background:#eef8ff; color:#2b7fff; border:1px solid #d8e8ff; }
 
 /* Sidebar */
 .hub-app .sidebar{
-  background:#0f1a2a;
-  color:#d1d9e6;
-  padding:18px 14px;
-  border-right:1px solid rgba(255,255,255,0.06);
+  background:#0f1a2a; color:#d1d9e6; padding:18px 14px; border-right:1px solid rgba(255,255,255,.06);
 }
-.hub-app .sidebar .logo{
-  font-weight:700; color:#fff; margin-bottom:16px;
-}
+.hub-app .sidebar .logo{ color:#fff; font-weight:700; margin-bottom:16px; }
 .hub-app .nav{ display:flex; flex-direction:column; gap:6px; }
-.hub-app .nav a{
-  display:block; padding:10px 12px; border-radius:8px;
-  color:#c6d2e3; border:1px solid transparent;
-}
-.hub-app .nav a:hover{ background:rgba(255,255,255,0.04); color:#fff; }
-.hub-app .nav a.active{
-  background:rgba(255,255,255,0.08);
-  border-color:rgba(255,255,255,0.14);
-  color:#fff; font-weight:600;
-}
+.hub-app .nav a{ padding:10px 12px; border-radius:8px; color:#c6d2e3; border:1px solid transparent; }
+.hub-app .nav a:hover{ background:rgba(255,255,255,.06); color:#fff; }
+.hub-app .nav a.active{ background:rgba(255,255,255,.10); color:#fff; font-weight:600; }
 
-/* ----- Containers ----- */
-.page{ max-width: 1220px; }
-.container{ max-width: 1200px; margin:0 auto; }
+/* Container */
+.container, .page{ max-width:1200px; }
 
-/* ----- Panel / Card ----- */
-.panel{
+/* ----- Cards ----- */
+.card{
   background:var(--panel);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);
-  padding:var(--pad);
+  color:var(--panel-ink);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
   box-shadow:var(--shadow);
-}
-
-/* ----- Tables (Contacts list etc.) ----- */
-.table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:var(--panel);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);
   overflow:hidden;
 }
-.table th, .table td{
-  padding:12px 14px;
-  border-bottom:1px solid var(--border);
-  text-align:left;
-  vertical-align:middle;
+.card-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px;
+  border-bottom:1px solid var(--divider);
+  background:#fbfdff;
 }
-.table th{
-  font-size:12px; letter-spacing:.02em; text-transform:uppercase;
-  color:var(--text-muted); background:#fbfdff;
+.card-title{ font-size:18px; font-weight:800; color:var(--heading); }
+.card-actions{ display:flex; gap:10px; }
+.card-body{ padding:18px 18px 14px; }
+.card-footer{
+  border-top:1px solid var(--divider);
+  padding:12px 18px;
+  display:flex; justify-content:flex-end; gap:8px;
+  background:#fff;
 }
-.table tr:last-child td{ border-bottom:none; }
+
+/* ----- Table (Contacts list) ----- */
+.table{
+  width:100%; border-collapse:separate; border-spacing:0;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden;
+}
+.table th,.table td{ padding:12px 16px; border-bottom:1px solid var(--divider); text-align:left; }
+.table th{ font-size:12px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); background:#fbfdff; }
+.table tr:last-child td{ border-bottom:0; }
 .table tr:hover td{ background:#fbfdff; }
 
 /* ----- Tabs ----- */
-.tabs{ display:flex; gap:10px; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.tabs{ display:flex; gap:12px; border-bottom:1px solid var(--divider); padding:0 18px; }
 .tab{
-  position:relative;
-  background:transparent; border:0; padding:8px 10px; font-weight:600;
-  color:var(--text-muted); cursor:pointer; border-radius:8px 8px 0 0;
+  appearance:none; background:transparent; border:0; padding:10px 6px; font-weight:700; color:var(--muted); cursor:pointer;
 }
 .tab:hover{ color:var(--heading); }
-.tab.active{ color:var(--heading); }
+.tab.active{ color:var(--heading); position:relative; }
 .tab.active::after{
-  content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px;
-  background:var(--primary);
+  content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--primary);
 }
 
 /* ----- Buttons ----- */
 .btn{
-  appearance:none; border:1px solid var(--border); background:#fff;
-  padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:600;
-  color:var(--heading);
+  appearance:none; border:1px solid var(--border); background:#fff; color:var(--heading);
+  padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
 }
 .btn:hover{ background:#f6f9fe; }
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
+.btn-primary{ background:var(--primary); color:var(--primary-ink); border-color:#ff6d48; }
+.btn-primary:hover{ filter:brightness(.98); }
+.btn-danger{ background:var(--danger); color:#fff; border-color:#e44545; }
+.btn-danger:hover{ filter:brightness(.98); }
 
-.btn-primary{
-  background:var(--primary); color:var(--primary-ink);
-  border-color:#ff6d48;
-}
-.btn-primary:hover{ background:#ff694f; }
-
-.btn-danger{
-  background:var(--danger); color:#fff; border-color:#e44545;
-}
-.btn-danger:hover{ background:#e64747; }
-
-/* ----- Forms ----- */
+/* ----- Forms (uniform across app) ----- */
+label, .crm-label{ font-size:13px; font-weight:700; color:#5a6c87; margin-bottom:6px; }
 input, select, textarea{
-  width:100%;
-  border:1px solid var(--border);
-  background:#fff;
-  color:var(--text);
-  border-radius:10px;
-  padding:10px 12px;
-  font:inherit;
-  outline:none;
+  width:100%; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text);
+  padding:10px 12px; font:inherit; outline:none;
 }
-input:focus, select:focus, textarea:focus{
-  border-color:#c8dcff; box-shadow:0 0 0 3px rgba(43,127,255,0.12);
-}
+input:focus, select:focus, textarea:focus{ border-color:#c8dcff; box-shadow:var(--focus); }
 textarea{ min-height:120px; resize:vertical; }
 
-/* Labels look */
-label, .form-label{ font-size:13px; color:var(--text-muted); font-weight:600; }
-
-/* ---- Hub app specific headers ---- */
-.header .title{ font-size:22px; font-weight:800; color:var(--heading); }
-
-/* ==================== CRM page polish ==================== */
-
-/* Contact detail grid & labels */
-.crm-form .tabs{ margin-bottom:12px; }
-.crm-form .crm-grid{
+/* ----- Contact form grid & spacing ----- */
+.crm-form .tabs{ margin:6px 0 0; }
+.crm-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:16px 20px;
+  padding:16px 18px 18px;
 }
-.crm-form .crm-field{ display:flex; flex-direction:column; }
-.crm-form .crm-label{ font-weight:600; color:#5a6c87; margin-bottom:6px; }
-.crm-form .crm-input{ height:38px; }
-.crm-form .crm-textarea{ min-height:140px; }
-.crm-form .crm-span-full{ grid-column:1 / -1; }
+.crm-field{ display:flex; flex-direction:column; }
+.crm-span-full{ grid-column:1 / -1; }
+.crm-readonly{ background:#f7f9fc; color:var(--muted); }
 
-/* Slightly denser card like baseline mocks */
-.panel.crm-form{ padding:18px 20px; }
-
-/* Optional mini breadcrumb area (Path) */
-.hub-app .sidebar .kbd, .page .kbd { background:#f2f7ff; }
-
-/* ================= Contacts page table spacing ============ */
-.panel .table th:first-child, .panel .table td:first-child{ padding-left:18px; }
-.panel .table th:last-child, .panel .table td:last-child{ padding-right:18px; }
-
-/* ================= Helpers ================================ */
-.mt-16{ margin-top:16px; }
-.row-gap-8{ gap:8px; }
+/* Make small sub-section headings look tidy (optional) */
+.subtle{ color:var(--muted); font-size:13px; }
