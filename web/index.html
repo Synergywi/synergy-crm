@@ -9,10 +9,9 @@
     <meta name="color-scheme" content="light only" />
     <title>Synergy CRM 2</title>
 
-    <!-- Single source of truth for styles: served from /public -->
-    <link rel="stylesheet" href="/hubspot-theme.css" />
+    <!-- Single stylesheet, cache-busted -->
+    <link rel="stylesheet" href="/hubspot-theme.css?v=5" />
 
-    <!-- tiny FOUC guard -->
     <style>
       html, body, #root { height: 100%; }
       html, body { margin: 0; background: #f6f8fb; }
