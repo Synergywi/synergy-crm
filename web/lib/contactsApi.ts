@@ -1,4 +1,5 @@
 // /web/lib/contactsApi.ts
+
 export type Contact = {
   id: string;
   name: string;
@@ -12,6 +13,7 @@ export type Contact = {
 
 const KEY = "contacts.v1";
 
+/** Load from localStorage; seeds default data if nothing saved yet. */
 function load(): Contact[] {
   try {
     const raw = localStorage.getItem(KEY);
@@ -34,6 +36,15 @@ function seed(): Contact[] {
   return seeded;
 }
 
+/**
+ * Compat helper for older code paths that call seedOnce().
+ * It ensures data is present by invoking load(), which seeds if needed.
+ */
+export function seedOnce(): void {
+  // If there is no saved data, load() will create it via seed()
+  load();
+}
+
 export async function listContacts(): Promise<Contact[]> {
   return load();
 }
@@ -42,12 +53,12 @@ export async function addContact(input: Partial<Contact>): Promise<Contact> {
   const list = load();
   const c: Contact = {
     id: `c-${Date.now()}`,
-    name: input.name?.trim() || "New Contact",
-    email: input.email?.trim(),
-    phone: input.phone?.trim(),
-    company: input.company?.trim(),
-    role: input.role?.trim(),
-    notes: input.notes?.trim(),
+    name: (input.name ?? "New Contact").toString().trim(),
+    email: input.email?.toString().trim(),
+    phone: input.phone?.toString().trim(),
+    company: input.company?.toString().trim(),
+    role: input.role?.toString().trim(),
+    notes: input.notes?.toString().trim(),
     lastSeen: null,
   };
   list.unshift(c);
