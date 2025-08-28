@@ -1,195 +1,319 @@
-/* HubSpot-like Light theme (orange/teal + navy text) */
+/* ==========================================================================
+   HubSpot-style Theme (clean build)
+   File: /public/hubspot-theme.css
+   --------------------------------------------------------------------------
+   Design goals:
+   • Light, clean CRM look with HubSpot-like accents
+   • Consistent cards (panels), tables, forms, and tabs
+   • Tight, readable spacing; action buttons align right in card headers
+   ========================================================================== */
 
-/* ------ Palette ------ */
+/* ---------- Design tokens ---------- */
 :root {
-  --bg: #f7f9fc;
-  --panel: #ffffff;
-  --border: #e4e8ee;
+  --bg-page: #f6f9fc;
+  --bg-card: #ffffff;
 
-  --text: #33475b;          /* HubSpot navy */
-  --text-muted: #556987;
+  --text: #24324b;
+  --text-muted: #6c7a95;
 
-  --primary: #ff7a59;       /* HubSpot orange */
-  --primary-ink: #ffffff;
+  --border: #e9edf5;
+  --border-strong: #d9e2ef;
 
-  --accent: #00b3bf;        /* HubSpot teal */
+  --brand-50: #fff3ee;
+  --brand-100: #ffe1d6;
+  --brand-500: #ff7a59;   /* HubSpot orange-ish */
+  --brand-600: #ff6a45;
 
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 10px 20px rgba(16,24,40,.04);
-  --gap: 16px;              /* base gap */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --info:    #3b82f6;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  --shadow-md: 0 2px 8px rgba(16,24,40,.06);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
 }
 
-/* ------ Global layout & typography ------ */
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
 html, body {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Arial;
+  height: 100%;
+  background: var(--bg-page);
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font: 14px/1.5 var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Keep your app layout */
-.hub-app {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-}
+img { max-width: 100%; display: block; }
 
-/* Sidebar (if present) */
-.hub-app .sidebar {
-  background: var(--panel) !important;
-  color: var(--text) !important;
-  border-right: 1px solid var(--border) !important;
-}
+a { color: #475569; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-/* ------ Containers / cards ------ */
+/* ---------- App chrome (optional; won’t break if not present) ---------- */
+.app .sidebar {
+  width: 220px;
+  background: #0f1a2b;
+  color: #b3bfd3;
+  padding: 20px 14px;
+}
+.app .sidebar .logo { color: #fff; font-weight: 600; margin-bottom: 12px; }
+.app .sidebar .nav a {
+  display: block; padding: 8px 10px; border-radius: 8px; color: #b3bfd3;
+}
+.app .sidebar .nav a.active,
+.app .sidebar .nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+
+.app main { min-height: 100vh; }
+
+/* Page header row */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+}
+.header .title { font-size: 18px; font-weight: 600; }
+.badge { background: #eef2f7; color: #607089; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+
+/* ---------- Layout container ---------- */
 .container,
 .hub-container {
-  max-width: 1200px;
+  width: min(1120px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 24px 28px;
+  padding: 12px 0 32px; /* top tightened */
 }
 
-.card,
-.panel {
-  background: var(--panel) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: var(--shadow);
-  padding: 20px;
-}
-
-/* Narrow, centered card for details screens */
-.card.narrow,
-.panel.narrow {
-  max-width: 960px;
-  margin: 12px auto 36px !important; /* force tighten spacing */
-}
-
-/* Header/toolbar */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 8px 0 14px;
-}
-.toolbar .title {
-  font-size: 24px;
-  font-weight: 700;
-}
-.toolbar .spacer {
-  flex: 1;
-}
-
-/* Card header inside the card */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: -4px 0 12px;
-}
-.card-header h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-}
-
-/* Tabs */
-.tabs, .tablist {
-  display: flex;
-  gap: 12px;
-  margin: 8px 0 16px;
-}
-.tab {
+/* ---------- Cards / Panels ---------- */
+.panel,
+.card {
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  background: #fafcff;
-  color: var(--text);
-  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* Inner spacing when no header block is used */
+.panel:not(:has(.panel-header)),
+.card:not(:has(.card-header)) {
+  padding: 16px;
+}
+
+/* Header with actions (title left, buttons right) */
+.panel-header,
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(#fff, #fff);
+}
+
+.panel-title,
+.card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+/* Tabs directly inside header or below */
+.panel-tabs,
+.card-tabs,
+.tabs {
+  display: flex; gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.tab,
+.tabs .tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: #f7fafc;
+  color: #4a5974;
   border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
   cursor: pointer;
 }
-.tab.active {
-  border-color: #ffd0c4;
-  background: #fff6f3;
-  color: #b5472c;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+.tab.active,
+.tabs .tab.active {
+  background: var(--brand-50);
+  border-color: var(--brand-100);
+  color: var(--brand-600);
 }
 
-/* Form grid */
+/* Card footer (buttons right) */
+.panel-footer,
+.card-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
+/* Subtle overall spacing between stacked cards */
+.panel + .panel,
+.card + .card { margin-top: 16px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #3a4660;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn:hover { background: #f9fbfe; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--brand-600); border-color: var(--brand-600); }
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover { filter: brightness(.95); }
+
+/* ---------- Forms ---------- */
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  height: 38px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+textarea { min-height: 120px; resize: vertical; }
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, .12);
+}
+
+/* Two-column responsive grid for forms */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px 24px;
+  gap: 12px 20px;
 }
-.form-row--full {
-  grid-column: 1 / -1;
-}
-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-  display: block;
-}
-input, select, textarea {
-  width: 100%;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  line-height: 20px;
-  box-sizing: border-box;
-  color: var(--text);
-}
-textarea { min-height: 120px; }
+.form-grid .col-span-2 { grid-column: 1 / -1; }
 
-/* Buttons */
-.btn {
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-.btn-primary {
-  background: var(--primary);
-  color: var(--primary-ink);
-  border-color: #ff8f76;
-}
-.btn-danger {
-  background: #ff6b6b;
-  color: #fff;
-  border-color: #ff8585;
+@media (max-width: 860px) {
+  .form-grid { grid-template-columns: 1fr; }
 }
 
-/* Table in a card */
-.table-wrap {
-  overflow: auto;
+/* Read-only field look */
+.readonly {
+  background: #f8fafc;
+  border-style: dashed;
+  color: #5f6b84;
 }
+
+/* ---------- Tables ---------- */
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
-.table th {
+
+.table thead th {
   text-align: left;
-  font-weight: 600;
-  color: var(--text-muted);
   font-size: 12px;
+  font-weight: 600;
+  color: #6c7a95;
+  background: #f9fbfe;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+}
+
+.table tbody td {
+  border-bottom: 1px solid var(--border);
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  background: #fafcff;
-}
-.table td {
-  padding: 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+  color: var(--text);
 }
 
-/* Ensure our spacing wins even if older styles linger */
-.page { padding-top: 8px !important; }
-.card, .panel { margin-top: 12px !important; }
+.table tbody tr:hover { background: #fbfdff; }
+.table .actions { display: flex; gap: 8px; }
 
-/* Small screens */
-@media (max-width: 920px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .toolbar .title { font-size: 20px; }
+/* ---------- Badges / Pills ---------- */
+.pill {
+  display: inline-flex; align-items: center;
+  height: 22px; padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: #eef2f7; color: #5e6d86;
 }
+.pill.success { background: #eaf7ee; color: #187a38; }
+.pill.warn    { background: #fff6e6; color: #a86500; }
+.pill.info    { background: #e9f2ff; color: #1f5fbf; }
+
+/* ---------- Utility ---------- */
+.row { display: flex; align-items: center; }
+.row.space-between { justify-content: space-between; }
+.kbd {
+  font: 11px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background: #eef2f7; color: #51607a; padding: 2px 6px; border-radius: 6px;
+}
+
+/* ---------- Contact pages specific niceties ---------- */
+/* Keep the big gap above the first card tight */
+.page > .panel:first-child,
+.page > .card:first-child { margin-top: 8px; }
+
+/* If a page uses a header bar with title + actions */
+.contact-header,
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 4px 0 8px;
+}
+
+/* “Open” link in tables resembles HubSpot purple link */
+.table a { color: #6c4dd6; font-weight: 500; }
+.table a:hover { text-decoration: underline; }
+
+/* ---------- Safe defaults for any old dark theme leftovers ---------- */
+body,
+.app main,
+.container,
+.hub-container { background: var(--bg-page) !important; color: var(--text) !important; }
