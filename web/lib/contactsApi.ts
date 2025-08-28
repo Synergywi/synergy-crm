@@ -1,88 +1,74 @@
 // /web/lib/contactsApi.ts
-
 export type Contact = {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  role?: string;
-  notes?: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  role?: string | null;
+  notes?: string | null;
   lastSeen?: string | null;
 };
 
-const KEY = "contacts.v1";
+const BASE = "/api/contacts";
 
-/** Load from localStorage; seeds default data if nothing saved yet. */
-function load(): Contact[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return seed();
-    return JSON.parse(raw) as Contact[];
-  } catch {
-    return seed();
+async function json<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status} ${res.statusText}: ${msg}`);
   }
+  return res.json() as Promise<T>;
 }
 
-function save(list: Contact[]) {
-  localStorage.setItem(KEY, JSON.stringify(list));
-}
-
-function seed(): Contact[] {
-  const seeded: Contact[] = [
-    { id: "c-1", name: "John", email: "jsmith@hotmail.com", lastSeen: "2025-08-25T22:03:30.593Z" },
-  ];
-  save(seeded);
-  return seeded;
-}
-
-/**
- * Compat helper for older code paths that call seedOnce().
- * It ensures data is present by invoking load(), which seeds if needed.
- */
-export function seedOnce(): void {
-  // If there is no saved data, load() will create it via seed()
-  load();
-}
-
+/** List all contacts */
 export async function listContacts(): Promise<Contact[]> {
-  return load();
+  const res = await fetch(`${BASE}`, { headers: { "Accept": "application/json" } });
+  return json<Contact[]>(res);
 }
 
-export async function addContact(input: Partial<Contact>): Promise<Contact> {
-  const list = load();
-  const c: Contact = {
-    id: `c-${Date.now()}`,
-    name: (input.name ?? "New Contact").toString().trim(),
-    email: input.email?.toString().trim(),
-    phone: input.phone?.toString().trim(),
-    company: input.company?.toString().trim(),
-    role: input.role?.toString().trim(),
-    notes: input.notes?.toString().trim(),
-    lastSeen: null,
-  };
-  list.unshift(c);
-  save(list);
-  return c;
+/** Get a single contact by id. Tries /api/contacts/:id; falls back to list+find. */
+export async function getContact(id: string): Promise<Contact | null> {
+  // Try direct endpoint first
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    headers: { "Accept": "application/json" },
+  });
+  if (res.ok) return json<Contact>(res);
+
+  // Fallback to list and find
+  const all = await listContacts();
+  return all.find(c => c.id === id) ?? null;
 }
 
-export async function updateContact(id: string, patch: Partial<Contact>): Promise<Contact | null> {
-  const list = load();
-  const i = list.findIndex(c => c.id === id);
-  if (i === -1) return null;
-  list[i] = { ...list[i], ...patch };
-  save(list);
-  return list[i];
+/** Create a contact (supply at least "name"). Returns created Contact. */
+export async function addContact(data: Partial<Contact>): Promise<Contact> {
+  const res = await fetch(`${BASE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return json<Contact>(res);
 }
 
+/** Update contact fields. Returns updated Contact. */
+export async function updateContact(id: string, patch: Partial<Contact>): Promise<Contact> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  return json<Contact>(res);
+}
+
+/** Delete a contact by id. */
 export async function deleteContact(id: string): Promise<void> {
-  save(load().filter(c => c.id !== id));
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 }
 
+/** Utilities used by the UI — keep endpoints to what your API expects. */
 export async function simulateLogin(id: string): Promise<void> {
-  await updateContact(id, { lastSeen: new Date().toISOString() });
+  await fetch(`${BASE}/${encodeURIComponent(id)}/simulate-login`, { method: "POST" });
 }
-
 export async function clearLog(id: string): Promise<void> {
-  await updateContact(id, { lastSeen: null });
+  await fetch(`${BASE}/${encodeURIComponent(id)}/clear-log`, { method: "POST" });
 }
