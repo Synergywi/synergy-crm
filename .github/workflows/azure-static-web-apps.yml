@@ -11,7 +11,6 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
 
-    # All run steps work inside /web
     defaults:
       run:
         working-directory: web
@@ -31,20 +30,23 @@ jobs:
       - name: Build app (web)
         run: npm run build
 
-      # Ensure SPA routing & any settings are included in the deployed artifact
-      # (copy your existing config into the dist root)
-      - name: Copy static web app config into dist
+      - name: Ensure SPA config is copied into dist
         run: |
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json dist/
           fi
 
-      # Deploy the **built** app (web/dist), do NOT build again on Azure
+      - name: Sanity check build
+        run: |
+          test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: "web/dist"   # <<< deploy the build output
+          # Canonical combo: source folder + artifact folder
+          app_location: "web"
+          app_artifact_location: "dist"
           skip_app_build: true
           skip_api_build: true
