@@ -6,9 +6,11 @@
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "App.tsx"]
+  "include": ["src", "vite.config.ts"]
 }
