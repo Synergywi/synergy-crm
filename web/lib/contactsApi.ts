@@ -2,99 +2,65 @@
 
 export type Contact = {
   id: string;
-  // Newer fields
-  givenNames?: string;
-  surname?: string;
-
-  // Legacy/compat field (some screens still show "name")
-  name?: string;
-
-  // Common profile details
-  email?: string;
-  phone?: string;
-  company?: string;
-  role?: string;
-  notes?: string;
-
-  // System fields
+  givenNames: string;
+  surname: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  role?: string | null;
+  notes?: string | null;
   lastSeen?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-const API_BASE = "/api";
+export type ContactInput = Omit<Contact, "id" | "createdAt" | "updatedAt">;
 
-async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-    ...init,
-  });
+const JSON_HEADERS: Record<string, string> = { "Content-Type": "application/json" };
 
+async function http<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} on ${url}${text ? ` – ${text}` : ""}`);
+    // Try to surface server text to the UI
+    const msg = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText}${msg ? ` – ${msg}` : ""}`);
   }
-
-  // 204 No Content handling
-  if (res.status === 204) {
-    return undefined as unknown as T;
-  }
-
+  // Some endpoints may return 204 No Content
+  if (res.status === 204) return undefined as unknown as T;
   return (await res.json()) as T;
 }
 
-/** List all contacts (minimal list model) */
-export function listContacts(): Promise<Contact[]> {
-  return request<Contact[]>(`${API_BASE}/contacts`);
+// ---- CRUD ---------------------------------------------------------------
+
+export async function listContacts(): Promise<Contact[]> {
+  // GET /api/contacts
+  return http<Contact[]>("/api/contacts");
 }
 
-/** Get a single contact by id */
-export function getContact(id: string): Promise<Contact> {
-  return request<Contact>(`${API_BASE}/contacts/${encodeURIComponent(id)}`);
+export async function getContact(id: string): Promise<Contact> {
+  // GET /api/contacts/{id}
+  return http<Contact>(`/api/contacts/${encodeURIComponent(id)}`);
 }
 
-/**
- * Create a contact and return the created record.
- * Accepts either the new split fields (givenNames/surname) or a legacy `name`.
- */
-export function addContact(payload: Partial<Contact>): Promise<Contact> {
-  // If only a single `name` was provided, send it along; the API can split or store as-is
-  return request<Contact>(`${API_BASE}/contacts`, {
+export async function addContact(input: ContactInput): Promise<Contact> {
+  // POST /api/contacts
+  return http<Contact>("/api/contacts", {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: JSON_HEADERS,
+    body: JSON.stringify(input),
   });
 }
 
-/** Patch/update fields on a contact. Returns the updated record. */
-export function updateContact(
-  id: string,
-  patch: Partial<Contact>
-): Promise<Contact> {
-  return request<Contact>(`${API_BASE}/contacts/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(patch),
+export async function updateContact(id: string, input: ContactInput): Promise<Contact> {
+  // PUT /api/contacts/{id}
+  return http<Contact>(`/api/contacts/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(input),
   });
 }
 
-/** Delete a contact */
-export function deleteContact(id: string): Promise<void> {
-  return request<void>(`${API_BASE}/contacts/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-}
-
-/** Utility actions used on the detail page */
-export function simulateLogin(id: string): Promise<Contact> {
-  return request<Contact>(
-    `${API_BASE}/contacts/${encodeURIComponent(id)}/simulate-login`,
-    { method: "POST" }
-  );
-}
-
-export function clearLog(id: string): Promise<Contact> {
-  return request<Contact>(
-    `${API_BASE}/contacts/${encodeURIComponent(id)}/clear-log`,
-    { method: "POST" }
-  );
+export async function deleteContact(id: string): Promise<void> {
+  // DELETE /api/contacts/{id}
+  await http<void>(`/api/contacts/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
