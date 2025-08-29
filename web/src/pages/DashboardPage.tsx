@@ -1,5 +1,11 @@
 export default function DashboardPage() {
-  const card = { background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: 16 }
+  const card: React.CSSProperties = {
+    background: '#fff',
+    borderRadius: 12,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    padding: 16
+  }
+
   return (
     <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
       <div style={card}>
