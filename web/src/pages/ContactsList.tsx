@@ -1,44 +1,50 @@
-import { Link } from 'react-router-dom'
-
-type Row = { id: string; name: string; company?: string; email?: string }
-
-const demo: Row[] = [
-  { id: '1756338018580', name: 'Bruce Wayne', company: 'Wayne Enterprises', email: 'bruce@wayne.com' },
-  { id: '1756338018581', name: 'Diana Prince', company: 'Themyscira Embassy', email: 'diana@embassy.org' },
-]
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import api from '../lib/api'
+import type { Contact } from '../types'
 
 export default function ContactsList() {
+  const [rows, setRows] = useState<Contact[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const nav = useNavigate()
+
+  useEffect(() => {
+    let live = true
+    setLoading(true)
+    api.get<Contact[]>('/contacts')
+      .then((data) => live && setRows(data))
+      .catch((e) => live && setError(e.message))
+      .finally(() => live && setLoading(false))
+    return () => { live = false }
+  }, [])
+
   return (
-    <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>Contacts</h2>
-        <button>Create contact</button>
+    <div className="panel">
+      <div className="toprow" style={{ marginBottom: 8 }}>
+        <h3 style={{ margin:0 }}>Contacts</h3>
+        <button className="btn" onClick={() => nav('/contacts/new')}>Create contact</button>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8 }}>Name</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Company</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Email</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {demo.map((row) => (
-              <tr key={row.id}>
-                <td style={{ padding: 8 }}>{row.name}</td>
-                <td style={{ padding: 8 }}>{row.company ?? '—'}</td>
-                <td style={{ padding: 8 }}>{row.email ?? '—'}</td>
-                <td style={{ padding: 8 }}>
-                  <Link to={`/contacts/${row.id}`}>Open</Link>
-                </td>
+      {loading && <p>Loading…</p>}
+      {error && <p style={{ color:'#b91c1c' }}>{error}</p>}
+
+      {!loading && !error && (
+        <div style={{ overflowX:'auto' }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.givenNames} {c.surname}</td>
+                  <td>{c.company ?? '—'}</td>
+                  <td>{c.email ?? '—'}</td>
+                  <td>
+                   
