@@ -1,1 +1,0 @@
-# Styleguide included in baseline.
