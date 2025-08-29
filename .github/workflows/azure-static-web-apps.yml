@@ -2,63 +2,51 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
+
+env:
+  FRONTEND_DIR: web
+  BUILD_DIR: web/dist
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node (no cache)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install deps
-        shell: bash
+      # Install dependencies for the frontend in /web
+      - name: Install deps (web)
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: |
           if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            npm ci || npm install --legacy-peer-deps
+            npm ci
           else
             npm install --legacy-peer-deps
           fi
 
-      - name: Build app
-        shell: bash
+      # Build the frontend in /web → web/dist
+      - name: Build app (web)
+        working-directory: ${{ env.FRONTEND_DIR }}
         run: npm run build
 
-      # Find the folder that actually contains index.html (dist/build/out/.output/public or dist/<project>)
-      - name: Detect app artifact directory
-        shell: bash
-        run: |
-          set -e
-          OUT=""
-          for d in dist build out .output/public; do
-            if [ -d "$d" ] && find "$d" -type f -name index.html | head -n1 >/dev/null 2>&1; then
-              OUT="$d"; break
-            fi
-          done
-          if [ -z "$OUT" ] && [ -d dist ]; then
-            SUB=$(find dist -maxdepth 2 -type f -name index.html | head -n1 || true)
-            if [ -n "$SUB" ]; then OUT=$(dirname "$SUB"); fi
-          fi
-          if [ -z "$OUT" ]; then
-            echo "No built app found (dist/build/out/.output/public or dist/<project>)" >&2
-            exit 1
-          fi
-          echo "OUTPUT_DIR=$OUT" >> $GITHUB_ENV
-          echo "Using OUTPUT_DIR=$OUT"
+      # Point deployment at the built folder
+      - name: Set OUTPUT_DIR
+        run: echo "OUTPUT_DIR=${{ env.BUILD_DIR }}" >> $GITHUB_ENV
 
       # Put SPA routing + MIME types inside the built folder
       - name: Write staticwebapp.config.json to output
-        shell: bash
         run: |
-          CFG="$OUTPUT_DIR/staticwebapp.config.json"
+          CFG="${{ env.OUTPUT_DIR }}/staticwebapp.config.json"
           printf '%s\n' \
             '{' \
             '  "navigationFallback": {' \
@@ -75,7 +63,6 @@ jobs:
           echo "Wrote $CFG"
 
       - name: Debug output listing
-        shell: bash
         run: |
           echo "== OUTPUT_DIR: $OUTPUT_DIR =="
           ls -la "$OUTPUT_DIR" || true
@@ -85,7 +72,7 @@ jobs:
             find api -maxdepth 2 -type f -not -path "*/node_modules/*" | sed 's/^/  - /' || true
           fi
 
-      # Try app + API FIRST — app_location points directly at the built folder
+      # Deploy built frontend and include API (Functions) from /api
       - name: Deploy to Azure Static Web Apps (app + API)
         id: deploy_with_api
         continue-on-error: true
@@ -93,26 +80,25 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: ${{ env.OUTPUT_DIR }}   # <-- deploy from build folder, not repo root
-          app_artifact_location: ""             # not used when app_location is already the build
-          api_location: api                     # set "" if you truly have no API
-          skip_app_build: true
+          app_location: ${{ env.OUTPUT_DIR }}   # deploy the built folder
+          app_artifact_location: ""             # not needed when app_location is already 'dist'
+          api_location: api                     # your Functions backend
+          skip_app_build: true                  # we've already built
 
-      # If API distribution flakes, deploy frontend-only from the build folder
+      # Fallback: deploy frontend-only if API packaging fails
       - name: Fallback deploy (frontend only)
         if: steps.deploy_with_api.outcome == 'failure'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: ${{ env.OUTPUT_DIR }}   # <-- still deploy from the build folder
+          app_location: ${{ env.OUTPUT_DIR }}
           app_artifact_location: ""
           api_location: ""
           skip_app_build: true
 
       - name: Summary
         if: always()
-        shell: bash
         run: |
           echo "Deploy with API outcome: ${{ steps.deploy_with_api.outcome }}"
           if [ "${{ steps.deploy_with_api.outcome }}" = "failure" ]; then
