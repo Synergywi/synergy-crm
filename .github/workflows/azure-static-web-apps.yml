@@ -11,7 +11,7 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
 
-    # Make every `run:` step execute in /web
+    # All `run:` steps execute in /web
     defaults:
       run:
         working-directory: web
@@ -24,11 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          # no cache so we don't error on missing lockfile
 
       - name: Install deps (web)
-        # use install instead of ci so your manual package.json edits are honored
         run: npm install --no-audit --no-fund
 
       - name: Build app (web)
@@ -39,7 +37,7 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          app_location: "web"        # app lives in /web
-          app_artifact_location: "dist"  # vite output
-          skip_app_build: true       # we already built above
+          app_location: "web"        # app is in /web
+          app_artifact_location: "dist"
+          skip_app_build: true       # we've already built
           skip_api_build: true
