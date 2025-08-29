@@ -1,0 +1,19 @@
+project: synergy-crm
+framework: vite
+node: "18"
+monorepo:
+  root: web
+  output: dist
+  install: npm ci --no-audit --no-fund
+  build: npm run build
+functions:
+  path: api          # remove if you’re not deploying Functions
+routes:
+  - route: /assets/**
+    headers:
+      cache-control: public, max-age=31536000, immutable
+  - route: /index.html
+    headers:
+      cache-control: no-store, must-revalidate
+  - route: /**
+    rewrite: /index.html
