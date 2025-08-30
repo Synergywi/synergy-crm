@@ -29,6 +29,7 @@ jobs:
         run: |
           npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           if [ -f tsconfig.json ]; then
+            # Compile TypeScript sources
             npx --yes --package typescript tsc -p .
           else
             echo "No tsconfig.json; skipping TypeScript compile"
