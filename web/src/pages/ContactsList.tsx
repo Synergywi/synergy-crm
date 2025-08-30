@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-type Contact = { id: string; name: string; email: string; company?: string };
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  company?: string;
+}
 
 const SEED: Contact[] = [
   { id: "bruce", name: "Bruce Wayne", email: "bruce@wayne.com", company: "Wayne Enterprises" },
@@ -22,42 +27,51 @@ export default function ContactsList() {
           const data = await res.json();
           if (!cancelled && Array.isArray(data)) setContacts(data);
         }
-      } catch {}
-      finally { if (!cancelled) setLoading(false); }
+      } catch {
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <section>
       <div className="panel">
-        <div className="panel__header">
-          <h3 style={{ margin: 0 }}>Contacts</h3>
-          <button className="button">Create contact</button>
+        <div className="panel-header">
+          <h3 className="title">Contacts</h3>
+          <div className="spacer" />
+          <button className="btn btn-primary">Create contact</button>
         </div>
-        <div className="table">
-          <div className="table__row table__row--head">
-            <div className="table__cell">Name</div>
-            <div className="table__cell">Company</div>
-            <div className="table__cell">Email</div>
-            <div className="table__cell">Actions</div>
-          </div>
-          {contacts.map((c) => (
-            <div className="table__row" key={c.id}>
-              <div className="table__cell">{c.name}</div>
-              <div className="table__cell">{c.company ?? "-"}</div>
-              <div className="table__cell">{c.email}</div>
-              <div className="table__cell">
-                <Link to={`/contacts/${encodeURIComponent(c.id)}`}>Open</Link>
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="table__row">
-              <div className="table__cell">Loading…</div>
-            </div>
-          )}
-        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Company</th>
+              <th>Email</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {contacts.map((c) => (
+              <tr key={c.id}>
+                <td>{c.name}</td>
+                <td>{c.company ?? "-"}</td>
+                <td>{c.email}</td>
+                <td>
+                  <Link to={`/contacts/${encodeURIComponent(c.id)}`}>Open</Link>
+                </td>
+              </tr>
+            ))}
+            {loading && (
+              <tr>
+                <td colSpan={4}>Loading…</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   );
