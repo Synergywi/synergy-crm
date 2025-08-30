@@ -11,12 +11,16 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.action != 'closed'
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node 18
         uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      # ---- FRONTEND ----
       - name: Install & build frontend
         working-directory: web
         run: |
@@ -26,6 +30,8 @@ jobs:
             npm install --no-audit --no-fund
           fi
           npm run build
+
+      # ---- API ----
       - name: Install & compile API
         working-directory: api
         run: |
@@ -34,7 +40,13 @@ jobs:
           else
             npm install --no-audit --no-fund
           fi
-          npx tsc
+          if [ -f tsconfig.json ]; then
+            # Run the real TypeScript compiler even if it's not in devDependencies
+            npx --yes --package typescript tsc -p .
+          else
+            echo "No tsconfig.json – skipping tsc"
+          fi
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -42,5 +54,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: web
-          api_location: api
           output_location: dist
+          api_location: api
