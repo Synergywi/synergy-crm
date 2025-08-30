@@ -20,21 +20,17 @@ jobs:
       - name: Install & build frontend
         working-directory: web
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           npm run build
       - name: Install & compile API
         working-directory: api
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          if [ -f tsconfig.json ]; then
+            npx --yes --package typescript tsc -p .
           else
-            npm install --no-audit --no-fund
+            echo "No tsconfig.json, skipping TypeScript compile"
           fi
-          npx tsc
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
