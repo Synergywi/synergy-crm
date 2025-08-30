@@ -27,15 +27,11 @@ jobs:
         id: api_build
         working-directory: api
         run: |
-          if [ -f package.json ]; then
-            npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-            if [ -f tsconfig.json ]; then
-              npx --yes --package typescript tsc -p .
-            else
-              echo "No tsconfig.json; skipping TypeScript compile"
-            fi
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          if [ -f tsconfig.json ]; then
+            npx --yes --package typescript tsc -p .
           else
-            echo "No /api/package.json; skipping API step."
+            echo "No tsconfig.json; skipping TypeScript compile"
           fi
       - name: Deploy to Azure Static Web Apps
         if: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN && steps.web_build.conclusion == 'success' && steps.api_build.conclusion == 'success' }}
