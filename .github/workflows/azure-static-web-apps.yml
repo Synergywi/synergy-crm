@@ -21,6 +21,7 @@ jobs:
         id: web_build
         working-directory: web
         run: |
+          # Install dependencies with npm ci, fallback to npm install, then build
           npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           npm run build
       - name: Install & compile API
