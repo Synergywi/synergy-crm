@@ -8,3 +8,9 @@
     "@azure/cosmos": "^4.1.1"
   }
 }
+"devDependencies": {
+  "typescript": "^5.5.4"
+},
+"scripts": {
+  "build": "tsc -p ."
+}
