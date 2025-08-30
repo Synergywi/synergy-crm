@@ -10,8 +10,7 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    if: github.event_name != 'push' || github.event.action != 'closed'
-
+    if: github.event_name == 'push' || github.event.action != 'closed'
     steps:
       - uses: actions/checkout@v4
 
@@ -20,41 +19,26 @@ jobs:
         with:
           node-version: 18
 
-      # ---------- FRONTEND ----------
       - name: Install & build frontend
         id: web_build
         working-directory: web
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           npm run build
 
-      # ---------- API (optional TypeScript) ----------
       - name: Install & compile API
         id: api_build
         working-directory: api
         run: |
-          if [ -f package.json ]; then
-            if [ -f package-lock.json ]; then
-              npm ci --no-audit --no-fund
-            else
-              npm install --no-audit --no-fund
-            fi
-            if [ -f tsconfig.json ]; then
-              npx --yes --package typescript tsc -p .
-            else
-              echo "No tsconfig.json in /api – skipping TypeScript compile."
-            fi
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          if [ -f tsconfig.json ]; then
+            npx --yes --package typescript tsc -p .
           else
-            echo "No /api/package.json – skipping API step."
+            echo "No tsconfig.json; skipping TypeScript compile"
           fi
 
-      # ---------- DEPLOY ----------
       - name: Deploy to Azure Static Web Apps
-        if: ${{ success() && secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != '' }}
+        if: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN && steps.web_build.conclusion == 'success' && steps.api_build.conclusion == 'success' }}
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -65,5 +49,5 @@ jobs:
           output_location: dist
 
       - name: Skip deployment (missing token)
-        if: ${{ success() && secrets.AZURE_STATIC_WEB_APPS_API_TOKEN == '' }}
+        if: ${{ !secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         run: echo "AZURE_STATIC_WEB_APPS_API_TOKEN not set; skipping deployment."
