@@ -45,4 +45,4 @@ jobs:
           output_location: dist
       - name: Skip deployment (missing token)
         if: ${{ !secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-        run: echo 'AZURE_STATIC_WEB_APPS_API_TOKEN not set; skipping deployment.'
+        run: echo "AZURE_STATIC_WEB_APPS_API_TOKEN not set; skipping deployment."
