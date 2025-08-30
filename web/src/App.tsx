@@ -1,61 +1,48 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Routes, Route } from "react-router-dom";
 import ContactsList from "./pages/ContactsList";
 import ContactDetail from "./pages/ContactDetail";
 import CompaniesPage from "./pages/CompaniesPage";
 import DashboardPage from "./pages/DashboardPage";
-import type { CSSProperties } from "react";
 
-const navStyle = ({ isActive }: { isActive: boolean }): CSSProperties => ({
-  display: "block",
-  padding: "8px 10px",
-  borderRadius: 8,
-  color: isActive ? "#8a3b20" : "inherit",
-  background: isActive ? "#fff5f2" : "transparent",
-  fontWeight: isActive ? 600 : undefined,
-  textDecoration: "none",
-});
-
-export default function App() {
+function Layout() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", minHeight: "100%" }}>
-      <aside
-        style={{
-          background: "#fff",
-          borderRight: "1px solid var(--border)",
-          padding: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <h1 style={{ fontSize: 18, margin: "0 0 12px" }}>Synergy CRM</h1>
-        <NavLink to="/" end style={navStyle}>
-          Contacts
-        </NavLink>
-        <NavLink to="/companies" style={navStyle}>
-          Companies
-        </NavLink>
-        <NavLink to="/dashboard" style={navStyle}>
-          Dashboard
-        </NavLink>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-title">Synergy CRM — LIVE</div>
+        <div className="app-actions row">
+          <NavLink to="/contacts/new" className="btn btn-primary">+ New Contact</NavLink>
+          <NavLink to="/companies/new" className="btn">+ New Company</NavLink>
+        </div>
+      </header>
+
+      <aside className="app-sidebar">
+        <nav className="nav">
+          <NavLink to="/dashboard" className={({isActive}) => isActive ? "active" : ""}>Dashboard</NavLink>
+          <NavLink to="/contacts"  className={({isActive}) => isActive ? "active" : ""}>Contacts</NavLink>
+          <NavLink to="/companies" className={({isActive}) => isActive ? "active" : ""}>Companies</NavLink>
+          <NavLink to="/documents" className={({isActive}) => isActive ? "active" : ""}>Documents</NavLink>
+          <NavLink to="/resources" className={({isActive}) => isActive ? "active" : ""}>Resources</NavLink>
+          <NavLink to="/admin"     className={({isActive}) => isActive ? "active" : ""}>Admin</NavLink>
+        </nav>
       </aside>
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <header style={{ padding: "24px 24px 0" }}>
-          <h1 style={{ margin: 0 }}>Synergy CRM — LIVE</h1>
-          <p style={{ margin: 0, opacity: 0.7 }}>
-            Vite · React · Router · HubSpot theme
-          </p>
-        </header>
-        <main style={{ padding: 24, flex: 1 }}>
+
+      <main className="app-main">
+        <div className="page">
           <Routes>
             <Route path="/" element={<ContactsList />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/contacts" element={<ContactsList />} />
             <Route path="/contacts/:id" element={<ContactDetail />} />
             <Route path="/companies" element={<CompaniesPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            {/* keep your other routes as-is */}
             <Route path="*" element={<ContactsList />} />
           </Routes>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
+}
+
+export default function App() {
+  return <Layout />;
 }
