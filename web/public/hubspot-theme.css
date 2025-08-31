@@ -1,132 +1,72 @@
-/* ========== Synergy CRM — Baseline UI Theme (v11) ========== */
+/* Synergy CRM theme — lite v12
+   Purpose: subtle, safe overrides. No layout hijacking. */
+
 :root{
-  --bg:#0b1020;            /* page background */
-  --panel:#0f152a;         /* sidebar bg */
-  --card:#0f152a;          /* cards / tables */
-  --muted:#9aa4b2;
-  --text:#e6eaf1;
-  --line:#1d2946;          /* hairline borders */
-  --primary:#86b3ff;       /* action color (soft blue) */
-  --pill-bg:#16254a;       /* “Open” pill bg */
-  --pill-line:#244a94;     /* “Open” pill border */
-  --shadow: 0 8px 24px rgba(3, 10, 26, .35);
-  --radius:14px;
+  --bg:#f6f8fb;
+  --surface:#ffffff;
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --primary:#4f46e5;
+  --chip-bg:#eef2ff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(2,6,23,.06);
 }
 
-*,
-*::before,*::after { box-sizing:border-box; }
-html,body,#root { height:100%; }
-html,body { margin:0; background:var(--bg); color:var(--text); }
-body { font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
-
-/* ---------- Layout polish ---------- */
-main, .content, #page {
-  background:
-    radial-gradient(1200px 800px at 60% -20%, rgba(134,179,255,.06), transparent 55%) fixed,
-    radial-gradient(900px 600px at -10% 20%, rgba(20,97,255,.08), transparent 40%) fixed,
-    var(--bg);
+html,body{
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-/* Center inner content (safe, low specificity) */
-main > div, .content, .page-inner, .content-inner, .container {
-  max-width: 1040px;
-  margin-inline: auto;
-  padding-inline: 20px;
-}
-
-/* ---------- Sidebar ---------- */
-nav {
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-}
-nav a{
-  display:block;
-  padding:10px 12px;
-  margin:2px 8px;
-  border-radius:10px;
-  color:var(--text);
-  text-decoration:none;
-  font-weight:600;
-  letter-spacing:.1px;
-  opacity:.9;
-}
-nav a:hover { background:#101a34; opacity:1; }
-/* active class from NavLink or markup */
-nav a.active { background:#13214a; outline:1px solid #27488f; }
-
-/* LIVE badge */
-.badge-live{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:4px 10px; border-radius:999px;
-  background:#11204a; color:#cbe0ff; border:1px solid #2a4aa0;
-  font-weight:700; font-size:12px; letter-spacing:.02em;
-}
-
-/* ---------- Cards & tables ---------- */
-/* Many apps put white bg on a wrapper div around the table.
-   The :has(> table) selector catches that wrapper and themes it. */
-.table-wrap, .table-container, .card, .panel, .list, .box,
-main :where(div,section,article):has(> table) {
-  background:var(--card);
+/* Keep layout full width; just apply gentle surface + border where cards/panels exist */
+.card,.panel,.content,.table-card,.container,.kit-card{
+  max-width:none !important;
+  margin:0 !important;
+  background:var(--surface);
   border:1px solid var(--line);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
+  border-radius:14px;
+  box-shadow:var(--shadow-sm);
 }
 
-/* If the white bg is on the table itself, we still theme it. */
-table {
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:var(--card);
-  border-radius:var(--radius);
-  overflow:hidden;
-}
-thead th{
-  text-align:left;
-  color:var(--muted);
-  font-weight:600;
-  padding:14px 16px;
+/* Page padding without changing the grid */
+main,.page,.content-area,[role="main"]{ padding:24px 28px; }
+
+h1,h2{ color:var(--ink); font-weight:600; }
+
+/* Data tables */
+table{ width:100%; border-collapse:collapse; background:var(--surface); }
+th{
+  text-align:left; font-size:13px; letter-spacing:.02em;
+  color:var(--muted); font-weight:600; padding:12px 16px;
   border-bottom:1px solid var(--line);
 }
-tbody td{
-  padding:14px 16px;
-  vertical-align:middle;
-  background:transparent; /* keep rows transparent so card shows */
-}
-tbody tr + tr td { border-top:1px solid var(--line); }
-tbody tr:hover td { background: rgba(22,37,74,.35); }
+td{ padding:14px 16px; border-bottom:1px solid var(--line); }
+tbody tr:hover{ background:#f9fafb; }
 
-/* “Open” pill buttons */
-tbody td:last-child a,
-a.btn-open{
-  display:inline-flex; align-items:center; justify-content:center;
-  min-width:56px; padding:8px 12px;
-  border-radius:10px;
-  background:var(--pill-bg);
-  color:#d8e6ff;
-  border:1px solid var(--pill-line);
-  font-weight:700; text-decoration:none;
-  box-shadow: inset 0 -2px 0 rgba(255,255,255,.04);
+/* Pills / “Open” buttons */
+a[role="button"],.btn,button{
+  border-radius:9999px; padding:6px 14px;
+  border:1px solid #dfe3f0; background:var(--chip-bg);
+  color:var(--primary); font-weight:600; font-size:12px;
 }
-tbody td:last-child a:hover,
-a.btn-open:hover{ filter:brightness(1.08); }
-
-/* Primary button (Create contact) */
-button, .btn-primary{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 14px;
-  background:linear-gradient(180deg, #90b8ff 0%, #6aa0ff 98%);
-  color:#081a3a; font-weight:800; letter-spacing:.02em;
-  border:1px solid rgba(255,255,255,.3);
-  border-bottom-color: rgba(8,26,58,.35);
-  border-radius:12px;
-  box-shadow: 0 10px 30px rgba(26,100,255,.25), inset 0 1px 0 rgba(255,255,255,.35);
-  cursor:pointer; text-decoration:none;
+a[role="button"]:hover,.btn:hover,button:hover{
+  border-color:#c7cdf0; background:#e9ecff;
 }
-button:hover, .btn-primary:hover{ transform:translateY(-1px); }
 
-/* Small heading polish */
-h1,h2,h3{ margin:0 0 .75rem; font-weight:700; }
-h1{ font-size:22px; }
-h2{ font-size:18px; color:var(--muted); font-weight:600; }
+/* Sidebar palette only (no layout changes) */
+aside,nav[aria-label="Sidebar"],.sidebar{ background:#0b1220; }
+aside a,nav[aria-label="Sidebar"] a,.sidebar a{ color:#cbd5e1; }
+aside a:hover,nav[aria-label="Sidebar"] a:hover,.sidebar a:hover{ color:#ffffff; }
+
+/* Inputs */
+input[type="text"],input[type="email"],input[type="tel"],textarea,select{
+  background:#fff; border:1px solid var(--line);
+  border-radius:10px; padding:10px 12px;
+}
+input:focus,textarea:focus,select:focus{
+  outline:none; border-color:#c7d2fe; box-shadow:0 0 0 3px rgba(79,70,229,.15);
+}
+
+/* Tame any pre-existing huge shadows */
+.shadow-lg,.shadow-xl,.shadow-2xl{ box-shadow:var(--shadow-sm) !important; }
