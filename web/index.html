@@ -6,16 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>Synergy CRM — LIVE</title>
-
-    <!-- Load your theme from /public (served from site root). -->
-    <!-- Bump v= number any time you change the CSS to bust caches. -->
-    <link rel="preload" as="style" href="/hubspot-theme.css?v=10" />
-    <link rel="stylesheet" href="/hubspot-theme.css?v=10" />
+    <title>Synergy CRM</title>
+    <!-- no direct <link> to hubspot-theme.css; it is imported via index.css -->
   </head>
   <body>
     <div id="root"></div>
-    <!-- Vite entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
