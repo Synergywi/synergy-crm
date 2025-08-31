@@ -1,29 +1,14 @@
-/* Base globals used by the app bundle */
-:root{
-  --bg: #f6f8fb;
-  --text: #1f2937;
-}
+/* Base reset / sensible defaults */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+html, body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
 
-*,
-*::before,
-*::after{
-  box-sizing: border-box;
-}
+/* Provide light background that pairs with our override sheet */
+body { background: #f6f8fb; color: #0f172a; line-height: 1.4; }
 
-html, body, #root{
-  height: 100%;
-}
+/* Links + buttons */
+a { color: #1d4ed8; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-body{
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-               "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-               "Segoe UI Emoji";
-}
-
-/* Prevent Vite’s default style resets from collapsing our layout */
-#root{
-  min-height: 100%;
-}
+/* Let the app stretch */
+#root { display: contents; }
