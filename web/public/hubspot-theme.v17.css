@@ -1,0 +1,71 @@
+/* ---------- Theme tokens ---------- */
+:root{
+  --bg:#f6f8fb;
+  --surface:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --brand-600:#1d4ed8;
+  --border:#e5e7eb;
+}
+
+html, body, #root { background: var(--bg); color: var(--text); }
+
+/* ---------- Layout: app shell ---------- */
+#root .app-shell{
+  display:grid;
+  grid-template-columns: 260px 1fr;
+  gap:0;
+}
+
+/* Sidebar */
+#root .app-shell > aside{
+  background:#0f172a !important;
+  color:#cbd5e1 !important;
+  padding:20px 12px !important;
+}
+
+/* Kill narrow containers / card chrome */
+#root .app-shell > div,
+#root .app-shell [class*="container"],
+#root .app-shell [class*="Container"],
+#root .app-shell [class*="card"],
+#root .app-shell [class*="Card"],
+#root .app-shell [class*="panel"],
+#root .app-shell [class*="Panel"]{
+  max-width:none !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+
+/* Main spacing */
+#root .app-shell main,
+#root .app-shell > div{ padding:24px 28px !important; }
+
+/* Lists/tables surface */
+#root table, #root thead, #root tbody, #root tr{ background:transparent !important; }
+
+#root .list, 
+#root .table, 
+#root .grid, 
+#root [role="table"]{
+  background:var(--surface) !important;
+  border:1px solid var(--border) !important;
+  border-radius:12px !important;
+  overflow:hidden;
+}
+
+/* Headings */
+#root h1, #root h2{ margin:0 0 16px; font-weight:600; }
+
+/* Buttons */
+#root button, #root .btn{
+  border-radius:999px !important;
+  padding:8px 14px !important;
+}
+
+/* Links */
+#root a{ color:var(--brand-600) !important; }
