@@ -1,27 +1,17 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Synergy CRM — LIVE</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synergy CRM — LIVE</title>
 
-    <!-- Inject the theme *after* Vite’s CSS so it always wins -->
-    <script>
-      (function () {
-        function injectTheme() {
-          var link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = '/hubspot-theme.v18.css';
-          document.head.appendChild(link);
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', injectTheme);
-        } else {
-          injectTheme();
-        }
-      })();
-    </script>
-  </head>
+  <!-- Load your theme first -->
+  <link rel="stylesheet" href="/hubspot-theme.css?v=18" />
+
+  <!-- Vite will inject/resolve this asset at build time -->
+  <link rel="stylesheet" href="/assets/index-XXXXX.css" />
+  <script type="module" crossorigin src="/assets/index-XXXXX.js"></script>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
