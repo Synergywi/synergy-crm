@@ -2,14 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Synergy CRM — LIVE</title>
 
-    <!-- Served from /web/public; cache-busted with ?v=8 -->
-    <link rel="stylesheet" href="/hubspot-theme.css?v=8" />
+    <!-- Load your theme from /public (served from site root). -->
+    <!-- Bump v= number any time you change the CSS to bust caches. -->
+    <link rel="preload" as="style" href="/hubspot-theme.css?v=10" />
+    <link rel="stylesheet" href="/hubspot-theme.css?v=10" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- Vite entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
