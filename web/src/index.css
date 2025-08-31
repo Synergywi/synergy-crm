@@ -226,6 +226,106 @@ input, textarea, select{ margin-bottom:12px; }
   }
   #root > div > :nth-child(2){ padding: 16px; }
 }
+/* ---------- Step 2 – make it pop ---------- */
+
+/* Narrower content for stronger margins */
+#root > div > :nth-child(2){
+  max-width: 960px; /* was 1100 */
+}
+
+/* Softer app background */
+body{
+  background:
+    radial-gradient(1200px 500px at 80% -200px, rgba(79,70,229,0.04), transparent 60%),
+    linear-gradient(#fbfcfe, #f7f9fc 30%, #f8fafc);
+}
+
+/* Page heading stronger */
+h1,h2{
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a; /* slate-900 */
+}
+
+/* “LIVE” badge a bit tighter */
+.badge,[data-badge]{
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #e0e7ff;
+  font-weight: 600;
+}
+
+/* Table becomes a real card */
+#root table{
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 14px rgba(16,24,40,.06);
+  overflow: hidden; /* round the header too */
+}
+th{
+  background: #f8fafc;
+  font-weight: 700;
+  color: #334155; /* slate-700 */
+}
+tbody tr{ border-top: 1px solid var(--border); }
+tbody tr:first-child{ border-top: none; }
+td{ vertical-align: middle; }
+
+/* Emphasise first column (Name) */
+tbody td:first-child{
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* “Open” turns into a soft pill button */
+tbody tr td:last-child a{
+  background: #f1f5ff;
+  border: 1px solid #e0e7ff;
+  color: #4338ca;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+tbody tr td:last-child a:hover{
+  background: #e6ecff;
+  border-color: #c7d2fe;
+}
+
+/* Sidebar: clearer items + active state (requires aria-current on active link) */
+#root > div > :first-child a{
+  padding: 10px 12px;
+  margin: 4px 0;
+  border-radius: 10px;
+  color: #334155;
+}
+#root > div > :first-child a:hover{
+  background:#eef2ff;
+  color:#1f2937;
+}
+/* If your nav uses <a aria-current="page"> on the active item, this highlights it. */
+#root > div > :first-child a[aria-current="page"]{
+  background:#eef2ff;
+  color:#1f2937;
+  font-weight:700;
+  border:1px solid #e0e7ff;
+}
+
+/* Primary buttons – a touch bolder */
+#root button, #root .btn, #root [type="submit"]{
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(16,24,40,.06);
+}
+#root button:hover, #root .btn:hover, #root [type="submit"]:hover{
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
 
 /* Utility */
 .container{ max-width:1200px; margin:0 auto; }
