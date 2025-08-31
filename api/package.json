@@ -1,12 +1,19 @@
 {
-  "name": "synergycrm-api",
+  "name": "synergy-api",
   "version": "1.0.0",
   "private": true,
+  "main": "dist/index.js",
+  "type": "commonjs",
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.4.0",
+    "@azure/cosmos": "^4.1.1"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "@types/node": "^20.11.30"
+    "typescript": "^5.6.2",
+    "@types/node": "^20.14.10"
   }
 }
