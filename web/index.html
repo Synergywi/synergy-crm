@@ -5,8 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Synergy CRM — LIVE</title>
 
-    <!-- Load your theme from the site root -->
-   <link rel="stylesheet" href="/hubspot-theme.v17.css" />
+    <!-- Inject the theme *after* Vite’s CSS so it always wins -->
+    <script>
+      (function () {
+        function injectTheme() {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = '/hubspot-theme.v18.css';
+          document.head.appendChild(link);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', injectTheme);
+        } else {
+          injectTheme();
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
