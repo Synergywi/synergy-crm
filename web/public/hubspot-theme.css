@@ -70,3 +70,25 @@ input:focus,textarea:focus,select:focus{
 
 /* Tame any pre-existing huge shadows */
 .shadow-lg,.shadow-xl,.shadow-2xl{ box-shadow:var(--shadow-sm) !important; }
+/* === Expand main content; remove the artificial centered card === */
+#root > .app-shell > div:nth-child(2),
+#root > div:nth-child(2){
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  /* keep some page-side breathing room */
+  padding: 0 28px !important;
+}
+
+/* Keep inner tables/panels subtle (not the outer container) */
+#root > div:nth-child(2) .table-card,
+#root > div:nth-child(2) .panel,
+#root > div:nth-child(2) .card{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
