@@ -1,19 +1,20 @@
 <!doctype html>
 <html lang="en">
   <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synergy CRM — LIVE</title>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Synergy CRM — LIVE</title>
 
-  <!-- Load your theme first -->
-  <link rel="stylesheet" href="/hubspot-theme.css?v=18" />
-
-  <!-- Vite will inject/resolve this asset at build time -->
-  <link rel="stylesheet" href="/assets/index-XXXXX.css" />
-  <script type="module" crossorigin src="/assets/index-XXXXX.js"></script>
-</head>
+    <!-- HubSpot override theme (cache-busted by version number). -->
+    <link rel="stylesheet" href="/hubspot-theme.v17.css" />
+  </head>
   <body>
     <div id="root"></div>
+
+    <!-- IMPORTANT: point at your SOURCE entry, not built assets -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
