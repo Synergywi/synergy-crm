@@ -1,16 +1,8 @@
-/* Tailwind pipeline (leave as-is if you already use Tailwind) */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* web/src/index.css */
 
-/* Import the HubSpot theme that sits in web/public/
-   Using @import in CSS (not from TS) avoids the Vite/TS import error. */
+/* Load your HubSpot theme CSS that lives in /web/public */
 @import "/hubspot-theme.css";
 
-/* Optional small tweaks */
-:root {
-  color-scheme: light;
-}
-html, body, #root {
-  height: 100%;
-}
+/* A couple of sensible base rules */
+:root { color-scheme: light; }
+html, body, #root { height: 100%; margin: 0; }
