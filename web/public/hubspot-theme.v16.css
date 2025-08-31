@@ -1,22 +1,40 @@
-/* Synergy CRM – HubSpot theme overrides (v16) */
-html, body, #root { height: 100%; }
+/* Synergy CRM – HubSpot overrides (v16) */
 
-/* Kill any constrained/card container that HubSpot (or our UI) wraps around pages */
+/* Let the app use the full width */
+html, body, #root { height: 100%; }
 #root .app-shell,
-#root .app-shell > * ,
+#root .app-shell > *,
 #root main,
-#root main > *,
-#root [class*="container"],
-#root [class*="Container"],
-#root [class*="card"],
-#root [class*="Card"],
-#root [class*="panel"],
-#root [class*="Panel"] {
+#root main > * {
   max-width: none !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
 }
+
+/* Nuke “card/panel/container” chrome anywhere under the app shell */
+#root .app-shell [class*="card"],
+#root .app-shell [class*="Card"],
+#root .app-shell [class*="panel"],
+#root .app-shell [class*="Panel"],
+#root .app-shell [class*="container"],
+#root .app-shell [class*="Container"],
+#root .app-shell [class*="surface"],
+#root .app-shell [class*="paper"],
+#root .app-shell .card,
+#root .app-shell .panel,
+#root .app-shell .container {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Ensure the list/table area has no box chrome either */
+#root table, #root thead, #root tbody, #root tr, #root th, #root td {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Optional: lighten the overall page background if needed */
+body { background: #f8fafc !important; }
