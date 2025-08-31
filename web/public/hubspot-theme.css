@@ -1,142 +1,171 @@
-/* Synergy CRM theme — lite v12
-   Purpose: subtle, safe overrides. No layout hijacking. */
+/* ===== Synergy CRM – Baseline theme (safe version) =====
+   No nth-child hacks, no !important, and only app-shell/semantic
+   selectors so we don’t fight component CSS.
+   ------------------------------------------------------ */
 
+/* Design tokens */
 :root{
-  --bg:#f6f8fb;
-  --surface:#ffffff;
-  --ink:#0f172a;
-  --muted:#64748b;
-  --line:#e5e7eb;
-  --primary:#4f46e5;
-  --chip-bg:#eef2ff;
-  --shadow-sm:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(2,6,23,.06);
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-2:#f2f5f9;
+  --border:#e7edf4;
+  --shadow-1: 0 1px 1px rgba(18, 23, 34, .04);
+  --shadow-2: 0 10px 30px rgba(18, 23, 34, .06);
+
+  --text: #0f172a;        /* slate-900 */
+  --muted:#64748b;        /* slate-500 */
+  --primary:#6f7bff;      /* indigo-ish */
+  --primary-ink:#2e39a6;
+
+  --sidebar-bg:#0f172a;
+  --sidebar-ink:#cbd5e1;
+  --sidebar-ink-dim:#94a3b8;
+  --sidebar-active: rgba(111, 123, 255, .14);
+
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:8px;
+
+  --gap: 24px;
+  --container: 1120px;
 }
 
+/* Base */
+html,body,#root{height:100%}
 html,body{
   background:var(--bg);
-  color:var(--ink);
+  color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI,
+    Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  line-height:1.3;
 }
 
-/* Keep layout full width; just apply gentle surface + border where cards/panels exist */
-.card,.panel,.content,.table-card,.container,.kit-card{
-  max-width:none !important;
-  margin:0 !important;
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:14px;
-  box-shadow:var(--shadow-sm);
+/* App shell grid
+   (we only style the shell and semantic elements, not component classes) */
+.app-shell{
+  display:grid;
+  grid-template-columns: 240px minmax(0,1fr);
+  grid-template-rows: 56px minmax(0,1fr);
+  min-height:100%;
 }
 
-/* Page padding without changing the grid */
-main,.page,.content-area,[role="main"]{ padding:24px 28px; }
+/* Left sidebar */
+.app-shell > aside{
+  grid-row:1 / span 2;
+  background:var(--sidebar-bg);
+  color:var(--sidebar-ink);
+  padding:16px 10px;
+  border-right:1px solid rgba(255,255,255,.06);
+}
+.app-shell > aside a{
+  display:block;
+  padding:10px 12px;
+  margin:4px 6px;
+  border-radius:10px;
+  color:var(--sidebar-ink);
+  text-decoration:none;
+}
+.app-shell > aside a:hover{ background:rgba(255,255,255,.06) }
+.app-shell > aside .active{ background:var(--sidebar-active) }
 
-h1,h2{ color:var(--ink); font-weight:600; }
+/* Header (top strip if you have one) */
+.app-shell > header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 16px;
+  background:transparent;
+  border-bottom:1px solid transparent;
+}
 
-/* Data tables */
-table{ width:100%; border-collapse:collapse; background:var(--surface); }
+/* Main content area */
+.app-shell > main{
+  padding: var(--gap);
+  min-width:0; /* fix overflow in grids */
+}
+@media (max-width: 1024px){
+  .app-shell{
+    grid-template-columns: 220px minmax(0,1fr);
+  }
+}
+@media (max-width: 880px){
+  .app-shell{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+  .app-shell > aside{ grid-row:auto; grid-column:1 }
+}
+
+/* Page container card (works with very generic markup) */
+.app-shell > main > *{
+  max-width: var(--container);
+  background: var(--surface);
+  border:1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1), var(--shadow-2);
+  margin:0 auto;             /* center */
+  padding: 18px 20px;
+}
+
+/* Headings / small “LIVE” chip zone above lists */
+h1,h2,h3{ font-weight:600; letter-spacing:.2px }
+small, .muted{ color: var(--muted) }
+
+/* Tables (contact/company lists) */
+table{ width:100%; border-collapse: collapse }
 th{
-  text-align:left; font-size:13px; letter-spacing:.02em;
-  color:var(--muted); font-weight:600; padding:12px 16px;
-  border-bottom:1px solid var(--line);
+  text-align:left; font-size:13px; color:var(--muted);
+  padding:12px 14px; border-bottom:1px solid var(--border);
+  font-weight:500;
 }
-td{ padding:14px 16px; border-bottom:1px solid var(--line); }
-tbody tr:hover{ background:#f9fafb; }
+td{
+  padding:14px; border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+tr:last-child td{ border-bottom-color: transparent }
+tbody tr:hover{ background:var(--surface-2) }
 
-/* Pills / “Open” buttons */
-a[role="button"],.btn,button{
-  border-radius:9999px; padding:6px 14px;
-  border:1px solid #dfe3f0; background:var(--chip-bg);
-  color:var(--primary); font-weight:600; font-size:12px;
+/* “Open” pill buttons + generic buttons */
+button, .btn{
+  appearance:none; border:0; border-radius:999px;
+  padding:8px 12px; font-weight:600; cursor:pointer;
+  background: var(--primary); color:#fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,.05);
 }
-a[role="button"]:hover,.btn:hover,button:hover{
-  border-color:#c7cdf0; background:#e9ecff;
-}
+button:hover, .btn:hover{ filter: brightness(0.98) }
+button:active, .btn:active{ transform: translateY(1px) }
 
-/* Sidebar palette only (no layout changes) */
-aside,nav[aria-label="Sidebar"],.sidebar{ background:#0b1220; }
-aside a,nav[aria-label="Sidebar"] a,.sidebar a{ color:#cbd5e1; }
-aside a:hover,nav[aria-label="Sidebar"] a:hover,.sidebar a:hover{ color:#ffffff; }
-
-/* Inputs */
-input[type="text"],input[type="email"],input[type="tel"],textarea,select{
-  background:#fff; border:1px solid var(--line);
-  border-radius:10px; padding:10px 12px;
+/* Secondary buttons that look like links (often the “Open” chip) */
+a[role="button"], .chip{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:32px; padding:0 12px; border-radius:999px;
+  background: rgba(111,123,255,.12);
+  color: var(--primary-ink); text-decoration:none; font-weight:600;
 }
-input:focus,textarea:focus,select:focus{
-  outline:none; border-color:#c7d2fe; box-shadow:0 0 0 3px rgba(79,70,229,.15);
-}
-
-/* Tame any pre-existing huge shadows */
-.shadow-lg,.shadow-xl,.shadow-2xl{ box-shadow:var(--shadow-sm) !important; }
-/* === Expand main content; remove the artificial centered card === */
-#root > .app-shell > div:nth-child(2),
-#root > div:nth-child(2){
-  max-width: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  /* keep some page-side breathing room */
-  padding: 0 28px !important;
+a[role="button"]:hover, .chip:hover{
+  background: rgba(111,123,255,.18);
 }
 
-/* Keep inner tables/panels subtle (not the outer container) */
-#root > div:nth-child(2) .table-card,
-#root > div:nth-child(2) .panel,
-#root > div:nth-child(2) .card{
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--shadow-sm);
+/* Forms (detail pages) */
+input, textarea, select{
+  width:100%; background:#fff; color:var(--text);
+  border:1px solid var(--border); border-radius:10px;
+  padding:10px 12px; outline:none;
 }
-/* --- 1) Outer page wrapper (already expanded) --- */
-/* (Keeping this here for clarity; yours is already applied) */
-#root > .app-shell > div:nth-child(2),
-#root > div:nth-child(2){
-  max-width: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding: 0 28px !important;
+input:focus, textarea:focus, select:focus{
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(111,123,255,.18);
+}
+label{ font-size:13px; color:var(--muted) }
+
+/* Little “LIVE” badge */
+.badge, .live, [data-badge="live"]{
+  display:inline-block; font-size:12px; font-weight:700;
+  color:#0b7a00; background:#d9fbe1; border:1px solid #b7efc2;
+  padding:2px 8px; border-radius:999px;
 }
 
-/* --- 2) Remove the page-level "card" inside <main> --- */
-/* Many templates wrap the page content in a single card-like container */
-#root .app-shell main > .card,
-#root .app-shell main > .panel,
-#root .app-shell main > .container,
-#root .app-shell main > .content,
-#root .app-shell main > div:first-child{
-  max-width: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-}
-
-/* --- 3) Keep subtle styling only on actual data blocks/tables --- */
-#root main .table-card,
-#root main .table,
-#root main .list-card{
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Optional: make the sidebar a touch darker, to match your target look */
-#root .side {
-  background: #0f172a; /* slate-900 */
-}
-#root .side a,
-#root .side button { color: #cbd5e1; } /* slate-300 */
-#root .side .active,
-#root .side a:hover { color: #fff; }
+/* Kill old experimental overrides (just in case they exist) */
+.app-shell > div{ box-shadow:none }
