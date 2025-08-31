@@ -1,22 +1,22 @@
-/* Synergy CRM – hubspot overrides (v16) */
+/* Synergy CRM – HubSpot theme overrides (v16) */
 html, body, #root { height: 100%; }
 
-.app-shell {
-  width: 100% !important;
+/* Kill any constrained/card container that HubSpot (or our UI) wraps around pages */
+#root .app-shell,
+#root .app-shell > * ,
+#root main,
+#root main > *,
+#root [class*="container"],
+#root [class*="Container"],
+#root [class*="card"],
+#root [class*="Card"],
+#root [class*="panel"],
+#root [class*="Panel"] {
   max-width: none !important;
+  width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
   border: 0 !important;
-}
-
-.app-shell > div:nth-child(2) {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
   box-shadow: none !important;
-  border: 0 !important;
+  background: transparent !important;
 }
