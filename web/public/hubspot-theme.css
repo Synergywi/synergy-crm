@@ -1,236 +1,138 @@
-/* -------------------------------------------------------
-   Synergy CRM – HubSpot-style theme (drop-in)
-   File: web/public/hubspot-theme.css
-   ------------------------------------------------------- */
-
-/* Brand / design tokens */
+/* ========== Synergy CRM — Baseline UI Theme ========== */
+/* System font stack for a crisp app feel */
 :root{
-  --bg:            #f6f7f9;
-  --surface:       #ffffff;
-  --surface-2:     #fafafa;
-  --border:        #e6e8ec;
-  --muted:         #707786;
-  --text:          #1f2430;
-
-  --primary:       #2f6df6;   /* brand blue */
-  --primary-600:   #285cdf;
-  --primary-700:   #224ec2;
-
-  --success:       #10b981;
-  --warning:       #f59e0b;
-  --danger:        #ef4444;
-
-  --radius:        12px;
-  --shadow:        0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --bg:#0b1020;            /* page background */
+  --panel:#0f152a;         /* sidebar bg */
+  --card:#0f152a;          /* cards / tables */
+  --muted:#9aa4b2;
+  --text:#e6eaf1;
+  --line: #1d2946;         /* hairline borders */
+  --primary:#86b3ff;       /* action color (soft blue) */
+  --primary-ink:#0a3c8b;   /* darker edge for pills */
+  --pill-bg:#16254a;       /* “Open” pill bg */
+  --pill-line:#244a94;     /* “Open” pill border */
+  --shadow: 0 8px 24px rgba(3, 10, 26, .35);
+  --radius:14px;
 }
-
-/* Font (self-host your own if you prefer) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 *,
 *::before,
-*::after{ box-sizing: border-box; }
+*::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+html, body { margin:0; background:var(--bg); color:var(--text); }
 
-html, body {
-  height: 100%;
-  margin: 0;
+body {
+  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  text-rendering: optimizeLegibility;
 }
 
-body{
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  color: var(--text);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ----- Sidebar & page layout (works with your existing <nav> + main) ----- */
+nav {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+nav a {
+  display:block;
+  padding:10px 12px;
+  margin:2px 8px;
+  border-radius:10px;
+  color:var(--text);
+  text-decoration:none;
+  font-weight:600;
+  letter-spacing:.1px;
+  opacity:.9;
+}
+nav a:hover { background:#101a34; opacity:1; }
+nav a.active { background:#13214a; outline:1px solid #1e3a8a; }
+
+/* section labels if you use them */
+nav .label{
+  color:var(--muted);
+  text-transform:uppercase;
+  font-size:11px;
+  letter-spacing:.12em;
+  padding:10px 14px 6px;
+  opacity:.9;
 }
 
-/* Links */
-a{
-  color: var(--primary);
-  text-decoration: none;
+/* ----- Content area wrappers ----- */
+main, .content, #page {
+  background: radial-gradient(1200px 800px at 60% -20%, rgba(134,179,255,.06), transparent 55%) fixed,
+              radial-gradient(900px 600px at -10% 20%, rgba(20, 97, 255, .08), transparent 40%) fixed,
+              var(--bg);
 }
-a:hover{ text-decoration: underline; }
 
-/* Headings */
-h1,h2,h3{
-  margin: 0 0 .75rem;
-  line-height: 1.2;
+h1,h2,h3 { margin:0 0 .75rem; font-weight:700; }
+h1 { font-size:22px; }
+h2 { font-size:18px; color:var(--muted); font-weight:600; }
+
+/* LIVE badge */
+.badge-live{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 10px; border-radius:999px;
+  background:#11204a; color:#cbe0ff; border:1px solid #2a4aa0;
+  font-weight:700; font-size:12px; letter-spacing:.02em;
 }
-h1{ font-size: 1.5rem; font-weight: 700; }
-h2{ font-size: 1.25rem; font-weight: 600; color: #111827; }
-h3{ font-size: 1.125rem; font-weight: 600; }
 
-/* Generic containers */
-.card{
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+/* ----- Cards / tables look like the baseline panels ----- */
+table {
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
   box-shadow: var(--shadow);
+  overflow:hidden;
 }
+thead th {
+  text-align:left;
+  color:var(--muted);
+  font-weight:600;
+  padding:14px 16px;
+  border-bottom:1px solid var(--line);
+}
+tbody td {
+  padding:14px 16px;
+  vertical-align:middle;
+}
+tbody tr + tr td { border-top:1px solid var(--line); }
 
-.section{
-  padding: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
+/* Row hover */
+tbody tr:hover td { background: rgba(22, 37, 74, .35); }
 
-/* Toolbar (title + actions row) */
-.toolbar{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  margin: .75rem 0 1rem;
+/* Action pill in the last column (“Open”) */
+tbody td:last-child a,
+a.btn-open {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:56px;
+  padding:8px 12px;
+  border-radius:10px;
+  background:var(--pill-bg);
+  color:#d8e6ff;
+  border:1px solid var(--pill-line);
+  font-weight:700;
+  text-decoration:none;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.04);
 }
-.toolbar .title{
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-.chip{
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 .5rem;
-  border-radius: 999px;
-  background: #e8f0ff;
-  color: var(--primary-700);
-  font-weight: 600;
-  font-size: .75rem;
-  letter-spacing: .02em;
-  border: 1px solid #dbe5ff;
-}
+tbody td:last-child a:hover,
+a.btn-open:hover { filter: brightness(1.08); }
 
-/* Buttons (base + variants) */
-button,
-.btn{
-  appearance: none;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  padding: .55rem .8rem;
-  border-radius: 10px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 1px 0 rgba(16,24,40,.04);
-  transition: background .15s ease, border-color .15s ease, transform .02s ease;
+/* Primary button (e.g., Create contact) */
+button, .btn-primary {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 14px;
+  background:linear-gradient(180deg, #90b8ff 0%, #6aa0ff 98%);
+  color:#081a3a; font-weight:800; letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.3);
+  border-bottom-color: rgba(8,26,58,.35);
+  border-radius:12px;
+  box-shadow: 0 10px 30px rgba(26,100,255,.25), inset 0 1px 0 rgba(255,255,255,.35);
+  cursor:pointer; text-decoration:none;
 }
-button:hover,
-.btn:hover{
-  background: var(--surface-2);
-}
-button:active,
-.btn:active{ transform: translateY(1px); }
+button:hover, .btn-primary:hover { transform: translateY(-1px); }
 
-.btn-primary{
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+/* Small helper spacing so the table panel breathes */
+.container, .page-inner, .content-inner {
+  padding:20px;
 }
-.btn-primary:hover{ background: var(--primary-600); border-color: var(--primary-600); }
-.btn-danger{
-  background: #fff;
-  color: var(--danger);
-  border-color: #ffd9d9;
-}
-.btn-danger:hover{
-  background: #fff5f5;
-  border-color: #ffc9c9;
-}
-
-/* Tables */
-table{
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden; /* so rounded corners also clip thead background */
-  box-shadow: var(--shadow);
-}
-thead th{
-  text-align: left;
-  font-size: .75rem;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: #f7f9fc;
-  padding: .9rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-tbody td{
-  padding: .9rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-tbody tr:last-child td{ border-bottom: 0; }
-tbody tr:hover td{
-  background: #fbfdff;
-}
-
-/* Forms */
-label{
-  display: block;
-  font-size: .8rem;
-  color: var(--muted);
-  margin-bottom: .35rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-}
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="datetime-local"],
-textarea,
-select{
-  width: 100%;
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 10px;
-  padding: .6rem .7rem;
-  font-size: .95rem;
-  outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-input:focus,
-textarea:focus,
-select:focus{
-  border-color: #c8d6ff;
-  box-shadow: 0 0 0 3px rgba(47,109,246,.12);
-}
-
-.form-row{
-  display: grid;
-  gap: .9rem;
-  grid-template-columns: 1fr 1fr;
-}
-.form-row + .form-row{ margin-top: .75rem; }
-@media (max-width: 900px){
-  .form-row{ grid-template-columns: 1fr; }
-}
-
-/* Simple page padding helpers if your components don’t add spacing */
-.page-padding{ padding: 1.25rem; }
-.stack > * + *{ margin-top: 1rem; }
-
-/* Sidebar (light touch, only improves generic nav lists) */
-aside nav ul{ list-style: none; margin: .5rem 0 0; padding: 0; }
-aside nav li a{
-  display: block;
-  padding: .55rem .75rem;
-  border-radius: 10px;
-  color: #2b2f3a;
-}
-aside nav li a:hover{ background: #eef4ff; color: var(--primary-700); }
-
-/* Small muted helper text */
-.text-muted{ color: var(--muted); }
-
-/* Utility layout for top-right action buttons group */
-.actions{ display: inline-flex; gap: .5rem; }
-
-/* Make plain <hr> subtle */
-hr{ border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
