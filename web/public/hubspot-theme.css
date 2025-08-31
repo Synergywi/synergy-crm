@@ -92,3 +92,51 @@ input:focus,textarea:focus,select:focus{
   border-radius: 14px;
   box-shadow: var(--shadow-sm);
 }
+/* --- 1) Outer page wrapper (already expanded) --- */
+/* (Keeping this here for clarity; yours is already applied) */
+#root > .app-shell > div:nth-child(2),
+#root > div:nth-child(2){
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 28px !important;
+}
+
+/* --- 2) Remove the page-level "card" inside <main> --- */
+/* Many templates wrap the page content in a single card-like container */
+#root .app-shell main > .card,
+#root .app-shell main > .panel,
+#root .app-shell main > .container,
+#root .app-shell main > .content,
+#root .app-shell main > div:first-child{
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+/* --- 3) Keep subtle styling only on actual data blocks/tables --- */
+#root main .table-card,
+#root main .table,
+#root main .list-card{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Optional: make the sidebar a touch darker, to match your target look */
+#root .side {
+  background: #0f172a; /* slate-900 */
+}
+#root .side a,
+#root .side button { color: #cbd5e1; } /* slate-300 */
+#root .side .active,
+#root .side a:hover { color: #fff; }
