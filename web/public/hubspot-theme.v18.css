@@ -1,9 +1,7 @@
-/* Synergy CRM — HubSpot-style theme overrides (v18)
-   IMPORTANT: This file is injected *after* the app bundle CSS from index.html
-   so these rules (with !important) reliably win.
+/* Synergy CRM — HubSpot-style theme overrides (v19)
+   Loads AFTER bundle CSS so it wins.
 */
 
-/* ---------- base canvas ---------- */
 :root {
   --bg: #f6f8fb;
   --card-bg: #ffffff;
@@ -13,57 +11,82 @@
   --border: #e2e8f0;
 }
 
+/* Base */
 html, body, #root { height: 100%; }
 body { background: var(--bg); color: var(--text); }
 
-/* ---------- kill any width caps / enforced max-widths ---------- */
-/* common root wrappers */
-#root > .app-shell > :is(div, main, section) {
-  max-width: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-}
+/* ------------------------------------------------------------------
+   Layout: match baseline spacing/centering
+   ------------------------------------------------------------------ */
 
-/* generic container patterns (even when combined with utility classes) */
-#root :is(.container, [class*="container"], [class*="Container"]) {
-  max-width: none !important;
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* many UIs use the 2nd child wrapper under the shell */
-#root > .app-shell > div:nth-child(2) {
-  max-width: none !important;
-  width: 100% !important;
-}
-
-/* ---------- page chrome ---------- */
+/* App grid still provides the sidebar. We constrain & center the main. */
 #root .app-shell {
+  /* do not change columns; just ensure main content centers */
+}
+
+#root .app-shell > main,
+#root .app-shell > div[role="main"],
+#root .app-shell > .main {
+  max-width: 1120px !important;   /* baseline content width */
+  margin: 0 auto !important;      /* center */
+  padding: 24px 24px 40px !important;
   background: transparent !important;
 }
 
-/* ---------- cards / panels (match clean baseline look) ---------- */
+/* Prevent any container helpers from re-expanding to full width */
+#root :is(.container, [class*="container"], [class*="Container"]) {
+  max-width: 1120px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* ------------------------------------------------------------------
+   Cards / panels: light border, NO shadow (including drop-shadow)
+   ------------------------------------------------------------------ */
+
 #root :is(.card, .panel, .Card, .Panel, [class*="card"], [class*="panel"], [class*="Card"], [class*="Panel"]) {
   background: var(--card-bg) !important;
   border: 1px solid var(--border) !important;
-  box-shadow: none !important;
   border-radius: 10px !important;
+  box-shadow: none !important;
+  filter: none !important;              /* <-- kills drop-shadow */
 }
 
-/* ---------- action buttons ---------- */
+/* Sometimes the page "frame" is also a panel-like container */
+#root .page,
+#root .content,
+#root .page-frame {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Table normalization */
+#root table,
+#root .table,
+#root [role="table"] {
+  width: 100% !important;
+  background: transparent !important;
+}
+
+#root table thead th {
+  color: var(--muted) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+#root table tbody tr {
+  border-top: 1px solid var(--border) !important;
+}
+
+/* Buttons — soft, pill style like the baseline */
 #root :is(button, .btn, .Button, [class*="btn"], [class*="Button"]) {
   border-radius: 9999px !important;
   border: 1px solid var(--border) !important;
   box-shadow: none !important;
 }
 
-/* ---------- tables / lists ---------- */
-#root table,
-#root .table,
-#root [role="table"] {
-  width: 100% !important;
+/* Kill any global “frame” shadows the bundle may add with utilities */
+#root [style*="filter: drop-shadow"],
+#root [class*="drop-shadow"] {
+  filter: none !important;
 }
-
-/* ---------- globally tone down heavy shadows ---------- */
-#root * { box-shadow: none !important; }
