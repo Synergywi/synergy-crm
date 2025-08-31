@@ -1,14 +1,12 @@
-/* ========== Synergy CRM — Baseline UI Theme ========== */
-/* System font stack for a crisp app feel */
+/* ========== Synergy CRM — Baseline UI Theme (v11) ========== */
 :root{
   --bg:#0b1020;            /* page background */
   --panel:#0f152a;         /* sidebar bg */
   --card:#0f152a;          /* cards / tables */
   --muted:#9aa4b2;
   --text:#e6eaf1;
-  --line: #1d2946;         /* hairline borders */
+  --line:#1d2946;          /* hairline borders */
   --primary:#86b3ff;       /* action color (soft blue) */
-  --primary-ink:#0a3c8b;   /* darker edge for pills */
   --pill-bg:#16254a;       /* “Open” pill bg */
   --pill-line:#244a94;     /* “Open” pill border */
   --shadow: 0 8px 24px rgba(3, 10, 26, .35);
@@ -16,22 +14,32 @@
 }
 
 *,
-*::before,
-*::after { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-html, body { margin:0; background:var(--bg); color:var(--text); }
+*::before,*::after { box-sizing:border-box; }
+html,body,#root { height:100%; }
+html,body { margin:0; background:var(--bg); color:var(--text); }
+body { font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
 
-body {
-  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  text-rendering: optimizeLegibility;
+/* ---------- Layout polish ---------- */
+main, .content, #page {
+  background:
+    radial-gradient(1200px 800px at 60% -20%, rgba(134,179,255,.06), transparent 55%) fixed,
+    radial-gradient(900px 600px at -10% 20%, rgba(20,97,255,.08), transparent 40%) fixed,
+    var(--bg);
 }
 
-/* ----- Sidebar & page layout (works with your existing <nav> + main) ----- */
+/* Center inner content (safe, low specificity) */
+main > div, .content, .page-inner, .content-inner, .container {
+  max-width: 1040px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+/* ---------- Sidebar ---------- */
 nav {
   background: var(--panel);
   border-right: 1px solid var(--line);
 }
-nav a {
+nav a{
   display:block;
   padding:10px 12px;
   margin:2px 8px;
@@ -43,28 +51,8 @@ nav a {
   opacity:.9;
 }
 nav a:hover { background:#101a34; opacity:1; }
-nav a.active { background:#13214a; outline:1px solid #1e3a8a; }
-
-/* section labels if you use them */
-nav .label{
-  color:var(--muted);
-  text-transform:uppercase;
-  font-size:11px;
-  letter-spacing:.12em;
-  padding:10px 14px 6px;
-  opacity:.9;
-}
-
-/* ----- Content area wrappers ----- */
-main, .content, #page {
-  background: radial-gradient(1200px 800px at 60% -20%, rgba(134,179,255,.06), transparent 55%) fixed,
-              radial-gradient(900px 600px at -10% 20%, rgba(20, 97, 255, .08), transparent 40%) fixed,
-              var(--bg);
-}
-
-h1,h2,h3 { margin:0 0 .75rem; font-weight:700; }
-h1 { font-size:22px; }
-h2 { font-size:18px; color:var(--muted); font-weight:600; }
+/* active class from NavLink or markup */
+nav a.active { background:#13214a; outline:1px solid #27488f; }
 
 /* LIVE badge */
 .badge-live{
@@ -74,52 +62,58 @@ h2 { font-size:18px; color:var(--muted); font-weight:600; }
   font-weight:700; font-size:12px; letter-spacing:.02em;
 }
 
-/* ----- Cards / tables look like the baseline panels ----- */
+/* ---------- Cards & tables ---------- */
+/* Many apps put white bg on a wrapper div around the table.
+   The :has(> table) selector catches that wrapper and themes it. */
+.table-wrap, .table-container, .card, .panel, .list, .box,
+main :where(div,section,article):has(> table) {
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+
+/* If the white bg is on the table itself, we still theme it. */
 table {
   width:100%;
   border-collapse:separate;
   border-spacing:0;
   background:var(--card);
-  border:1px solid var(--line);
   border-radius:var(--radius);
-  box-shadow: var(--shadow);
   overflow:hidden;
 }
-thead th {
+thead th{
   text-align:left;
   color:var(--muted);
   font-weight:600;
   padding:14px 16px;
   border-bottom:1px solid var(--line);
 }
-tbody td {
+tbody td{
   padding:14px 16px;
   vertical-align:middle;
+  background:transparent; /* keep rows transparent so card shows */
 }
 tbody tr + tr td { border-top:1px solid var(--line); }
+tbody tr:hover td { background: rgba(22,37,74,.35); }
 
-/* Row hover */
-tbody tr:hover td { background: rgba(22, 37, 74, .35); }
-
-/* Action pill in the last column (“Open”) */
+/* “Open” pill buttons */
 tbody td:last-child a,
-a.btn-open {
+a.btn-open{
   display:inline-flex; align-items:center; justify-content:center;
-  min-width:56px;
-  padding:8px 12px;
+  min-width:56px; padding:8px 12px;
   border-radius:10px;
   background:var(--pill-bg);
   color:#d8e6ff;
   border:1px solid var(--pill-line);
-  font-weight:700;
-  text-decoration:none;
+  font-weight:700; text-decoration:none;
   box-shadow: inset 0 -2px 0 rgba(255,255,255,.04);
 }
 tbody td:last-child a:hover,
-a.btn-open:hover { filter: brightness(1.08); }
+a.btn-open:hover{ filter:brightness(1.08); }
 
-/* Primary button (e.g., Create contact) */
-button, .btn-primary {
+/* Primary button (Create contact) */
+button, .btn-primary{
   display:inline-flex; align-items:center; gap:8px;
   padding:10px 14px;
   background:linear-gradient(180deg, #90b8ff 0%, #6aa0ff 98%);
@@ -130,9 +124,9 @@ button, .btn-primary {
   box-shadow: 0 10px 30px rgba(26,100,255,.25), inset 0 1px 0 rgba(255,255,255,.35);
   cursor:pointer; text-decoration:none;
 }
-button:hover, .btn-primary:hover { transform: translateY(-1px); }
+button:hover, .btn-primary:hover{ transform:translateY(-1px); }
 
-/* Small helper spacing so the table panel breathes */
-.container, .page-inner, .content-inner {
-  padding:20px;
-}
+/* Small heading polish */
+h1,h2,h3{ margin:0 0 .75rem; font-weight:700; }
+h1{ font-size:22px; }
+h2{ font-size:18px; color:var(--muted); font-weight:600; }
