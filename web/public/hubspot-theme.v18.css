@@ -1,0 +1,69 @@
+/* Synergy CRM — HubSpot-style theme overrides (v18)
+   IMPORTANT: This file is injected *after* the app bundle CSS from index.html
+   so these rules (with !important) reliably win.
+*/
+
+/* ---------- base canvas ---------- */
+:root {
+  --bg: #f6f8fb;
+  --card-bg: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --brand-600: #4f46e5;
+  --border: #e2e8f0;
+}
+
+html, body, #root { height: 100%; }
+body { background: var(--bg); color: var(--text); }
+
+/* ---------- kill any width caps / enforced max-widths ---------- */
+/* common root wrappers */
+#root > .app-shell > :is(div, main, section) {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* generic container patterns (even when combined with utility classes) */
+#root :is(.container, [class*="container"], [class*="Container"]) {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* many UIs use the 2nd child wrapper under the shell */
+#root > .app-shell > div:nth-child(2) {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* ---------- page chrome ---------- */
+#root .app-shell {
+  background: transparent !important;
+}
+
+/* ---------- cards / panels (match clean baseline look) ---------- */
+#root :is(.card, .panel, .Card, .Panel, [class*="card"], [class*="panel"], [class*="Card"], [class*="Panel"]) {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+/* ---------- action buttons ---------- */
+#root :is(button, .btn, .Button, [class*="btn"], [class*="Button"]) {
+  border-radius: 9999px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- tables / lists ---------- */
+#root table,
+#root .table,
+#root [role="table"] {
+  width: 100% !important;
+}
+
+/* ---------- globally tone down heavy shadows ---------- */
+#root * { box-shadow: none !important; }
