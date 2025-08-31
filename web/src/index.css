@@ -1,8 +1,3 @@
-/* web/src/index.css */
-
-/* Load your HubSpot theme CSS that lives in /web/public */
-@import "/hubspot-theme.css";
-
-/* A couple of sensible base rules */
+/* Minimal global reset; the theme is linked in index.html */
 :root { color-scheme: light; }
 html, body, #root { height: 100%; margin: 0; }
