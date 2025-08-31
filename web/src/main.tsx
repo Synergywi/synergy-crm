@@ -2,9 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-
-// ✅ bring CSS back through a local file Vite can bundle
-import "./index.css";
+import "./index.css"; // keep this present so the import succeeds
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
