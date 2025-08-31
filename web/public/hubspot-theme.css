@@ -1,171 +1,126 @@
-/* ===== Synergy CRM – Baseline theme (safe version) =====
-   No nth-child hacks, no !important, and only app-shell/semantic
-   selectors so we don’t fight component CSS.
-   ------------------------------------------------------ */
-
-/* Design tokens */
+/* --- Synergy CRM – Baseline theme --------------------------------------- */
+/* Reset & tokens */
 :root{
-  --bg: #f6f8fb;
-  --surface: #ffffff;
-  --surface-2:#f2f5f9;
-  --border:#e7edf4;
-  --shadow-1: 0 1px 1px rgba(18, 23, 34, .04);
-  --shadow-2: 0 10px 30px rgba(18, 23, 34, .06);
-
-  --text: #0f172a;        /* slate-900 */
-  --muted:#64748b;        /* slate-500 */
-  --primary:#6f7bff;      /* indigo-ish */
-  --primary-ink:#2e39a6;
-
-  --sidebar-bg:#0f172a;
-  --sidebar-ink:#cbd5e1;
-  --sidebar-ink-dim:#94a3b8;
-  --sidebar-active: rgba(111, 123, 255, .14);
-
-  --radius-lg:16px;
-  --radius-md:12px;
-  --radius-sm:8px;
-
-  --gap: 24px;
-  --container: 1120px;
+  --bg: #f7f8fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --brand: #6366f1;          /* primary */
+  --brand-600:#4f46e5;
+  --brand-700:#4338ca;
+  --focus:  0 0 0 3px rgba(99,102,241,.25);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.04);
+  --shadow-md: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+  --table-stripe: #fafafa;
 }
 
-/* Base */
+*{box-sizing:border-box}
 html,body,#root{height:100%}
-html,body{
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  text-rendering:optimizeLegibility;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI,
-    Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  line-height:1.3;
-}
+html,body{background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
+body{margin:0; font: 14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
 
-/* App shell grid
-   (we only style the shell and semantic elements, not component classes) */
+/* Kill any old “floating canvas” overrides that were targeting nth-child */
+#root>.app-shell>div{max-width:none!important; width:auto!important; margin:0!important; background:transparent!important; box-shadow:none!important; padding:0!important}
+
+/* --- App shell ----------------------------------------------------------- */
 .app-shell{
   display:grid;
-  grid-template-columns: 240px minmax(0,1fr);
-  grid-template-rows: 56px minmax(0,1fr);
+  grid-template-columns: 260px minmax(0,1fr);
+  gap: 32px;
   min-height:100%;
 }
 
-/* Left sidebar */
-.app-shell > aside{
-  grid-row:1 / span 2;
-  background:var(--sidebar-bg);
-  color:var(--sidebar-ink);
-  padding:16px 10px;
-  border-right:1px solid rgba(255,255,255,.06);
+/* Left nav */
+.side{
+  position:sticky; top:0; height:100dvh;
+  background:var(--card); border-right:1px solid var(--border);
+  padding:18px 14px;
 }
-.app-shell > aside a{
-  display:block;
-  padding:10px 12px;
-  margin:4px 6px;
-  border-radius:10px;
-  color:var(--sidebar-ink);
-  text-decoration:none;
+.side .logo{display:block; font-weight:700; letter-spacing:.2px; margin:4px 8px 14px}
+.side nav{display:flex; flex-direction:column; gap:2px}
+.side a{
+  display:flex; align-items:center; gap:10px;
+  color:#1f2937; text-decoration:none;
+  padding:8px 10px; border-radius:10px;
 }
-.app-shell > aside a:hover{ background:rgba(255,255,255,.06) }
-.app-shell > aside .active{ background:var(--sidebar-active) }
-
-/* Header (top strip if you have one) */
-.app-shell > header{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:0 16px;
-  background:transparent;
-  border-bottom:1px solid transparent;
+.side a:hover{background:#f3f4f6}
+.side a[aria-current="page"], .side a.active{
+  background:#eef2ff; color:#3730a3; font-weight:600
 }
 
-/* Main content area */
-.app-shell > main{
-  padding: var(--gap);
-  min-width:0; /* fix overflow in grids */
-}
-@media (max-width: 1024px){
-  .app-shell{
-    grid-template-columns: 220px minmax(0,1fr);
-  }
-}
-@media (max-width: 880px){
-  .app-shell{
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
-  }
-  .app-shell > aside{ grid-row:auto; grid-column:1 }
-}
+/* Main area */
+.main{padding:28px 28px 64px}
 
-/* Page container card (works with very generic markup) */
-.app-shell > main > *{
-  max-width: var(--container);
-  background: var(--surface);
+/* Page header bits seen on Contacts screen */
+.env-pill{
+  display:inline-block; padding:3px 8px; border-radius:999px;
+  background:#eef2ff; color:#3730a3; font-weight:600; font-size:12px;
+  vertical-align:middle; margin-right:8px
+}
+.page-actions{display:flex; gap:10px; margin:6px 0 16px}
+.page-actions a{font-size:13px}
+
+/* --- Primitives ---------------------------------------------------------- */
+.panel{
+  background:var(--card);
   border:1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1), var(--shadow-2);
-  margin:0 auto;             /* center */
-  padding: 18px 20px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-md);
 }
 
-/* Headings / small “LIVE” chip zone above lists */
-h1,h2,h3{ font-weight:600; letter-spacing:.2px }
-small, .muted{ color: var(--muted) }
+.btn{appearance:none; border:1px solid var(--border); background:var(--card);
+  padding:8px 12px; border-radius:999px; font-weight:600; cursor:pointer}
+.btn:focus{outline:var(--focus)}
+.btn:hover{background:#f9fafb}
+.btn-primary{border-color:transparent; background:var(--brand); color:#fff}
+.btn-primary:hover{background:var(--brand-600)}
+.btn-primary:active{background:var(--brand-700)}
 
-/* Tables (contact/company lists) */
-table{ width:100%; border-collapse: collapse }
-th{
-  text-align:left; font-size:13px; color:var(--muted);
-  padding:12px 14px; border-bottom:1px solid var(--border);
-  font-weight:500;
-}
-td{
-  padding:14px; border-bottom:1px solid var(--border);
-  vertical-align:middle;
-}
-tr:last-child td{ border-bottom-color: transparent }
-tbody tr:hover{ background:var(--surface-2) }
+/* Links styled as small “Open” buttons on the table */
+a.chip{display:inline-flex; align-items:center; gap:6px; padding:6px 12px;
+  color:#3730a3; background:#eef2ff; border:1px solid #e0e7ff; border-radius:999px; font-weight:600; text-decoration:none}
+a.chip:hover{background:#e0e7ff}
 
-/* “Open” pill buttons + generic buttons */
-button, .btn{
-  appearance:none; border:0; border-radius:999px;
-  padding:8px 12px; font-weight:600; cursor:pointer;
-  background: var(--primary); color:#fff;
-  box-shadow: 0 1px 0 rgba(0,0,0,.05);
+/* --- Tables -------------------------------------------------------------- */
+.table{width:100%; border-collapse:separate; border-spacing:0}
+.table th{
+  text-align:left; font-size:12px; letter-spacing:.02em; text-transform:uppercase;
+  padding:14px 16px; color:var(--muted)
 }
-button:hover, .btn:hover{ filter: brightness(0.98) }
-button:active, .btn:active{ transform: translateY(1px) }
+.table td{padding:16px}
+.table tr{border-top:1px solid var(--border)}
+.table tr:first-child{border-top:none}
+.table tr:nth-child(even){background:var(--table-stripe)}
+.table td:last-child,.table th:last-child{width:120px}
 
-/* Secondary buttons that look like links (often the “Open” chip) */
-a[role="button"], .chip{
-  display:inline-flex; align-items:center; justify-content:center;
-  height:32px; padding:0 12px; border-radius:999px;
-  background: rgba(111,123,255,.12);
-  color: var(--primary-ink); text-decoration:none; font-weight:600;
+/* --- Forms --------------------------------------------------------------- */
+.input, .select, .textarea{
+  width:100%; border:1px solid var(--border); background:#fff; border-radius:12px;
+  padding:10px 12px; font:inherit;
 }
-a[role="button"]:hover, .chip:hover{
-  background: rgba(111,123,255,.18);
-}
+.input:focus, .select:focus, .textarea:focus{outline:var(--focus); border-color:var(--brand)}
+.label{display:block; font-weight:600; margin:14px 0 6px; color:#111827}
 
-/* Forms (detail pages) */
-input, textarea, select{
-  width:100%; background:#fff; color:var(--text);
-  border:1px solid var(--border); border-radius:10px;
-  padding:10px 12px; outline:none;
-}
-input:focus, textarea:focus, select:focus{
-  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(111,123,255,.18);
-}
-label{ font-size:13px; color:var(--muted) }
+/* “Save Contact” bar */
+.form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:16px}
 
-/* Little “LIVE” badge */
-.badge, .live, [data-badge="live"]{
-  display:inline-block; font-size:12px; font-weight:700;
-  color:#0b7a00; background:#d9fbe1; border:1px solid #b7efc2;
-  padding:2px 8px; border-radius:999px;
-}
+/* Simple utility */
+.mt-16{margin-top:16px}
 
-/* Kill old experimental overrides (just in case they exist) */
-.app-shell > div{ box-shadow:none }
+/* --- Page-specific glue so current markup picks up the theme ------------- */
+/* Contacts list card */
+.contacts-card{overflow:hidden}
+.contacts-card .card-inner{padding:0}
+.contacts-card table{width:100%}
+
+/* Convert the existing markup into themed components */
+main .card, .content-card, .contacts-card{border-radius:var(--radius); border:1px solid var(--border); background:var(--card); box-shadow:var(--shadow-md)}
+main .card .header, .content-card .header{padding:16px 18px; border-bottom:1px solid var(--border)}
+main .card .body, .content-card .body{padding:0}
+
+/* Buttons that say “Create contact” on list screen */
+button, .btn, .button{font-weight:600}
