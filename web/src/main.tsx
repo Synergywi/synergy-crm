@@ -3,12 +3,10 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 
-const root = document.getElementById("root");
-if (!root) {
-  throw new Error("Root element #root not found in index.html");
-}
+// ✅ bring CSS back through a local file Vite can bundle
+import "./index.css";
 
-ReactDOM.createRoot(root).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
