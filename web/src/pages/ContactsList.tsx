@@ -1,78 +1,72 @@
-import { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 
-interface Contact {
+type Contact = {
   id: string;
   name: string;
   email: string;
   company?: string;
-}
+};
 
-const SEED: Contact[] = [
+const CONTACTS: Contact[] = [
   { id: "bruce", name: "Bruce Wayne", email: "bruce@wayne.com", company: "Wayne Enterprises" },
-  { id: "diana", name: "Diana Prince", email: "diana@embassy.org", company: "Themyscira Embassy" },
+  { id: "diana", name: "Diana Prince", email: "diana@embassy.org", company: "Themyscira Embassy" }
 ];
 
-export default function ContactsList() {
-  const [contacts, setContacts] = useState<Contact[]>(SEED);
-  const [loading, setLoading] = useState(false);
+const tableStyle: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "separate",
+  borderSpacing: 0,
+  background: "#0e1626",
+  borderRadius: 12,
+  overflow: "hidden",
+  boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset, 0 0 0 1px rgba(148,163,184,0.08)"
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/contacts");
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled && Array.isArray(data)) setContacts(data);
-        }
-      } catch {
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+const thTd: React.CSSProperties = { padding: "12px 16px", borderBottom: "1px solid rgba(148,163,184,0.08)" };
 
+const ContactsList: React.FC = () => {
   return (
     <section>
-      <div className="panel">
-        <div className="panel-header">
-          <h3 className="title">Contacts</h3>
-          <div className="spacer" />
-          <button className="btn btn-primary">Create contact</button>
-        </div>
-        <table className="table">
-          <thead>
+      <header style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Contacts</h1>
+        <button
+          type="button"
+          style={{ padding: "8px 12px", background: "#4f46e5", color: "white", borderRadius: 8, border: 0 }}
+          onClick={() => window.alert("Hook this up to your create-contact form")}
+        >
+          Create contact
+        </button>
+      </header>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={tableStyle}>
+          <thead style={{ background: "rgba(148,163,184,0.05)" }}>
             <tr>
-              <th>Name</th>
-              <th>Company</th>
-              <th>Email</th>
-              <th />
+              <th style={{ ...thTd, textAlign: "left" }}>Name</th>
+              <th style={{ ...thTd, textAlign: "left" }}>Company</th>
+              <th style={{ ...thTd, textAlign: "left" }}>Email</th>
+              <th style={{ ...thTd, textAlign: "right" }}></th>
             </tr>
           </thead>
           <tbody>
-            {contacts.map((c) => (
+            {CONTACTS.map((c: Contact) => (
               <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.company ?? "-"}</td>
-                <td>{c.email}</td>
-                <td>
-                  <Link to={`/contacts/${encodeURIComponent(c.id)}`}>Open</Link>
+                <td style={thTd}>{c.name}</td>
+                <td style={thTd}>{c.company ?? "—"}</td>
+                <td style={thTd}>{c.email}</td>
+                <td style={{ ...thTd, textAlign: "right" }}>
+                  <Link to={`/contacts/${c.id}`} style={{ padding: "6px 10px", background: "#4f46e5", borderRadius: 8 }}>
+                    Open
+                  </Link>
                 </td>
               </tr>
             ))}
-            {loading && (
-              <tr>
-                <td colSpan={4}>Loading…</td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
     </section>
   );
-}
+};
+
+export default ContactsList;
