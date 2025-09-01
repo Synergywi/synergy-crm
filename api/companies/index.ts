@@ -1,20 +1,13 @@
-module.exports = async function (context, req) {
-  if (req.method === "GET") {
-    context.res = {
-      status: 200,
-      body: [{ id: 1, name: "Synergy Test Company" }]
-    };
-    return;
-  }
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { companies } from "../shared/data";
 
-  if (req.method === "POST") {
-    const body = req.body || {};
-    context.res = {
-      status: 201,
-      body: { id: Date.now(), ...body }
-    };
-    return;
-  }
+export async function getCompanies(req: HttpRequest, ctx: InvocationContext): Promise<HttpResponseInit> {
+  return { status: 200, jsonBody: companies };
+}
 
-  context.res = { status: 405, body: { error: "Method not allowed" } };
-};
+app.http("companies", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "companies",
+  handler: getCompanies
+});
