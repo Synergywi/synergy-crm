@@ -1,14 +1,12 @@
-/* Global entry – keep this tiny and import our theme */
+/* Keep theme import first; remove any old hubspot-theme.v19.css link usage */
 @import "./theme/hubspot.css";
 
-/* App frame */
 :root {
   --bg: #0b1220;
   --panel: #0f172a;
   --text: #e2e8f0;
   --muted: #94a3b8;
   --brand: #7c8cff;
-  --ring: 0 0 0 3px rgba(124, 140, 255, .3);
 }
 
 html, body, #root { height: 100%; }
