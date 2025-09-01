@@ -1,80 +1,60 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  NavLink,
-  Outlet,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider, NavLink, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import ContactsPage from "./pages/Contacts";         // list
-import ContactsListPage from "./pages/ContactsList"; // alt list (kept, route below)
-import ContactDetailPage from "./pages/ContactDetail";
-
-import CompaniesPage from "./pages/Companies";       // list
+import ContactsListPage from "./pages/ContactsList";
+import ContactsPage from "./pages/Contacts";
+import CompaniesPage from "./pages/Companies";
+import CompaniesListPage from "./pages/CompaniesPage"; // if you use a separate list page
 import CompanyDetailPage from "./pages/CompanyDetail";
-
 import DashboardPage from "./pages/DashboardPage";
+// import DocumentsPage from "./pages/DocumentsPage";
+// import ResourcesPage from "./pages/ResourcesPage";
+// import AdminPage from "./pages/AdminPage";
 
 import "./index.css";
 
-/** React Query client */
 const qc = new QueryClient();
 
-/** App layout (shell + nav + outlet) */
 function Layout() {
   return (
     <div className="app-shell">
       <aside className="aside">
         <div className="brand">Synergy CRM</div>
         <nav className="nav">
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
-          >
-            Dashboard
-          </NavLink>
-          <NavLink
-            to="/contacts"
-            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
-          >
-            Contacts
-          </NavLink>
-          <NavLink
-            to="/contacts-list"
-            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
-          >
-            Contacts (Alt)
-          </NavLink>
-          <NavLink
-            to="/companies"
-            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
-          >
-            Companies
-          </NavLink>
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>Dashboard</NavLink>
+          <NavLink to="/contacts" className={({ isActive }) => (isActive ? "active" : "")}>Contacts</NavLink>
+          <NavLink to="/companies" className={({ isActive }) => (isActive ? "active" : "")}>Companies</NavLink>
+          {/* <NavLink to="/documents" className={({ isActive }) => (isActive ? "active" : "")}>Documents</NavLink>
+          <NavLink to="/resources" className={({ isActive }) => (isActive ? "active" : "")}>Resources</NavLink>
+          <NavLink to="/admin" className={({ isActive }) => (isActive ? "active" : "")}>Admin</NavLink> */}
         </nav>
       </aside>
+
       <main className="main">
-        <Outlet />
+        <div className="content card">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
 }
 
-/** Router with all the pages you have in /pages */
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <DashboardPage /> },                 // /
-      { path: "dashboard", element: <DashboardPage /> },           // /dashboard
-      { path: "contacts", element: <ContactsPage /> },             // /contacts
-      { path: "contacts-list", element: <ContactsListPage /> },    // /contacts-list
-      { path: "contacts/:id", element: <ContactDetailPage /> },    // /contacts/123
-      { path: "companies", element: <CompaniesPage /> },           // /companies
-      { path: "companies/:id", element: <CompanyDetailPage /> },   // /companies/abc
+      { index: true, element: <DashboardPage /> },
+      { path: "contacts", element: <ContactsPage /> },
+      { path: "contacts/list", element: <ContactsListPage /> },
+      { path: "companies", element: <CompaniesPage /> },
+      { path: "companies/list", element: <CompaniesListPage /> },
+      { path: "companies/:id", element: <CompanyDetailPage /> },
+      // { path: "documents", element: <DocumentsPage /> },
+      // { path: "resources", element: <ResourcesPage /> },
+      // { path: "admin", element: <AdminPage /> },
     ],
   },
 ]);
