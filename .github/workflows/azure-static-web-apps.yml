@@ -1,38 +1,37 @@
+# name can be whatever; keep the token line your workflow already uses
 name: Build and deploy web
+
 on:
   push:
     branches: [ main ]
-    paths:
-      - "web/**"
-      - ".github/workflows/azure-static-web-apps.yml"
   workflow_dispatch:
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    name: Build and deploy web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node 18
-        uses: actions/setup-node@v4
+      # (Optional but explicit) Use Node 18
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
-          # No cache-dependency-path to avoid failing when lockfile is absent
+          node-version: 18
 
-      - name: Install deps
+      # Explicit build helps avoid Oryx weirdness
+      - name: Install
         working-directory: web
-        run: npm install
+        run: npm ci
 
-      - name: Build (Vite)
+      - name: Build
         working-directory: web
         run: npm run build
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: "upload"
-          app_location: "web"
-          output_location: "dist"
-          skip_app_build: true   # we already built above
+          azure_static_web_apps_api_token: ${{ secrets.YOUR_EXISTING_SWA_TOKEN }}
+          action: upload
+          app_location: web
+          output_location: dist
+          api_location: ""   # no API right now
