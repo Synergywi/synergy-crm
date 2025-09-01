@@ -1,41 +1,106 @@
-/* --- HubSpot theme overrides (moved from /public) --- */
-:root {
-  --bg: #0f1623;
-  --surface: #111827;
-  --text: #e5ebf5;
-  --muted: #a7b3c2;
-  --border: #2a3340;
-  --radius: 12px;
-  --shadow: 0 8px 24px rgba(0,0,0,.25);
+/* HubSpot-like light theme, no external files needed */
+:root{
+  --bg:#f6f8fb;
+  --panel:#ffffff;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --brand:#635bff;
+  --brand-600:#574bd8;
+  --border:#e5e7eb;
+  --ring:#c7d2fe;
 }
 
-html, body, #root { height: 100%; }
-
-/* Kill constrained wrappers/cards from old layout */
-#root .app-shell > *,
-#root main,
-#root [class*="container"],
-#root [class*="Container"],
-#root [class*="card"],
-#root [class*="Card"],
-#root [class*="panel"],
-#root [class*="Panel"] {
-  max-width: 100% !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  color:var(--text);
+  background:var(--bg);
 }
 
-/* …keep or add any other HubSpot styles you want here … */
+.app-shell{
+  display:grid;
+  grid-template-columns: 240px 1fr;
+  min-height:100%;
+}
 
-/* --- your existing index.css content can stay below --- */
-/* CSS reset + tiny base so we can see something even if the theme misses */
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
-body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
+aside{
+  background:#0f172a;
+  color:#cbd5e1;
+  padding:16px 12px;
+}
 
-/* small helper so cards don’t stick to the edges before the theme kicks in */
-.app-shell { padding: 24px; }
+.brand{
+  font-weight:700;
+  color:#fff;
+  letter-spacing:.3px;
+  margin-bottom:8px;
+}
+
+.nav a{
+  display:block;
+  padding:10px 12px;
+  margin:4px 0;
+  border-radius:8px;
+  color:#cbd5e1;
+  text-decoration:none;
+}
+.nav a.active{ background:#111827; color:#fff }
+
+main{
+  padding:24px;
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+
+.panel-header{
+  padding:18px 20px;
+  font-weight:600;
+  border-bottom:1px solid var(--border);
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+.table th,.table td{
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  font-size:14px;
+}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  font-size:12px;
+  border-radius:999px;
+  color:#3f3f46;
+  background:#eef2ff;
+  border:1px solid var(--ring);
+}
+.btn{
+  appearance:none;
+  border:1px solid var(--border);
+  background:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:14px;
+  cursor:pointer;
+}
+.btn.primary{
+  background:var(--brand);
+  color:#fff;
+  border-color:transparent;
+}
+.btn.primary:hover{ background:var(--brand-600); }
+.toolbar{
+  padding:12px 16px;
+  display:flex;
+  gap:8px;
+}
