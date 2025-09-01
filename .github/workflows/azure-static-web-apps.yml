@@ -1,25 +1,15 @@
 name: Build and deploy web
-
 on:
   push:
     branches: [ main ]
     paths:
-      - 'web/**'
-      - '.github/workflows/azure-static-web-apps.yml'
+      - "web/**"
+      - ".github/workflows/azure-static-web-apps.yml"
   workflow_dispatch:
-
-# ensure only the newest run deploys, older ones are cancelled
-concurrency:
-  group: swa-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,28 +17,22 @@ jobs:
       - name: Use Node 18
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18.x"
+          # No cache-dependency-path to avoid failing when lockfile is absent
 
       - name: Install deps
-        run: |
-          if [ -f pnpm-lock.yaml ]; then
-            corepack enable && pnpm i --frozen-lockfile
-          elif [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          elif [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        working-directory: web
+        run: npm install
 
       - name: Build (Vite)
+        working-directory: web
         run: npm run build
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: upload
-          app_location: web
-          output_location: dist
-          config_file_location: web
+          action: "upload"
+          app_location: "web"
+          output_location: "dist"
+          skip_app_build: true   # we already built above
