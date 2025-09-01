@@ -1,13 +1,5 @@
 /* ===== Synergy CRM — Baseline theme (v17) ===== */
 /* Debug marker: remove after verification */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0; left: 0; right: 0; height: 2px;
-  background: magenta;
-  z-index: 2147483647;
-}
-
 /* Palette */
 :root{
   --bg: #f6f8fb;
