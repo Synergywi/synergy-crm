@@ -31,7 +31,6 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install deps
-        # Use ci if you have a lockfile, otherwise fall back to install
         run: |
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
