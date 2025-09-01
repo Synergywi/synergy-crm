@@ -1,3 +1,37 @@
+/* --- HubSpot theme overrides (moved from /public) --- */
+:root {
+  --bg: #0f1623;
+  --surface: #111827;
+  --text: #e5ebf5;
+  --muted: #a7b3c2;
+  --border: #2a3340;
+  --radius: 12px;
+  --shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+
+html, body, #root { height: 100%; }
+
+/* Kill constrained wrappers/cards from old layout */
+#root .app-shell > *,
+#root main,
+#root [class*="container"],
+#root [class*="Container"],
+#root [class*="card"],
+#root [class*="Card"],
+#root [class*="panel"],
+#root [class*="Panel"] {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* …keep or add any other HubSpot styles you want here … */
+
+/* --- your existing index.css content can stay below --- */
 /* CSS reset + tiny base so we can see something even if the theme misses */
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
