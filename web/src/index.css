@@ -1,7 +1,14 @@
+/* web/src/index.css */
 @import "./theme/hubspot.css";
 
 /* minimal base */
-:root { color-scheme: light; }
+:root { color-scheme: light; --bg:#f7f8fa; --ink:#121417; --ink-2:#475467; --brand:#1a73e8; }
 html, body, #root { height: 100%; }
-body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:#f7f8fa; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--ink);
+  background: var(--bg);
+}
 a { color: inherit; text-decoration: none; }
