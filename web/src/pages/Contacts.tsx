@@ -1,46 +1,63 @@
-import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { Link, useParams } from "react-router-dom";
 
 type Contact = {
   id: string;
-  givenName: string;
-  surname: string;
-  email?: string;
-  companyName?: string;
+  name: string;
+  email: string;
+  company?: string;
 };
 
-export default function ContactsPage(){
-  const { data, isLoading, error } = useQuery<Contact[]>({
-    queryKey:["contacts"],
-    queryFn: async ()=>{
-      const res = await fetch("/api/contacts");
-      if(!res.ok) throw new Error("Failed to load contacts");
-      return res.json();
-    }
-  });
+const CONTACTS: Contact[] = [
+  { id: "bruce", name: "Bruce Wayne", email: "bruce@wayne.com", company: "Wayne Enterprises" },
+  { id: "diana", name: "Diana Prince", email: "diana@embassy.org", company: "Themyscira Embassy" }
+];
+
+const fieldRow: React.CSSProperties = { display: "grid", gridTemplateColumns: "160px 1fr", gap: 12 };
+
+const Contacts: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const record: Contact | undefined = CONTACTS.find((c: Contact) => c.id === id);
+
+  if (!record) {
+    return (
+      <section>
+        <p style={{ marginBottom: 16 }}>Contact not found.</p>
+        <Link to="/contacts" style={{ padding: "8px 12px", background: "#334155", borderRadius: 8 }}>
+          Back to Contacts
+        </Link>
+      </section>
+    );
+  }
 
   return (
-    <div className="panel">
-      <div className="panel-header">Contacts</div>
-      <div className="toolbar">
-        <button className="btn primary">Create contact</button>
+    <section>
+      <header style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+        <Link to="/contacts" style={{ padding: "8px 12px", background: "#334155", borderRadius: 8 }}>
+          Back
+        </Link>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{record.name}</h1>
+      </header>
+
+      <div
+        style={{
+          background: "#0e1626",
+          borderRadius: 12,
+          padding: 16,
+          boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset, 0 0 0 1px rgba(148,163,184,0.08)"
+        }}
+      >
+        <div style={fieldRow}>
+          <div style={{ opacity: 0.7 }}>Email</div>
+          <div>{record.email}</div>
+        </div>
+        <div style={{ ...fieldRow, marginTop: 10 }}>
+          <div style={{ opacity: 0.7 }}>Company</div>
+          <div>{record.company ?? "—"}</div>
+        </div>
       </div>
-      <table className="table">
-        <thead>
-          <tr><th>Name</th><th>Company</th><th>Email</th><th></th></tr>
-        </thead>
-        <tbody>
-          {isLoading && <tr><td colSpan={4}>Loading…</td></tr>}
-          {error && <tr><td colSpan={4}>Error loading contacts</td></tr>}
-          {(data||[]).map(c=>(
-            <tr key={c.id}>
-              <td>{c.givenName} {c.surname}</td>
-              <td>{c.companyName || "—"}</td>
-              <td>{c.email || "—"}</td>
-              <td><span className="badge">Open</span></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    </section>
   );
-}
+};
+
+export default Contacts;
