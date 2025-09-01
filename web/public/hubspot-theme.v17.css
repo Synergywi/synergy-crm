@@ -1,71 +1,103 @@
-/* ---------- Theme tokens ---------- */
+/* ===== Synergy CRM — Baseline theme (v17) ===== */
+/* Debug marker: remove after verification */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: magenta;
+  z-index: 2147483647;
+}
+
+/* Palette */
 :root{
-  --bg:#f6f8fb;
-  --surface:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
-  --brand-600:#1d4ed8;
-  --border:#e5e7eb;
+  --bg: #f6f8fb;
+  --panel: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --brand-600: #4f46e5;
+  --brand-500: #6366f1;
+  --brand-100: #eef2ff;
+  --border: #e2e8f0;
+  --ring: #c7d2fe;
+  --shadow: 0 2px 6px rgba(15,23,42,.06), 0 12px 24px rgba(15,23,42,.04);
 }
 
-html, body, #root { background: var(--bg); color: var(--text); }
+html, body, #root { height:100%; }
+html, body { background: var(--bg) !important; color: var(--text); margin:0; }
 
-/* ---------- Layout: app shell ---------- */
-#root .app-shell{
-  display:grid;
-  grid-template-columns: 260px 1fr;
-  gap:0;
+/* App shell */
+#root .app-shell{ display:grid; grid-template-columns:240px 1fr; min-height:100%; }
+#root aside{
+  background:#0b1220; color:#cbd5e1; padding:16px 12px;
+}
+#root aside a{
+  display:block; padding:10px 12px; border-radius:10px; color:#cbd5e1; text-decoration:none; font-weight:500;
+}
+#root aside a:hover{ background:#111a2e; }
+#root aside a.active{ background:#0f1b34; color:#e5e7eb; }
+
+/* Main */
+#root main{ padding:28px 32px 48px; }
+
+/* Container + Card */
+#root main .container{ max-width:1120px; margin:0 auto; }
+#root main .card,
+#root main .container > div:first-child,
+#root main > .card,
+#root main > .container > .card{
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow) !important;
 }
 
-/* Sidebar */
-#root .app-shell > aside{
-  background:#0f172a !important;
-  color:#cbd5e1 !important;
-  padding:20px 12px !important;
+/* If your list/table lives directly inside the page, wrap the “Contacts” block visually */
+#root main .contacts, 
+#root main .content-card{
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow) !important;
 }
 
-/* Kill narrow containers / card chrome */
-#root .app-shell > div,
-#root .app-shell [class*="container"],
-#root .app-shell [class*="Container"],
-#root .app-shell [class*="card"],
-#root .app-shell [class*="Card"],
-#root .app-shell [class*="panel"],
-#root .app-shell [class*="Panel"]{
-  max-width:none !important;
-  width:100% !important;
-  margin:0 !important;
-  padding:0 !important;
-  border:0 !important;
-  box-shadow:none !important;
-  background:transparent !important;
+/* Table */
+#root main table{
+  width:100%; border-collapse:separate; border-spacing:0;
+}
+#root main thead th{
+  text-align:left; font-size:12px; font-weight:700; color:var(--muted);
+  letter-spacing:.02em; padding:14px 16px 10px;
+  border-bottom:1px solid var(--border);
+  background:transparent;
+}
+#root main tbody td{
+  padding:14px 16px; border-bottom:1px solid var(--border);
+}
+#root main tbody tr:hover{ background:#fcfdff; }
+
+/* Section title */
+#root main h1, #root main .page-title{
+  font-size:18px; font-weight:700; margin:0 0 14px;
 }
 
-/* Main spacing */
-#root .app-shell main,
-#root .app-shell > div{ padding:24px 28px !important; }
-
-/* Lists/tables surface */
-#root table, #root thead, #root tbody, #root tr{ background:transparent !important; }
-
-#root .list, 
-#root .table, 
-#root .grid, 
-#root [role="table"]{
-  background:var(--surface) !important;
-  border:1px solid var(--border) !important;
-  border-radius:12px !important;
-  overflow:hidden;
+/* Buttons / Pills */
+#root main .btn,
+#root main button,
+#root main a[role="button"]{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:32px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--ring); background:var(--brand-100); color:var(--brand-600);
+  font-weight:600; text-decoration:none;
+}
+#root main .btn:hover,
+#root main button:hover,
+#root main a[role="button"]:hover{
+  background:#e5e7ff; border-color:#bfc8ff;
 }
 
-/* Headings */
-#root h1, #root h2{ margin:0 0 16px; font-weight:600; }
-
-/* Buttons */
-#root button, #root .btn{
-  border-radius:999px !important;
-  padding:8px 14px !important;
+/* Kill generic “card/panel/container” from external resets */
+#root *[class^="container"], #root *[class="container"],
+#root *[class^="card"],      #root *[class="card"],
+#root *[class^="panel"],     #root *[class="panel"]{
+  box-shadow: initial;
 }
-
-/* Links */
-#root a{ color:var(--brand-600) !important; }
