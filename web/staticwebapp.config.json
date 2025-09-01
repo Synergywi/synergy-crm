@@ -1,13 +1,11 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/api/*", "/*.css", "/*.js", "/*.png", "/*.jpg", "/*.svg", "/*.ico"]
-  },
-  "responseOverrides": {
-    "404": { "rewrite": "/index.html" }
-  },
+  "routes": [
+    { "route": "/assets/*", "serve": "/assets/*" }
+  ],
   "mimeTypes": {
     ".css": "text/css",
-    ".js": "application/javascript"
+    ".js": "text/javascript",
+    ".json": "application/json",
+    ".svg": "image/svg+xml"
   }
 }
