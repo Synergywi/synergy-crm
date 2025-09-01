@@ -30,8 +30,8 @@ const router = createBrowserRouter([
   { path: "/", element: <Layout />, children: [
       { index: true, element: <ContactsPage /> },
       { path: "/contacts", element: <ContactsPage /> },
-      { path: "/companies", element: <CompaniesPage /> },
-    ]},
+      { path: "/companies", element: <CompaniesPage /> }
+  ]},
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
