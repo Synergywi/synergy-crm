@@ -1,17 +1,11 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": [
-      "/assets/*",               // all Vite-bundled static files
-      "/hubspot-theme*.css",     // your HubSpot CSS at the site root
-      "/favicon.ico",
-      "/robots.txt",
-      "/sitemap.xml",
-      "/manifest.webmanifest"
-    ]
+    "exclude": ["/api/*", "/assets/*"]
   },
-  "mimeTypes": {
-    ".css": "text/css",
-    ".js": "text/javascript"
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html"
+    }
   }
 }
