@@ -1,5 +1,4 @@
+/* Minimal PostCSS setup – only autoprefixer */
 module.exports = {
-  plugins: {
-    autoprefixer: {},
-  },
-}
+  plugins: [require('autoprefixer')()]
+};
