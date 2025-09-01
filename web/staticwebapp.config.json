@@ -1,11 +1,18 @@
 {
-  "routes": [
-    { "route": "/assets/*", "serve": "/assets/*" }
-  ],
-  "mimeTypes": {
-    ".css": "text/css",
-    ".js": "text/javascript",
-    ".json": "application/json",
-    ".svg": "image/svg+xml"
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/*",
+      "/images/*",
+      "/favicon.*",
+      "/icon.*",
+      "/robots.txt"
+    ]
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
+    }
   }
 }
