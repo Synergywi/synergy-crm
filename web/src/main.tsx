@@ -6,29 +6,53 @@ import {
   NavLink,
   Outlet,
 } from "react-router-dom";
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import ContactsPage from "./pages/Contacts";
-import CompaniesPage from "./pages/Companies";
+import ContactsPage from "./pages/Contacts";         // list
+import ContactsListPage from "./pages/ContactsList"; // alt list (kept, route below)
+import ContactDetailPage from "./pages/ContactDetail";
+
+import CompaniesPage from "./pages/Companies";       // list
+import CompanyDetailPage from "./pages/CompanyDetail";
+
+import DashboardPage from "./pages/DashboardPage";
+
 import "./index.css";
 
+/** React Query client */
 const qc = new QueryClient();
-const nav = ({ isActive }: { isActive: boolean }) => (isActive ? "active" : "");
 
-function Layout(): JSX.Element {
+/** App layout (shell + nav + outlet) */
+function Layout() {
   return (
     <div className="app-shell">
-      <aside className="side">
+      <aside className="aside">
         <div className="brand">Synergy CRM</div>
         <nav className="nav">
-          <NavLink to="/contacts" className={nav}>Contacts</NavLink>
-          <NavLink to="/companies" className={nav}>Companies</NavLink>
-          <NavLink to="/documents" className={nav}>Documents</NavLink>
-          <NavLink to="/resources" className={nav}>Resources</NavLink>
-          <NavLink to="/admin" className={nav}>Admin</NavLink>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
+          >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/contacts"
+            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
+          >
+            Contacts
+          </NavLink>
+          <NavLink
+            to="/contacts-list"
+            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
+          >
+            Contacts (Alt)
+          </NavLink>
+          <NavLink
+            to="/companies"
+            className={({ isActive }: { isActive: boolean }) => (isActive ? "active" : "")}
+          >
+            Companies
+          </NavLink>
         </nav>
       </aside>
       <main className="main">
@@ -38,14 +62,19 @@ function Layout(): JSX.Element {
   );
 }
 
+/** Router with all the pages you have in /pages */
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <ContactsPage /> },
-      { path: "contacts", element: <ContactsPage /> },
-      { path: "companies", element: <CompaniesPage /> },
+      { index: true, element: <DashboardPage /> },                 // /
+      { path: "dashboard", element: <DashboardPage /> },           // /dashboard
+      { path: "contacts", element: <ContactsPage /> },             // /contacts
+      { path: "contacts-list", element: <ContactsListPage /> },    // /contacts-list
+      { path: "contacts/:id", element: <ContactDetailPage /> },    // /contacts/123
+      { path: "companies", element: <CompaniesPage /> },           // /companies
+      { path: "companies/:id", element: <CompanyDetailPage /> },   // /companies/abc
     ],
   },
 ]);
