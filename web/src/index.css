@@ -1,43 +1,8 @@
-/* Load the HubSpot-like theme first */
+/* web/src/index.css */
 @import "./theme/hubspot.css";
 
-/* App shell defaults (kept intentionally small) */
-:root {
-  --bg: #0b1220;
-  --panel: #0f172a;
-  --muted: #94a3b8;
-  --ring: #94b8ff;
-}
+/* minimal base */
+:root { color-scheme: light; }
 html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: white;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-}
-a { color: #a5b4fc; text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-.app-shell {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  min-height: 100%;
-}
-aside {
-  background: var(--panel);
-  border-right: 1px solid rgba(148, 184, 255, 0.15);
-  padding: 16px 12px;
-}
-.brand { font-weight: 700; letter-spacing: .2px; margin: 6px 6px 14px; }
-.nav a {
-  display: block; padding: 8px 10px; border-radius: 10px;
-  margin: 2px 4px; color: var(--muted);
-}
-.nav a.active { background: rgba(164, 180, 255, .12); color: white; }
-main { padding: 24px; }
-.card {
-  background: var(--panel); border: 1px solid rgba(148,184,255,.12);
-  border-radius: 14px; padding: 16px;
-}
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 10px 12px; border-bottom: 1px solid rgba(148,184,255,.08); }
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:#f7f8fa; }
+a { color: inherit; text-decoration: none; }
