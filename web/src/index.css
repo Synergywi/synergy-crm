@@ -1,31 +1,7 @@
-/* If Tailwind is configured, these will be picked up; if not, they are harmless. */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* CSS reset + tiny base so we can see something even if the theme misses */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
 
-/* App defaults */
-:root {
-  --bg: #0f1623;
-  --card: #111827;
-  --text: #d1d5db;
-  --muted: #9ca3af;
-  --brand: #4f46e5;
-  --border: #1f2937;
-}
-
-html, body, #root {
-  height: 100%;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-}
-
-/* Make sure the app shell can stretch and center content nicely */
-#root .app-shell {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
-  box-sizing: border-box;
-}
+/* small helper so cards don’t stick to the edges before the theme kicks in */
+.app-shell { padding: 24px; }
