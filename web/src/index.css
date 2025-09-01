@@ -5,11 +5,3 @@
 html, body, #root { height: 100%; }
 body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:#f7f8fa; }
 a { color: inherit; text-decoration: none; }
-
-/* tiny layout helpers for the demo nav */
-.app-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100%; }
-aside { background: #0b1f2a; color: #fff; padding: 16px; }
-.brand { font-weight: 700; margin-bottom: 12px; }
-.nav a { display:block; padding:8px 10px; border-radius:8px; }
-.nav a.active { background: #ecf5ff; color:#1b5cff; font-weight:600; }
-main { padding: 24px; }
