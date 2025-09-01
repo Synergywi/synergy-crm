@@ -1,35 +1,32 @@
-name: Azure Static Web Apps CI/CD
-
+name: SWA Build & Deploy
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node 18 (no caching)
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 18
 
-      - name: Install & build (Vite)
+      - name: Install deps
         working-directory: web
-        run: |
-          npm install --no-audit --no-fund
-          npm run build
+        run: npm ci
 
-      # Deploy only the prebuilt site. We tell the SWA action to skip its own build.
+      - name: Build (Vite)
+        working-directory: web
+        run: npm run build
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          # Use the same secret name you already have in your existing SWA workflow.
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          app_location: web
-          output_location: dist
-          skip_app_build: true
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "web"
+          output_location: "dist"
+          skip_api_build: true
