@@ -1,54 +1,43 @@
-/* Keep theme import first; remove any old hubspot-theme.v19.css link usage */
+/* Load the HubSpot-like theme first */
 @import "./theme/hubspot.css";
 
+/* App shell defaults (kept intentionally small) */
 :root {
   --bg: #0b1220;
   --panel: #0f172a;
-  --text: #e2e8f0;
   --muted: #94a3b8;
-  --brand: #7c8cff;
+  --ring: #94b8ff;
 }
-
 html, body, #root { height: 100%; }
-* { box-sizing: border-box; }
-
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  color: white;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
+a { color: #a5b4fc; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
 .app-shell {
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100%;
 }
-
 aside {
   background: var(--panel);
-  border-right: 1px solid rgba(148,163,184,.15);
-  padding: 20px 16px;
+  border-right: 1px solid rgba(148, 184, 255, 0.15);
+  padding: 16px 12px;
 }
-
-.brand { font-weight: 700; letter-spacing: .3px; margin: 4px 0 14px; }
-
+.brand { font-weight: 700; letter-spacing: .2px; margin: 6px 6px 14px; }
 .nav a {
-  display: block;
-  padding: 10px 12px;
-  margin: 4px 0;
-  text-decoration: none;
-  color: var(--muted);
-  border-radius: 10px;
+  display: block; padding: 8px 10px; border-radius: 10px;
+  margin: 2px 4px; color: var(--muted);
 }
-.nav a.active { color: var(--text); background: rgba(124,140,255,.12); }
-
+.nav a.active { background: rgba(164, 180, 255, .12); color: white; }
 main { padding: 24px; }
 .card {
-  background: var(--panel);
-  border: 1px solid rgba(148,163,184,.15);
-  border-radius: 14px;
-  padding: 18px;
+  background: var(--panel); border: 1px solid rgba(148,184,255,.12);
+  border-radius: 14px; padding: 16px;
 }
 .table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 14px; border-bottom: 1px solid rgba(148,163,184,.15); }
+.table th, .table td { padding: 10px 12px; border-bottom: 1px solid rgba(148,184,255,.08); }
