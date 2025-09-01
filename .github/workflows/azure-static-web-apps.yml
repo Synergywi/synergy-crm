@@ -5,12 +5,19 @@ on:
     branches: [ main ]
     paths:
       - "web/**"
-      - ".github/workflows/build-and-deploy-web.yml"
+      - ".github/workflows/azure-static-web-apps.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
 
     steps:
       - name: Checkout
@@ -20,22 +27,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install deps
-        working-directory: web
+        # Use ci if you have a lockfile, otherwise fall back to install
         run: |
-          npm install
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm i --no-audit --no-fund
+          fi
 
-      - name: Build (Vite)
-        working-directory: web
+      - name: Build
         run: npm run build
 
-      # We already built, so skip Oryx. Just upload /web/dist
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: "upload"
-          app_location: "web"
-          output_location: "dist"
+          app_location: web/dist
           skip_app_build: true
