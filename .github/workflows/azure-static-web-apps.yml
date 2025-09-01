@@ -25,7 +25,6 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          # If a lockfile exists we cache it; if not, no failure
           cache-dependency-path: |
             web/package-lock.json
             package-lock.json
