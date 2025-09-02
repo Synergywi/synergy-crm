@@ -1,38 +1,54 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 type Company = {
   id: string;
   name: string;
-  domain: string;
+  domain?: string;
   city?: string;
 };
 
-const rows: Company[] = [
-  { id: "c1", name: "Wayne Enterprises", domain: "wayne.com", city: "Gotham" },
-  { id: "c2", name: "Themyscira Embassy", domain: "embassy.org", city: "Washington DC" },
-  { id: "c3", name: "Stark Industries", domain: "stark.com", city: "Malibu" },
-];
+// Import your existing in-memory store.
+import { companies as companiesData } from "../lib/companiesStore";
 
 export default function CompaniesPage() {
+  const companies: Company[] = Array.isArray(companiesData) ? companiesData as Company[] : [];
+
   return (
-    <div className="page">
-      <div className="card">
-        <div className="card-title">Companies</div>
-        <div className="table">
-          <div className="thead">
-            <div>NAME</div>
-            <div>DOMAIN</div>
-            <div>CITY</div>
-            <div></div>
-          </div>
-          {rows.map((r) => (
-            <div className="trow" key={r.id}>
-              <div>{r.name}</div>
-              <div>{r.domain}</div>
-              <div>{r.city ?? "—"}</div>
-              <div><button className="btn">Open</button></div>
-            </div>
-          ))}
+    <div className="panel">
+      <div className="panel-header">
+        <h1 className="panel-title">Companies</h1>
+      </div>
+
+      <div className="panel-body">
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th style={{width: "34%"}}>Name</th>
+                <th style={{width: "34%"}}>Domain</th>
+                <th style={{width: "24%"}}>City</th>
+                <th style={{width: "8%"}} aria-label="actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((co) => (
+                <tr key={co.id}>
+                  <td>{co.name}</td>
+                  <td className="text-muted">{co.domain ?? "—"}</td>
+                  <td className="text-muted">{co.city ?? "—"}</td>
+                  <td className="text-right">
+                    <Link to="#" className="btn btn-small">Open</Link>
+                  </td>
+                </tr>
+              ))}
+              {companies.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-muted">No companies yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
